@@ -9,6 +9,7 @@ __pycache__/
 .Python
 env/
 build/
+out/
 develop-eggs/
 dist/
 downloads/
@@ -68,6 +69,7 @@ target/
 
 # VS Code
 .vscode/
+*.code-workspace
 
 # Spyder
 .spyproject/
@@ -89,3 +91,42 @@ target/
 
 # Mypy cache
 .mypy_cache/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.nav
+*.snm
+*.vrb
+*.run.xml
+*.bcf
+*.blg
+*.bbl
+*.idx
+*.ilg
+*.ind
+*.glg
+*.glo
+*.gls
+*.ist
+*.acn
+*.acr
+*.alg
+*.loa
+*.thm
+*.xdy
+*.maf
+*.mtc
+*.mtc0
+*.ptc
+
+# PDFs
+*.pdf
