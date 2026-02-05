@@ -20,7 +20,6 @@ repos:
     -   id: detect-private-key
     -   id: double-quote-string-fixer
     -   id: end-of-file-fixer
-    -   id: fix-encoding-pragma
     -   id: mixed-line-ending
         args: ["--fix=lf"]
     -   id: name-tests-test
@@ -89,3 +88,9 @@ repos:
     hooks:
     -   id: detect-secrets
         exclude: package.lock.json
+# Replace fix-encoding-pragma
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.2
+    hooks:
+    -   id: pyupgrade
+        args: ["--py311-plus"]
