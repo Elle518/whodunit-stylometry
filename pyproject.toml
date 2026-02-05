@@ -1,9 +1,9 @@
 [project]
 name = "whodunit-stylometry"
 version = "0.1.0"
-description = ""
+description = "Modelado estilístico de la novela de misterio - Un análisis computacional de autores canónicos"
 authors = [
-    {name = "Teresa García Ceva",email = "tgarciace@uoc.edu"}
+    {name = "Teresa García Ceva", email = "tgarciace@uoc.edu"}
 ]
 readme = "README.md"
 requires-python = ">=3.11"
@@ -21,5 +21,13 @@ build-backend = "poetry.core.masonry.api"
 dev = [
     "pytest (>=9.0.2,<10.0.0)",
     "ruff (>=0.15.0,<0.16.0)",
-    "black (>=26.1.0,<27.0.0)"
+    "black (>=26.1.0,<27.0.0)",
+    "pre-commit (>=4.5.1,<5.0.0)"
 ]
+
+# Pre-commit hooks
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120
