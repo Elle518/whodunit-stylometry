@@ -10,6 +10,19 @@ Este repositorio contiene el código y los recursos relacionados con mi Trabajo 
 > poetry install
 > poetry add pandas numpy
 > poetry add --group dev pytest ruff black
+> poetry add --group dev ipykernel
+```
+
+Activa el entorno virtual:
+
+```bash
+> source .venv/bin/activate
+```
+
+Instalar el src como paquete editable:
+
+```bash
+> pip install -e .
 ```
 
 ## Uso de git hook para formatear el código antes de cada commit
