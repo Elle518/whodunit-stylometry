@@ -4310,7 +4310,7 @@ V. The “_Gloria Scott_”
       to him. They are endorsed outside, as you see, ‘Some particulars
       of the voyage of the bark _Gloria Scott_, from her leaving
       Falmouth on the 8th October, 1855, to her destruction in N. lat.
-      15º 20’, W. long. 25º 14’ on Nov. 6th.’ It is in the form of a
+      15° 20’, W. long. 25° 14’ on Nov. 6th.’ It is in the form of a
       letter, and runs in this way:
 
       “‘My dear, dear son,—Now that approaching disgrace begins to
@@ -4554,7 +4554,7 @@ V. The “_Gloria Scott_”
       sailors’ togs each, a barrel of water, two casks, one of junk and
       one of biscuits, and a compass. Prendergast threw us over a
       chart, told us that we were shipwrecked mariners whose ship had
-      foundered in lat. 15º N. and long 25º W., and then cut the
+      foundered in lat. 15° N. and long 25° W., and then cut the
       painter and let us go.
 
       “‘And now I come to the most surprising part of my story, my dear
