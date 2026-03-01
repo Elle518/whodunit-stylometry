@@ -67,8 +67,8 @@ The resulting route-map was surprisingly accurate, as shown by the
 agreement of the outward and homeward tracks, It was published by the
 Royal Geographical Society, and incorporated in the map of this region
 compiled by the Intelligence Branch of the War Office, and it formed the
-basis of the map which accompanied my volume of <i>Travels in Ashanti and
-Jaman</i>. So that Thorndyke's plan must be taken as quite a practicable
+basis of the map which accompanied my volume of Travels in Ashanti and
+Jaman. So that Thorndyke's plan must be taken as quite a practicable
 one.
 
 New Inn, the background of this story, and one of the last surviving
@@ -160,7 +160,7 @@ to be extinct. They were all gentlemen--unless they were ladies or
 children--even as the Liberian army was said to consist entirely of
 generals. Sweeps, labourers, milkmen, costermongers--all were
 impartially invested by the democratic bottle-boy with the rank and
-title of <i>armigeri</i>. The present nobleman appeared to favour the
+title of armigeri. The present nobleman appeared to favour the
 aristocratic recreation of driving a cab or job-master's carriage, and,
 as he entered the room, he touched his hat, closed the door somewhat
 carefully, and then, without remark, handed me a note which bore the
@@ -1250,7 +1250,7 @@ didn't take much making," departed much gratified by the compliment.
 factotum retired. "He took in the idea instantly and seems to have
 produced the finished article by magic, as the conjurers bring forth
 rabbits and bowls of goldfish at a moment's notice. I suppose you see
-what your <i>modus operandi</i> is to be?"
+what your modus operandi is to be?"
 
 I had gathered a clue from the little appliance--a plate of white
 fret-wood about seven inches by five, to one corner of which a
@@ -1467,7 +1467,7 @@ eyes were more sunken, his skin more livid; "his nose was as sharp as a
 pen," and if he did not "babble of green fields" it was because he
 seemed to be beyond even that. If it had been a case of disease, I
 should have said at once that he was dying. He had all the appearance of
-a man <i>in articulo mortis</i>. Even as it was, feeling convinced that the
+a man in articulo mortis. Even as it was, feeling convinced that the
 case was one of morphine poisoning, I was far from confident that I
 should be able to draw him back from the extreme edge of vitality on
 which he trembled so insecurely.
@@ -2233,7 +2233,7 @@ morphine."
 
 "That's no good, sir," interrupted the officer. "Suspicion isn't
 evidence. We should want you to swear an information and give us enough
-facts to make out a <i>primâ facie</i> case against some definite person. And
+facts to make out a primâ facie case against some definite person. And
 you couldn't do it. Your information amounts to this: that a certain
 person has taken a poisonous dose of morphine and apparently recovered.
 That's all. You can't swear that the names given to you are real names,
@@ -2244,8 +2244,8 @@ locate the house, I think, without much difficulty."
 
 The officer smiled faintly and fixed an abstracted gaze on the clock.
 
-"<i>You</i> could, sir," he replied. "I have no doubt whatever that <i>you</i>
-could. <i>I</i> couldn't. But, in any case, we haven't enough to go upon. If
+"You could, sir," he replied. "I have no doubt whatever that you
+could. I couldn't. But, in any case, we haven't enough to go upon. If
 you learn anything fresh, I hope you will let me know; and I am very
 much obliged to you for taking so much trouble in the matter. Good
 evening sir. Good evening, Dr. Stillbury."
@@ -2654,7 +2654,7 @@ disastrous."
 "Indeed!"
 
 "Yes. As I have said, no alteration in the testator's circumstances had
-taken place at the time the new will was executed. <i>But</i> only two days
+taken place at the time the new will was executed. But only two days
 before his death, his sister, Mrs. Edmund Wilson, died; and on her will
 being proved it appeared that she had bequeathed to him her entire
 personalty, estimated at about thirty thousand pounds."
@@ -3429,7 +3429,7 @@ put an analogous medical case as being more within your present sphere.
 Supposing that a man should consult you, say, about a progressive loss
 of weight. He can give no explanation. He has no pain, no discomfort, no
 symptoms of any kind; in short, he feels perfectly well in every
-respect; <i>but</i> he is losing weight continuously. What would you do?"
+respect; but he is losing weight continuously. What would you do?"
 
 "I should overhaul him thoroughly," I answered.
 
@@ -3583,7 +3583,7 @@ when they're gone the house is as empty as a blown hegg. I don't wonder
 poor Mr. Blackmore made away with his-self. Livin' up there all alone,
 it must have been like Robinson Crusoe without no man Friday and not
 even a blooming goat to talk to. Quiet! It's quiet enough, if that's
-what you want. Wouldn't be no good to <i>me</i>."
+what you want. Wouldn't be no good to me."
 
 With a contemptuous shake of the head, he turned and retired down the
 next flight, and, as the echoes of his footsteps died away we resumed
@@ -3677,7 +3677,7 @@ leases and other legal documents from Eridu and other Babylonian cities.
 He used to copy the inscriptions in the cuneiform writing and then
 translate them into English. But I mustn't stay here any longer as I
 have an engagement for this evening. I just dropped in to get these two
-volumes--<i>Thornton's History of Babylonia</i>, which he once advised me to
+volumes--Thornton's History of Babylonia, which he once advised me to
 read. Shall I give you the key? You'd better have it and leave it with
 the porter as you go out."
 
@@ -3726,11 +3726,11 @@ remarkable."
 "I don't follow you at all," said I. "That a man should hang upon his
 wall an inscription that is legible to him does not seem to me at all
 out of the way. It would be much more singular if he should hang up an
-inscription that he could <i>not</i> read."
+inscription that he could not read."
 
 "No doubt," replied Thorndyke. "But you will agree with me that it would
 be still more singular if a man should hang upon his wall an inscription
-that he <i>could</i> read--and hang it upside down."
+that he could read--and hang it upside down."
 
 I stared at Thorndyke in amazement.
 
@@ -6108,7 +6108,7 @@ signatures that you have got wouldn't help you. I have looked them over
 very closely--and I have seen a few signatures in my time, you know.
 Marchmont asked me to glance over them as a matter of form, but I don't
 believe in matters of form; I examined them very carefully. There is an
-appreciable amount of variation; a very appreciable amount. <i>But</i> under
+appreciable amount of variation; a very appreciable amount. But under
 the variation one can trace the personal character (which is what
 matters); the subtle, indescribable quality that makes it recognizable
 to the expert eye as Jeffrey Blackmore's writing. You understand me.
@@ -6268,7 +6268,7 @@ could make them, and I could think of no way in which to improve them, I
 changed sides and considered the case from the standpoint of detection.
 I analysed the case, I picked out its inherent and unavoidable
 weaknesses, and, especially, I noted the respects in which a fraudulent
-proceeding of a particular kind differed from the <i>bona fide</i> proceeding
+proceeding of a particular kind differed from the bona fide proceeding
 that it simulated. The exercise was invaluable to me. I acquired as much
 experience from those imaginary cases as I should from real ones, and in
 addition, I learned a method which is the one that I practise to this
@@ -6798,7 +6798,7 @@ smaller man.
 I sat down nearly opposite and stole an occasional furtive glance at
 him. The resemblance to Weiss was really remarkable. The same flaxen
 hair, the same ragged beard and a similar red nose, with the patches of
-<i>acne rosacea</i> spreading to the adjacent cheeks. He wore spectacles,
+acne rosacea spreading to the adjacent cheeks. He wore spectacles,
 too, through which he took a quick glance at me now and again, returning
 immediately to his document.
 
@@ -7254,7 +7254,7 @@ it in deeper obscurity, so far as I was concerned. The new problem that
 Thorndyke offered for solution was a tougher one than any of the others.
 He proposed that I should identify and give a name to this mysterious
 woman. But how could I? No woman, excepting Mrs. Wilson, had been
-mentioned in connection with the case. This new <i>dramatis persona</i> had
+mentioned in connection with the case. This new dramatis persona had
 appeared suddenly from nowhere and straightway vanished without leaving
 a trace, excepting the two or three beads that we had picked up in
 Jeffrey's room.
@@ -7382,7 +7382,7 @@ cannot reconcile it with those facts."
 
 "This is the letter," exclaimed Mr. Winwood, dragging the document from
 his wallet and slapping it down on the table. "If you are acquainted
-with the case, sir, just read that, and let us hear what <i>you</i> think."
+with the case, sir, just read that, and let us hear what you think."
 
 I took up the letter and read aloud:
 
@@ -8457,8 +8457,8 @@ unwillingness to show himself even by the light of a candle. But there
 is an item of positive evidence on this point which is important from
 having other bearings. It is furnished by the spectacles worn by Weiss,
 of which you have heard Jervis's description. These spectacles had very
-peculiar optical properties. When you looked <i>through</i> them they had the
-properties of plain glass; when you looked <i>at</i> them they had the
+peculiar optical properties. When you looked through them they had the
+properties of plain glass; when you looked at them they had the
 appearance of lenses. But only one kind of glass possesses these
 properties; namely, that which, like an ordinary watch-glass, has
 curved, parallel surfaces. But for what purpose could a person wear
@@ -8525,7 +8525,7 @@ some time, in the chambers at New Inn.
 are inquiring into the identity of the man Weiss. Who was he?
 
 "In the first place, we find him committing a secret crime from which
-John Blackmore alone will benefit. This suggests the <i>prima-facie</i>
+John Blackmore alone will benefit. This suggests the prima-facie
 probability that he was John Blackmore.
 
 "Then we find that he was a man of normal eyesight who was wearing
