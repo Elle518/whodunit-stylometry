@@ -2986,7 +2986,7 @@ him till dusk fell--about six. Then I received this telegram:--
 
 /#
      "Cypher read. Most interesting case. If you can spare an hour be
-     outside 120 Broad Street at six thirty.--<sc>Hewitt</sc>."
+     outside 120 Broad Street at six thirty.--Hewitt."
 #/
 
 I had to be at my office between eight and nine, and to keep Hewitt's
@@ -3378,7 +3378,7 @@ arrival at his office, ran thus:--
 /#
      "Did you receive telegram? See newspapers. Matter life or death.
      Would come personally but cannot leave mother. Pray
-     answer.--<sc>Peytral</sc>."
+     answer.--Peytral."
 #/
 
 The answer went instantly that Hewitt would come by the next train, for
@@ -3406,7 +3406,7 @@ same. News agency report to both papers, no doubt."
 The report which I read ran as follows:--
 
 /#
-     "<sc>Singular Tragedy</sc>.--An extraordinary occurrence is reported from
+     "Singular Tragedy.--An extraordinary occurrence is reported from
      Throckham, a small village within fifteen miles of London,
      involving a tragic fatality that has led to a charge of murder. On
      Thursday evening an old barn, for some time disused, was discovered
