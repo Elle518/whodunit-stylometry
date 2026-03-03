@@ -10,7 +10,7 @@ Este repositorio contiene el código y los recursos relacionados con mi Trabajo 
 > poetry install
 > poetry add pandas numpy
 > poetry add --group dev pytest ruff black
-> poetry add --group dev ipykernel
+> poetry add --group dev ipykernel ipywidgets
 ```
 
 Activa el entorno virtual:
