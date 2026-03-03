@@ -819,23 +819,6 @@ he ventured to remark:
 "This discovery alters matters, does it not? May I ask what you propose
 to do now? Anything in which we can help you?"
 
-[Illustration:
-1--Ephraim Short.
-2--Mrs. Lynch.
-3--Director Roberts.
-4--Door-man.
-5--Copyist.
-6--Mrs. Alice Lee.
-7-8--Mr. and Mrs. Draper.
-9--Mr. Coit.
-10--Mr. Simpson.
-11--Prof. Turnbull.
-12--Second Door-man.
-13--Miss Hunsicker.
-14--Attendant.
-15--Miss Blake.
-16--Officer.]
-
 The detective may have heard him and he may not; at all events he made no
 reply though he continued to advance with a mechanical step until he
 stood again at the top of the marble steps leading down into the court.
@@ -1148,23 +1131,6 @@ broad sweep of that huge square of tapestry upon which his thoughts were
 centered. It was for him to make a note of these persons. A diagram of
 the court as it looked to him at that moment is shown for your
 enlightenment.
-
-[Illustration:
-1--Ephraim Short.
-2--Mrs. Lynch.
-3--Director Roberts.
-4--Door-man.
-5--Copyist.
-6--Mrs. Alice Lee.
-7-8--Mr. and Mrs. Draper.
-9--Mr. Coit.
-10--Mr. Simpson.
-11--Prof. Turnbull.
-12--Second Door-man.
-13--Miss Hunsicker.
-14--Attendant.
-15--Miss Blake.
-16--Officer.]
 
 Sixteen persons! Ten in view from the steps and six not. Of the sixteen,
 only the following seemed to afford any excuse for future interrogation:
@@ -7555,8 +7521,6 @@ the District Attorney and his assistant bent over this crude presentation
 of something--they hardly knew what--which this old but long trusted
 detective was offering them in substantiation of the well-nigh
 unbelievable statement he had just made.
-
-[Illustration]
 
 "This, gentlemen," he went on, as he pointed to the following, "is the
 copy of a label pasted on the back of a certain Swiss clock to be seen at

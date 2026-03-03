@@ -4223,7 +4223,7 @@ wife. Had you any reason to think she was not?"
 "I had more than one. First, my wife would never wear the clothes I saw
 on the girl whose dead body was shown to me. Secondly, she would never
 go to any house alone with a man at the hour testified to by one of your
-witnesses."[A]
+witnesses."
 
 "Not with any man?"
 
@@ -4689,11 +4689,6 @@ so markedly different from what they had expected. After a short pause,
 painful enough to all concerned, the Coroner, perceiving that very
 little could be done with the witness under the circumstances, adjourned
 the sitting till afternoon.
-
-FOOTNOTES:
-
-[Footnote A: Why could he not have said Miss Butterworth? These Van
-Burnams are proud, most vilely proud as the poet has it.--A. B.]
 
 
 
@@ -5490,7 +5485,7 @@ The replies given are in the form of reasons, as witness:
 _My reasons for not thinking it an accident._
 
 1. If it had been an accident, and she had pulled the cabinet over upon
-herself,[B] she would have been found with her feet pointing towards the
+herself, she would have been found with her feet pointing towards the
 wall where the cabinet had stood. But her feet were towards the door and
 her head under the cabinet.
 
@@ -5569,11 +5564,6 @@ But I discouraged this. I have no patience with idle curiosity.
 Consequently by nine I was left alone to give the affair such real
 attention as it demanded; something which, of course, I could not have
 done with a half dozen gossiping friends leaning over my shoulder.
-
-FOOTNOTES:
-
-[Footnote B: _As was asserted by her husband in his sworn examination._]
-
 
 
 
@@ -6839,7 +6829,7 @@ This done, I wrote the following letter:
      would show it to the Misses Van Burnam, who feel great remorse
      at their treatment of her, and who want to see how she looked.
      Cannot you find one in their rooms? The one in Mr. Howard's
-     room here has been confiscated by the police.[C]
+     room here has been confiscated by the police.
 
      "Hoping that you will feel disposed to oblige me in this--and I
      assure you that my motives in making this request are most
@@ -7064,11 +7054,6 @@ searched at those four corners.
 
 We rode home after visiting the drug-store. I was not going to subject
 Lena or myself to another midnight walk through Twenty-seventh Street.
-
-FOOTNOTES:
-
-[Footnote C: This was _so_ probable, it cannot be considered an
-untruth.--A. B.]
 
 
 
@@ -8824,8 +8809,7 @@ house by Lena, and it ran thus:
 
      "Pardon our interference. _We_ have found the rings which you
      think so conclusive an evidence of guilt against the person
-     secreting them; and, _with your permission_ [this was basely
-     underlined], Mr. Franklin Van Burnam will be in custody to-day.
+     secreting them; and, _with your permission_, Mr. Franklin Van Burnam will be in custody to-day.
 
      "I will wait upon you at ten.
 
@@ -12455,7 +12439,7 @@ conclusions by a series of old successes. Had he listened to _me_--But I
 will not pursue this suggestion. You will accuse me of egotism, an
 imputation I cannot bear with equanimity and will not risk; modest
 depreciation of myself being one of the chief attributes of my
-character.[D]
+character.
 
 Howard Van Burnam bore his release, as he had his arrest, with great
 outward composure. Mr. Gryce's explanation of his motives in perjuring

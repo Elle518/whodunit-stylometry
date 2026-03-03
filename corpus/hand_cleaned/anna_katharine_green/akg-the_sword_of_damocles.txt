@@ -11416,7 +11416,7 @@ thousand dollars, was abstracted in full daylight from the vaults of one
 of our largest banks; an act requiring such daring, the directors for a
 long time refused to believe it possible, until a detective one day
 showed them another box of theirs which he had succeeded in abstracting
-in the same way. [1] But the vaults in that instance were in a less
+in the same way. But the vaults in that instance were in a less
 conspicuous portion of the bank than ours, besides to approach an open
 vault, snatch a box from it and escape, is a much simpler matter than to
 remain long enough to open a box and choose from its contents such
@@ -11424,8 +11424,6 @@ papers as appeared most marketable. If a regular thief could do such a
 thing, it does not seem probable that he would. Nevertheless the most
 acute judgment is often at fault in these matters, and I do not pretend
 to have formed an opinion.”
-
-[Footnote 1: A fact.]
 
 The detective who had listened to these words with marked attention,
 bowed his concurrence and asked if the bonds mentioned by Mr. Stuyvesant
