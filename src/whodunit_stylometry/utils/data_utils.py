@@ -82,8 +82,8 @@ def get_file_inventory(corpus_dir: Path) -> pd.DataFrame:
             stat = txt_file.stat()
             rows.append(
                 {
-                    "author": author,
-                    "book": txt_file.stem,
+                    "author_norm": author,
+                    "title_norm": txt_file.stem,
                     "path": str(txt_file),
                     "file_name": txt_file.name,
                     "size_bytes": stat.st_size,
