@@ -80,6 +80,7 @@ target/
 # exclude folders
 # With preceding / ignore folder and its content at top level, e.g. /data/
 # Without preceding / ignore folder and its content at any level, e.g. wanddb/
+output/
 
 
 # Mac OS-specific storage files
