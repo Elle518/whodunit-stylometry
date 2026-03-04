@@ -88,6 +88,42 @@ def plot_novels_per_author(df: pd.DataFrame, save_path: Path | None = None):
     plt.show()
 
 
+def plot_publication_year_distribution(df: pd.DataFrame, year_col: str = "year", save_path: Path | None = None):
+    """Plot the distribution of works by publication year.
+
+    This function extracts publication years from the specified DataFrame
+    column, counts the number of works published in each year, and includes
+    years with zero works within the full observed range. The result is
+    displayed as a bar chart.
+
+    Args:
+        df: Input DataFrame containing publication year data.
+        year_col: Name of the column that stores publication years.
+            Defaults to ``"year"``.
+        save_path: Optional path where the generated figure will be saved.
+            If ``None``, the figure is only displayed.
+    """
+
+    years = df[year_col].dropna().astype(int)
+
+    full_range = range(years.min(), years.max() + 1)
+    counts = years.value_counts().sort_index().reindex(full_range, fill_value=0)
+
+    plt.figure(figsize=(12, 6))
+    plt.bar(counts.index, counts.values, width=0.8)
+
+    plt.title("Año de publicación de las obras del corpus")
+    plt.xlabel("Año de publicación")
+    plt.ylabel("Número de obras")
+    plt.xticks(full_range[::5], rotation=45)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150)
+
+    plt.show()
+
+
 def plot_zipf_curve_by_author(
     tokens_by_author: dict[str, list],
     save_path: Path | None = None,
