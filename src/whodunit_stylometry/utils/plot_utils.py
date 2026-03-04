@@ -60,7 +60,7 @@ def plot_novels_per_author(df: pd.DataFrame, save_path: Path | None = None):
 
     counts = df["author"].value_counts().sort_values(ascending=False)
 
-    plt.figure(figsize=(10, 7))
+    plt.figure(figsize=(8, 6))
 
     ax = counts.plot(kind="bar")
 
