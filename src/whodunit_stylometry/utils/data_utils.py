@@ -73,7 +73,7 @@ def get_file_inventory(corpus_dir: Path) -> pd.DataFrame:
 
     Returns:
         A pandas DataFrame with one row per ``.txt`` file and the following columns:
-        ``author``, ``book``, ``path``, ``file_name``, ``size_bytes``, and ``md5``.
+        ``author_norm``, ``title_norm``, ``path``, ``file_name``, ``size_bytes``, and ``md5``.
     """
     rows = []
     for author_dir in sorted([p for p in corpus_dir.iterdir() if p.is_dir()]):
