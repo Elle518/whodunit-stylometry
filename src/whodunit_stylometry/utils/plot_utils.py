@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from whodunit_stylometry.constants import AUTHORS_ABREV_MAP
+
 
 def plot_word_length_distributions(author_name: str, distributions: list[dict[int, float]], block_size: int):
     """Plot relative word-length distributions for multiple text blocks of an author.
@@ -54,6 +56,8 @@ def plot_novels_per_author(df: pd.DataFrame, save_path: Path | None = None):
             If ``None``, the figure is only displayed.
     """
 
+    df["author"] = df["author"].map(AUTHORS_ABREV_MAP)
+
     counts = df["author"].value_counts().sort_values(ascending=False)
 
     plt.figure(figsize=(10, 7))
@@ -63,7 +67,7 @@ def plot_novels_per_author(df: pd.DataFrame, save_path: Path | None = None):
     plt.title("Número de novelas por autor")
     plt.xlabel("Autor")
     plt.ylabel("Nº de novelas")
-    plt.xticks(rotation=45, ha="right")
+    plt.xticks(rotation=0)
 
     for p in ax.patches:
         height = p.get_height()
@@ -72,7 +76,7 @@ def plot_novels_per_author(df: pd.DataFrame, save_path: Path | None = None):
             (p.get_x() + p.get_width() / 2, height),
             ha="center",
             va="bottom",
-            xytext=(0, 3),
+            xytext=(0, 2),
             textcoords="offset points",
         )
 
