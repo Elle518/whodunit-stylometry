@@ -435,4 +435,3 @@ def plot_scatter_list_plotly(
         )
 
         fig.show()
-        fig.show()
