@@ -19,6 +19,8 @@ nltk = ">=3.9,<4"
 scipy = ">=1.17,<2"
 unidecode = "^1.4.0"
 ipywidgets = "^8.1.8"
+plotly = "^6.6.0"
+nbformat = "^5.10.4"
 
 
 [tool.poetry.group.dev.dependencies]
