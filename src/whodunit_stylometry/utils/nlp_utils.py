@@ -144,6 +144,7 @@ def fix_gutenberg_linebreaks(text: str) -> str:
         Text with intra-paragraph line breaks removed and paragraph
         structure preserved.
     """
+
     # Normalizes line breaks on Windows/Mac to \n
     text = text.replace("\r\n", "\n").replace("\r", "\n")
 
@@ -242,7 +243,29 @@ def is_alpha_tokens(tokens: list[str], keep_alpha: bool = True) -> list[str]:
 
 
 def split_sentences_by_paragraph(paragraphs: list, batch_size: int = 1000) -> list[list[str]]:
+    """Split each paragraph into a list of sentences using a spaCy pipeline.
+
+    The function processes the input paragraphs in batches with ``nlp.pipe``
+    and extracts sentence strings from ``doc.sents``. Leading and trailing
+    whitespace is stripped, and empty sentences are discarded.
+
+    Notes:
+        This function expects a global spaCy ``nlp`` object to be available in
+        scope and configured with sentence boundary detection (e.g., a parser
+        or a ``sentencizer`` component).
+
+    Args:
+        paragraphs: List of paragraph texts to be segmented into sentences.
+        batch_size: Number of paragraphs to process per batch in ``nlp.pipe``.
+            Larger values may improve throughput at the cost of memory.
+
+    Returns:
+        A list where each element corresponds to the input paragraph at the
+        same index and contains the list of sentence strings extracted from it.
+    """
+
     result = []
+
     for doc in nlp.pipe(paragraphs, batch_size=batch_size):
         sentences = [s.text.strip() for s in doc.sents if s.text.strip()]
         result.append(sentences)
@@ -253,7 +276,7 @@ def split_sentences_by_paragraph(paragraphs: list, batch_size: int = 1000) -> li
 def get_length_stats(
     texts: list[str], tokenizer: CustomTokenizer, keep_alpha: bool = True, return_lengths: bool = False
 ):
-    """Computes average and median text lengths in words.
+    """Computes average, median and standard deviation of text lengths in words.
 
     Each text is tokenized with the provided tokenizer, then filtered with
     `is_alpha_tokens`. Only non-empty tokenized texts are included in the
@@ -269,10 +292,10 @@ def get_length_stats(
 
     Returns:
         tuple: If `return_lengths` is False, returns:
-            (avg_len, median_len)
+            (avg_len, median_len, std_len)
 
             If `return_lengths` is True, returns:
-            (avg_len, median_len, lengths)
+            (avg_len, median_len, std_len, lengths)
 
             - avg_len (float): Mean number of words per text.
             - median_len (float): Median number of words per text.
@@ -281,6 +304,7 @@ def get_length_stats(
 
         If no valid texts are found, `avg_len` and `median_len` are `np.nan`.
     """
+
     lengths = []
 
     for text in texts:
@@ -315,6 +339,7 @@ def text_quality_metrics(text: str) -> dict[str, float]:
             digit_ratio: Proportion of characters that are digits.
             whitespace_ratio: Proportion of characters that are whitespace.
     """
+
     n_chars = len(text)
     n_alpha = sum(ch.isalpha() for ch in text)
     n_digit = sum(ch.isdigit() for ch in text)
@@ -358,6 +383,7 @@ def lexical_metrics(tokens_alpha: list[str]) -> dict[str, float]:
         as MATTR. If `tokens_alpha` is empty, `ttr`, `hapax_ratio`, and
         `avg_word_len` are returned as `np.nan`.
     """
+
     tokens_alpha = [t.lower() for t in tokens_alpha]
     n_tokens = len(tokens_alpha)
     counts = Counter(tokens_alpha)
@@ -396,12 +422,15 @@ def mattr(tokens: list[str], window: int = 100) -> float:
         `np.nan` if the number of tokens is smaller than `window` or if
         `window <= 1`.
     """
+
     if len(tokens) < window or window <= 1:
         return np.nan
+
     vals = []
     for i in range(len(tokens) - window + 1):
         window_tokens = tokens[i : i + window]
         vals.append(len(set(window_tokens)) / window)
+
     return float(np.mean(vals)) if vals else np.nan
 
 
@@ -432,6 +461,7 @@ def punctuation_metrics(text: str) -> dict[str, float]:
         are sensitive to text length and may also reflect editorial or
         typographic conventions.
     """
+
     punct_counts = {
         "comma_count": text.count(","),
         "period_count": len(re.findall(r"(?<!\.)\.(?!\.)", text)),
@@ -466,6 +496,7 @@ def stopword_metrics(tokens_alpha: list[str], stopword_set: set) -> dict[str, fl
     Raises:
         ZeroDivisionError: If `tokens_alpha` is empty.
     """
+
     tokens_alpha = [t.lower() for t in tokens_alpha]
     n = len(tokens_alpha)
     sw = sum(1 for t in tokens_alpha if t in stopword_set)
@@ -474,6 +505,22 @@ def stopword_metrics(tokens_alpha: list[str], stopword_set: set) -> dict[str, fl
 
 
 def compute_long_word_ratio(tokens: list[str], min_len: int = 8) -> float:
+    """Compute the proportion of tokens longer than a given character length.
+
+    A token is considered a "long word" if its character length is strictly
+    greater than ``min_len``. The ratio is computed as:
+
+        (# tokens with len(token) > min_len) / (total # tokens)
+
+    Args:
+        tokens: List of token strings.
+        min_len: Minimum character length threshold. Tokens with length
+            strictly greater than this value are counted as long words.
+            Defaults to 8.
+
+    Returns:
+        The proportion of long-word tokens in ``tokens``.
+    """
     return sum(len(token) > min_len for token in tokens) / len(tokens)
 
 
@@ -482,13 +529,30 @@ def sentence_length_ratios(
     short_max: int = 10,
     long_min: int = 30,
 ) -> tuple[float, float]:
-    """Return short- and long-sentence ratios from a list of sentence lengths."""
-    if not sentence_lengths:
-        return 0.0, 0.0
+    """Compute short- and long-sentence ratios from sentence token lengths.
+
+    The ratios are computed over the input list of sentence lengths (in tokens)
+    as:
+
+    - short_sentence_ratio = (# lengths < short_max) / N
+    - long_sentence_ratio = (# lengths > long_min) / N
+
+    Args:
+        sentence_lengths: List of sentence lengths measured in tokens.
+        short_max: Upper bound (exclusive) for a sentence to be considered
+            short. Defaults to 10.
+        long_min: Lower bound (exclusive) for a sentence to be considered
+            long. Defaults to 30.
+
+    Returns:
+        A tuple ``(short_sentence_ratio, long_sentence_ratio)``.
+    """
 
     n = len(sentence_lengths)
+
     short_ratio = sum(length < short_max for length in sentence_lengths) / n
     long_ratio = sum(length > long_min for length in sentence_lengths) / n
+
     return short_ratio, long_ratio
 
 
@@ -687,25 +751,4 @@ make them one are being spoken.
     text_n = normalize_text_for_tokenization(fix_gutenberg_linebreaks(text))
 
     print(text_n)
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
-    print(punctuation_metrics(text_n))
     print(punctuation_metrics(text_n))
