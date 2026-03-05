@@ -1,13 +1,19 @@
 """Exploratory Data Analysis (EDA) utilities for the corpus."""
 
 import re
+import statistics
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import spacy
+from nltk import ngrams
 from spacy.lang.en.stop_words import STOP_WORDS
 from spacy.tokenizer import Tokenizer
 from spacy.util import compile_infix_regex, compile_prefix_regex, compile_suffix_regex
+
+from whodunit_stylometry.utils.data_utils import read_book_text
 
 # Matches tokens composed of Unicode letters, optionally containing
 # internal apostrophes or periods, and allowing a single trailing period.
@@ -238,7 +244,8 @@ def is_alpha_tokens(tokens: list[str], keep_alpha: bool = True) -> list[str]:
 def split_sentences_by_paragraph(paragraphs: list, batch_size: int = 1000) -> list[list[str]]:
     result = []
     for doc in nlp.pipe(paragraphs, batch_size=batch_size):
-        result.extend([s.text for s in doc.sents])
+        sentences = [s.text.strip() for s in doc.sents if s.text.strip()]
+        result.append(sentences)
 
     return result
 
@@ -269,6 +276,7 @@ def get_length_stats(
 
             - avg_len (float): Mean number of words per text.
             - median_len (float): Median number of words per text.
+            - std_len (float): Standard deviation of word counts per text.
             - lengths (list[int], optional): Word counts for each non-empty text.
 
         If no valid texts are found, `avg_len` and `median_len` are `np.nan`.
@@ -282,10 +290,11 @@ def get_length_stats(
 
     avg_len = np.mean(lengths) if lengths else np.nan
     median_len = np.median(lengths) if lengths else np.nan
+    std_len = np.std(lengths) if lengths else np.nan
 
     if return_lengths:
-        return avg_len, median_len, lengths
-    return avg_len, median_len
+        return avg_len, median_len, std_len, lengths
+    return avg_len, median_len, std_len
 
 
 def text_quality_metrics(text: str) -> dict[str, float]:
@@ -397,10 +406,35 @@ def mattr(tokens: list[str], window: int = 100) -> float:
 
 
 def punctuation_metrics(text: str) -> dict[str, float]:
-    # Conteos básicos
+    """Counts major punctuation marks in a text.
+
+    The function computes absolute frequencies for a set of punctuation
+    features, including commas, periods, semicolons, colons, exclamation
+    marks, question marks, ellipses, quotation marks, and dialogue dashes.
+
+    Args:
+        text: The input text to analyze.
+
+    Returns:
+        A dictionary with the following keys:
+            comma_count: Number of commas.
+            period_count: Number of periods.
+            semicolon_count: Number of semicolons.
+            colon_count: Number of colons.
+            exclam_count: Number of exclamation marks.
+            question_count: Number of question marks.
+            ellipsis_count: Number of ellipsis sequences ("...").
+            quote_count: Number of double quotation marks.
+            dialog_dash_count: Number of dialogue dashes.
+
+    Notes:
+        These are raw counts rather than normalized frequencies, so they
+        are sensitive to text length and may also reflect editorial or
+        typographic conventions.
+    """
     punct_counts = {
         "comma_count": text.count(","),
-        "period_count": text.count("."),
+        "period_count": len(re.findall(r"(?<!\.)\.(?!\.)", text)),
         "semicolon_count": text.count(";"),
         "colon_count": text.count(":"),
         "exclam_count": text.count("!"),
@@ -439,6 +473,25 @@ def stopword_metrics(tokens_alpha: list[str], stopword_set: set) -> dict[str, fl
     return {"stopword_ratio": sw / n}
 
 
+def compute_long_word_ratio(tokens: list[str], min_len: int = 8) -> float:
+    return sum(len(token) > min_len for token in tokens) / len(tokens)
+
+
+def sentence_length_ratios(
+    sentence_lengths: list[int],
+    short_max: int = 10,
+    long_min: int = 30,
+) -> tuple[float, float]:
+    """Return short- and long-sentence ratios from a list of sentence lengths."""
+    if not sentence_lengths:
+        return 0.0, 0.0
+
+    n = len(sentence_lengths)
+    short_ratio = sum(length < short_max for length in sentence_lengths) / n
+    long_ratio = sum(length > long_min for length in sentence_lengths) / n
+    return short_ratio, long_ratio
+
+
 def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str, float]:
 
     stopwords = stopword_set if stopword_set else STOP_WORDS
@@ -449,29 +502,56 @@ def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str
     tokens_all = tokenizer.tokenize(norm_text)
     tokens_alpha = is_alpha_tokens(tokens_all, keep_alpha=True)
     tokens_not_alpha = is_alpha_tokens(tokens_all, keep_alpha=False)
+    avg_token_alpha_len = np.mean([len(t) for t in tokens_alpha])
+    median_token_alpha_len = np.median([len(t) for t in tokens_alpha])
+    long_word_ratio = compute_long_word_ratio(tokens_alpha, min_len=8)
 
     paragraphs = split_paragraphs(norm_text)
-    sentences = split_sentences_by_paragraph(paragraphs)
+    paragraph_sentences = split_sentences_by_paragraph(paragraphs)
+    sentences = [s for para in paragraph_sentences for s in para]
+    sentence_counts_per_paragraph = [len(sents) for sents in paragraph_sentences]
 
-    avg_sentence_len, median_sentence_len = get_length_stats(sentences, tokenizer)
-    avg_paragraph_len, median_paragraph_len = get_length_stats(paragraphs, tokenizer)
+    avg_sentences_per_paragraph = sum(sentence_counts_per_paragraph) / len(sentence_counts_per_paragraph)
+
+    median_sentences_per_paragraph = statistics.median(sentence_counts_per_paragraph)
+
+    avg_sentence_len, median_sentence_len, std_sentence_len, sentence_lenghts = get_length_stats(
+        sentences, tokenizer, return_lengths=True
+    )
+    short_sentence_ratio, long_sentence_ratio = sentence_length_ratios(sentence_lenghts)
+    avg_paragraph_len, median_paragraph_len, std_paragraph_len = get_length_stats(paragraphs, tokenizer)
 
     out = {}
     out.update(text_quality_metrics(norm_text))
-    out.update(lexical_metrics(tokens_alpha))
-    out.update(stopword_metrics(tokens_alpha, stopwords))
-    out.update(punctuation_metrics(norm_text))
 
     out["n_tokens_all"] = len(tokens_all)
     out["n_tokens_alpha"] = len(tokens_alpha)
     out["n_tokens_not_alpha"] = len(tokens_not_alpha)
+    out["non_alpha_token_ratio"] = len(tokens_not_alpha) / len(tokens_all)
+    out["avg_token_alpha_len"] = avg_token_alpha_len
+    out["median_token_alpha_len"] = median_token_alpha_len
+    out["long_word_ratio"] = long_word_ratio
     out["n_sentences"] = len(sentences)
     out["n_paragraphs"] = len(paragraphs)
     out["avg_sentence_len"] = avg_sentence_len
     out["median_sentence_len"] = median_sentence_len
+    out["std_sentence_len"] = std_sentence_len
+    out["sentences_per_1000_tokens"] = len(sentences) * 1000 / len(tokens_all)
+    out["short_sentence_ratio"] = short_sentence_ratio
+    out["long_sentence_ratio"] = long_sentence_ratio
     out["avg_paragraph_len"] = avg_paragraph_len
     out["median_paragraph_len"] = median_paragraph_len
+    out["std_paragraph_len"] = std_paragraph_len
+    out["paragraphs_per_1000_tokens"] = len(paragraphs) * 1000 / len(tokens_all)
+    out["avg_sentences_per_paragraph"] = avg_sentences_per_paragraph
+    out["median_sentences_per_paragraph"] = median_sentences_per_paragraph
+
+    out.update(lexical_metrics(tokens_alpha))
     out["mattr_100"] = mattr(tokens_alpha, window=100)
+
+    out.update(stopword_metrics(tokens_alpha, stopwords))
+
+    out.update(punctuation_metrics(norm_text))
 
     # Ratios por 1.000 palabras
     for col in [
@@ -487,6 +567,95 @@ def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str
     ]:
         out[f"{col}_per_1000"] = out[col] * 1000 / out["n_tokens_alpha"]
 
+    return out
+
+
+def get_tokens_alpha_by_author(df: pd.DataFrame, is_lower: bool = True) -> dict[str, list[str]]:
+    tokenizer = CustomTokenizer()
+    out = {}
+    for author, sub in df.groupby("author"):
+        toks = []
+        for _, row in sub.iterrows():
+            text = read_book_text(Path(row["path"]))
+            norm_text = normalize_text_for_tokenization(fix_gutenberg_linebreaks(text))
+            tokens_all = tokenizer.tokenize(norm_text)
+            tokens_alpha = is_alpha_tokens(tokens_all, keep_alpha=True)
+            if is_lower:
+                tokens_alpha = [t.lower() for t in tokens_alpha]
+            toks.extend(tokens_alpha)
+        out[author] = toks
+    return out
+
+
+def compute_word_frecuencies(
+    alpha_tokens: dict, stopword_set: set = None, remove_stopwords: bool = False
+) -> dict[str, float]:
+
+    counters = {}
+
+    for author, toks in alpha_tokens.items():
+        c = Counter()
+        if remove_stopwords and stopword_set is not None:
+            toks = [t for t in toks if t not in stopword_set]
+        c.update(toks)
+        counters[author] = c
+
+    return counters
+
+
+def top_n_words(counter: Counter, n: int = 20) -> pd.DataFrame:
+    data = counter.most_common(n)
+    return pd.DataFrame(data, columns=["token", "freq"])
+
+
+def top_ngrams(tokens: list[str], n: int = 2, top_k: int = 20, stopword_set: set = None) -> list[tuple[str, int]]:
+    if stopword_set is not None:
+        tokens = [t for t in tokens if t not in stopword_set]
+    ng = ngrams(tokens, n)
+    c = Counter(ng)
+    return [(" ".join(t), f) for t, f in c.most_common(top_k)]
+
+
+def compute_ngrams_frecuencies(
+    alpha_tokens: dict, stopword_set: set = None, ngram_n: int = 2, top_k: int = 20
+) -> dict[str, Counter]:
+
+    out = {}
+
+    for author, toks in alpha_tokens.items():
+        out[author] = top_ngrams(toks, n=ngram_n, top_k=top_k, stopword_set=stopword_set)
+    return out
+
+
+def relative_frequency(counter: Counter) -> dict[str, float]:
+    total = sum(counter.values())
+    if total == 0:
+        return {}
+    return {k: v / total for k, v in counter.items()}
+
+
+def distinctive_words(
+    author_counters: dict[str, Counter], top_k: int = 20, min_freq: int = 10
+) -> dict[str, pd.DataFrame]:
+    # vocab global
+    all_authors = list(author_counters.keys())
+    rel = {a: relative_frequency(c) for a, c in author_counters.items()}
+    raw = author_counters
+
+    out = {}
+    for a in all_authors:
+        rows = []
+        for token, cnt in raw[a].items():
+            if cnt < min_freq:
+                continue
+            rf_a = rel[a].get(token, 0.0)
+            rf_others = (
+                np.mean([rel[o].get(token, 0.0) for o in all_authors if o != a]) if len(all_authors) > 1 else 0.0
+            )
+            score = (rf_a + 1e-12) / (rf_others + 1e-12)  # razón simple
+            rows.append((token, cnt, rf_a, rf_others, score))
+        df = pd.DataFrame(rows, columns=["token", "freq", "rel_freq_author", "rel_freq_others", "ratio"])
+        out[a] = df.sort_values(["ratio", "freq"], ascending=[False, False]).head(top_k)
     return out
 
 
@@ -518,5 +687,25 @@ make them one are being spoken.
     text_n = normalize_text_for_tokenization(fix_gutenberg_linebreaks(text))
 
     print(text_n)
-
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n))
     print(punctuation_metrics(text_n))
