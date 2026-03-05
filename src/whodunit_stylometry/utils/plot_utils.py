@@ -1,11 +1,16 @@
+import math
 from collections import Counter, defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import seaborn as sns
 
 from whodunit_stylometry.constants import AUTHORS_ABREV_MAP
+
+sns.set_theme(style="whitegrid")
 
 
 def plot_word_length_distributions(author_name: str, distributions: list[dict[int, float]], block_size: int):
@@ -83,7 +88,7 @@ def plot_novels_per_author(df: pd.DataFrame, save_path: Path | None = None):
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150)
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     plt.show()
 
@@ -119,7 +124,7 @@ def plot_publication_year_distribution(df: pd.DataFrame, year_col: str = "year",
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=150)
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     plt.show()
 
@@ -172,3 +177,262 @@ def plot_zipf_curve_by_author(
         plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     plt.show()
+
+
+def plot_metrics_histograms(
+    df: pd.DataFrame,
+    metrics: list[str],
+    save_path: Path | None = None,
+):
+    """Plot histograms for the given metrics using a dynamic subplot layout.
+
+    The function creates as many subplots as needed based on the number of
+    metrics provided. Each metric is plotted as a histogram with a KDE curve.
+    Any unused axes in the subplot grid are hidden.
+
+    Args:
+        df: Input DataFrame containing the metric columns to plot.
+        metrics: List of column names in ``df`` to plot as histograms.
+        save_path: Optional path where the generated figure will be saved. If ``None``, the figures are only displayed.
+    """
+
+    n_metrics = len(metrics)
+    n_cols = 2 if n_metrics > 1 else 1
+    n_rows = math.ceil(n_metrics / n_cols)
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(7 * n_cols, 4.5 * n_rows))
+
+    if n_metrics == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()
+
+    for ax, metric in zip(axes, metrics):
+        sns.histplot(df[metric].dropna(), bins=30, kde=True, ax=ax)
+        ax.set_title(f"Histograma de {metric}")
+        ax.set_xlabel(metric)
+        ax.set_ylabel("Frecuencia")
+
+    for ax in axes[len(metrics) :]:
+        ax.set_visible(False)
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    plt.show()
+
+
+def plot_metrics_boxplots_by_author(
+    df: pd.DataFrame,
+    metrics: list[str],
+    save_path: Path | None = None,
+):
+    """Plot one boxplot per metric grouped by author.
+
+    This function iterates over the given metrics and generates a separate
+    boxplot for each one, grouping values by the ``author`` column in the
+    input DataFrame. Each plot is displayed individually. If ``save_path`` is
+    provided, each figure is also saved to disk using the metric name appended
+    to the base file name.
+
+    Args:
+        df: Input DataFrame containing an ``author`` column and the metric
+            columns to plot.
+        metrics: List of metric column names in ``df`` to visualize as
+            boxplots.
+        save_path: Optional base path where each generated figure will be
+            saved. The metric name is appended to the file name before the
+            extension. If ``None``, the figures are only displayed.
+    """
+
+    for metric in metrics:
+        plt.figure(figsize=(14, 6))
+
+        sns.boxplot(data=df, x="author", y=metric)
+
+        plt.title(f"Boxplot por autor: {metric}")
+        plt.xlabel("Autor")
+        plt.ylabel(metric)
+
+        plt.tight_layout()
+
+        if save_path:
+            plt.savefig(f"{save_path.with_suffix('')}_{metric}_{save_path.suffix}", dpi=150, bbox_inches="tight")
+
+        plt.show()
+
+
+def plot_bars_by_author_with_std(
+    df: pd.DataFrame,
+    metrics: list[str],
+    agg: str,
+    save_path: Path | None = None,
+):
+    """Plot the mean of a metric per author with standard-deviation error bars.
+
+    The function groups the input DataFrame by the ``author`` column and
+    computes summary statistics for the selected metric (mean, standard
+    deviation, median, and count). It then plots a bar chart of the mean value
+    per author and overlays error bars corresponding to one standard deviation.
+
+    Args:
+        df: Input DataFrame containing an ``author`` column and the specified
+            metric column.
+        metric: Name of the numeric column to summarize and plot.
+        save_path: Optional path where the generated figure will be saved.
+            If ``None``, the figure is only displayed.
+    """
+
+    """Plot one bar chart per metric showing an aggregated value by author.
+
+    This function groups the input DataFrame by the ``author`` column and
+    computes summary statistics for each metric, including mean, standard
+    deviation, median, and count. For every metric in ``metrics``, it creates
+    a bar chart where bar heights correspond to the selected aggregation
+    (``"mean"`` or ``"median"``) and error bars represent one standard
+    deviation.
+
+    If ``save_path`` is provided, each generated figure is saved to disk using
+    the aggregation name and metric name in the output file name.
+
+    Args:
+        df: Input DataFrame containing an ``author`` column and the metric
+            columns to summarize and plot.
+        metrics: List of numeric column names in ``df`` to visualize.
+        agg: Aggregation to plot for each metric. Supported values are
+            ``"mean"`` and ``"median"``.
+        save_path: Optional base path where the generated figures will be
+            saved. The aggregation name and metric name are appended to the
+            file name before the extension. If ``None``, the figures are only
+            displayed.
+
+    Raises:
+        KeyError: If ``author`` or any metric in ``metrics`` is not present in
+            ``df``.
+        ValueError: If ``agg`` is not one of the supported values.
+
+    Returns:
+        None
+    """
+
+    agg_labels = {
+        "mean": "Media",
+        "median": "Mediana",
+    }
+
+    for metric in metrics:
+        author_stats = df.groupby("author")[metric].agg(["mean", "std", "median", "count"]).reset_index()
+
+        plt.figure(figsize=(14, 6))
+        plt.bar(
+            author_stats["author"],
+            author_stats[agg],
+            yerr=author_stats["std"],
+            capsize=5,
+        )
+        plt.title(f"{agg_labels[agg]} de {metric} por autor (con desviación estándar)")
+        plt.xlabel("Autor")
+        plt.ylabel(f"{agg_labels[agg]} de {metric}")
+        plt.tight_layout()
+
+        if save_path:
+            output_path = save_path.with_name(f"{save_path.stem}_{agg}_{metric}{save_path.suffix}")
+            plt.savefig(output_path, dpi=150, bbox_inches="tight")
+
+        plt.show()
+
+
+def plot_metrics_correlations_heatmap(
+    df: pd.DataFrame,
+    metrics: list[str],
+    save_path: Path | None = None,
+):
+    """Plot a heatmap of correlations between the specified metrics.
+
+    This function computes the pairwise correlation matrix for the selected
+    metric columns in the input DataFrame and visualizes it as a heatmap using
+    Seaborn. Correlation coefficients are displayed inside each cell.
+
+    Args:
+        df: Input DataFrame containing the metric columns to analyze.
+        metrics: List of column names in ``df`` for which the correlation
+            matrix will be computed.
+        save_path: Optional path where the generated figure will be saved.
+            If ``None``, the figure is only displayed.
+    """
+
+    corr = df[metrics].corr(numeric_only=True)
+
+    n_metrics = len(corr.columns)
+
+    cell_size = 0.8
+    min_size = 6
+    max_size = 20
+    fig_width = min(max(min_size, n_metrics * cell_size), max_size)
+    fig_height = min(max(min_size, n_metrics * cell_size), max_size)
+
+    plt.figure(figsize=(fig_width, fig_height))
+    sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", square=True)
+    plt.title("Heatmap de correlaciones entre métricas")
+
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    plt.show()
+
+
+def plot_scatter_list_plotly(
+    data: pd.DataFrame,
+    scatter_pairs: list[tuple[str, str]],
+    hue: str = "author",
+    work_col: str = "title",
+):
+    """Create interactive scatter plots for multiple pairs of variables.
+
+    This function iterates over the variable pairs provided in
+    ``scatter_pairs`` and generates one Plotly scatter plot for each pair.
+    Points can be colored according to the values in the ``hue`` column, if
+    that column exists in the input DataFrame. When available, the value in
+    ``work_col`` is displayed as the hover name for each point, together with
+    the x and y values.
+
+    Args:
+        data: Input DataFrame containing the variables to plot.
+        scatter_pairs: List of ``(x_var, y_var)`` tuples specifying which
+            variable pairs to visualize.
+        hue: Name of the column used to color the points. If the column is not
+            present in ``data``, points are displayed without color grouping.
+            Defaults to ``"author"``.
+        work_col: Name of the column whose values are shown as the hover label
+            for each point. If the column is not present in ``data``, no hover
+            name is displayed. Defaults to ``"title"``.
+    """
+
+    for x_var, y_var in scatter_pairs:
+        fig = px.scatter(
+            data_frame=data,
+            x=x_var,
+            y=y_var,
+            color=hue if hue in data.columns else None,
+            hover_name=work_col if work_col in data.columns else None,
+            hover_data={
+                hue: True if hue in data.columns else False,
+                x_var: True,
+                y_var: True,
+            },
+            opacity=0.75,
+            title=f"{y_var} vs {x_var}",
+        )
+
+        fig.update_layout(
+            width=900,
+            height=600,
+            legend_title_text=hue,
+        )
+
+        fig.show()
+        fig.show()
