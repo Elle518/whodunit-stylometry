@@ -493,7 +493,7 @@ def plot_standardized_heatmap_by_author(
 def plot_authors_pca(
     pca: PCA,
     pca_df: pd.DataFrame,
-    savepath: Path | None = None,
+    save_path: Path | None = None,
 ) -> None:
     """Plot the first two principal components for author-level stylometric data.
 
@@ -536,7 +536,7 @@ def plot_authors_pca(
     plt.axvline(0, color="red", linestyle="--", linewidth=0.4)
     plt.tight_layout()
 
-    if savepath is not None:
-        plt.savefig(savepath, dpi=150, bbox_inches="tight")
+    if save_path is not None:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     plt.show()
