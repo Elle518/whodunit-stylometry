@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 from whodunit_stylometry.constants import AUTHORS_ABREV_MAP
 
@@ -435,3 +437,106 @@ def plot_scatter_list_plotly(
         )
 
         fig.show()
+
+
+def plot_standardized_heatmap_by_author(
+    df: pd.DataFrame,
+    value_cols: str,
+    save_path: Path | None = None,
+):
+    """Plot a heatmap of author-level metrics standardized across authors.
+
+    This function selects the columns in ``df`` whose names end with
+    ``value_cols``, uses ``author`` as the row index, and standardizes each
+    selected metric independently across authors using z-score scaling. The
+    resulting standardized matrix is displayed as a heatmap, which helps
+    compare how each author deviates from the cross-author mean for each
+    metric.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame containing one row per author, an
+            ``author`` column, and metric summary columns such as
+            ``avg_sentence_len_mean`` or ``mattr_100_mean``.
+        value_cols (str): Column-name suffix used to select the metrics to
+            visualize. For example, ``"_mean"`` selects all columns ending in
+            ``"_mean"``.
+        save_path (str | None, optional): Output path where the generated
+            figure will be saved. If ``None``, the figure is not saved.
+
+    Notes:
+        The heatmap colors represent standardized values per metric:
+        positive values indicate that an author is above the mean for that
+        metric, and negative values indicate that the author is below the
+        mean. This plot is mainly useful for relative comparison across
+        authors rather than for inspecting absolute metric values.
+    """
+
+    mean_cols = [c for c in df.columns if c.endswith(value_cols)]
+    plot_df = df.set_index("author")[mean_cols].copy()
+    scaler = StandardScaler()
+    plot_df_z = pd.DataFrame(scaler.fit_transform(plot_df), index=plot_df.index, columns=plot_df.columns)
+
+    plt.figure(figsize=(16, 10))
+    sns.heatmap(plot_df_z, cmap="vlag", center=0, linewidths=0.5)
+    plt.title("Heatmap de métricas estandarizadas por autor")
+    plt.xlabel("Métricas")
+    plt.ylabel("Autor")
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    plt.show()
+
+
+def plot_authors_pca(
+    pca: PCA,
+    pca_df: pd.DataFrame,
+    savepath: Path | None = None,
+) -> None:
+    """Plot the first two principal components for author-level stylometric data.
+
+    This function creates a scatter plot of authors projected onto the first
+    two principal components of a fitted PCA model. Each point is annotated
+    with the corresponding author name, and the axis labels include the
+    percentage of variance explained by each component.
+
+    Args:
+        pca: A fitted ``sklearn.decomposition.PCA`` object.
+        pca_df: A DataFrame containing at least the columns ``"PC1"``,
+            ``"PC2"``, and ``"author"``. Each row represents one author in
+            the PCA space.
+        savepath: Optional path where the generated figure will be saved.
+            If ``None``, the figure is not saved. Defaults to ``None``.
+
+    Returns:
+        None.
+
+    Raises:
+        KeyError: If ``pca_df`` does not contain the required columns
+            ``"PC1"``, ``"PC2"``, or ``"author"``.
+        AttributeError: If ``pca`` does not provide the
+            ``explained_variance_ratio_`` attribute.
+        Exception: Propagates any exception raised during plotting or saving.
+
+    """
+    explained = pca.explained_variance_ratio_
+
+    plt.figure(figsize=(10, 7))
+    sns.scatterplot(data=pca_df, x="PC1", y="PC2", s=120)
+
+    for _, row in pca_df.iterrows():
+        plt.text(row["PC1"] + 0.03, row["PC2"] + 0.03, row["author"], fontsize=10)
+
+    plt.title("PCA of authors based on stylometric features")
+    plt.xlabel(f"PC1 ({explained[0] * 100:.1f}% var)")
+    plt.ylabel(f"PC2 ({explained[1] * 100:.1f}% var)")
+    plt.axhline(0, color="red", linestyle="--", linewidth=0.4)
+    plt.axvline(0, color="red", linestyle="--", linewidth=0.4)
+    plt.tight_layout()
+
+    if savepath is not None:
+        plt.savefig(savepath, dpi=150, bbox_inches="tight")
+
+    plt.show()
