@@ -376,6 +376,8 @@ def lexical_metrics(tokens_alpha: list[str]) -> dict[str, float]:
             hapax_ratio: Proportion of hapax legomena relative to the
                 number of types.
             avg_word_len: Mean token length in characters.
+            median_word_len: Median token length in characters.
+            long_word_ratio: Proportion of tokens longer than 8 characters.
 
     Notes:
         The `ttr` value is sensitive to text length and is therefore best
@@ -394,6 +396,7 @@ def lexical_metrics(tokens_alpha: list[str]) -> dict[str, float]:
     hapax_ratio = (hapax / n_types) if n_types else np.nan
 
     avg_word_len = np.mean([len(t) for t in tokens_alpha]) if tokens_alpha else np.nan
+    median_word_len = np.median([len(t) for t in tokens_alpha]) if tokens_alpha else np.nan
 
     return {
         "n_types": n_types,
@@ -401,6 +404,8 @@ def lexical_metrics(tokens_alpha: list[str]) -> dict[str, float]:
         "hapax_count": hapax,
         "hapax_ratio": hapax_ratio,
         "avg_word_len": avg_word_len,
+        "median_word_len": median_word_len,
+        "long_word_ratio": compute_long_word_ratio(tokens_alpha),
     }
 
 
@@ -434,7 +439,7 @@ def mattr(tokens: list[str], window: int = 100) -> float:
     return float(np.mean(vals)) if vals else np.nan
 
 
-def punctuation_metrics(text: str) -> dict[str, float]:
+def punctuation_metrics(text: str, n_tokens: int) -> dict[str, float]:
     """Counts major punctuation marks in a text.
 
     The function computes absolute frequencies for a set of punctuation
@@ -443,6 +448,7 @@ def punctuation_metrics(text: str) -> dict[str, float]:
 
     Args:
         text: The input text to analyze.
+        n_tokens: The total number of tokens in the text.
 
     Returns:
         A dictionary with the following keys:
@@ -455,6 +461,10 @@ def punctuation_metrics(text: str) -> dict[str, float]:
             ellipsis_count: Number of ellipsis sequences ("...").
             quote_count: Number of double quotation marks.
             dialog_dash_count: Number of dialogue dashes.
+            hyphen_count: Number of hyphens.
+            parenthesis_count: Total number of parentheses (both "(" and ")").
+            punctuation_count_total: Total count of all the above punctuation marks.
+            punctuation_ratio: Total punctuation count divided by the number of tokens.
 
     Notes:
         These are raw counts rather than normalized frequencies, so they
@@ -471,8 +481,17 @@ def punctuation_metrics(text: str) -> dict[str, float]:
         "question_count": text.count("?"),
         "ellipsis_count": len(re.findall(r"\.\.\.", text)),
         "quote_count": text.count('"'),
-        "dialog_dash_count": len(re.findall(r"\s*—\s*", text)),
+        "dialog_dash_count": len(re.findall(r"—", text)),
+        "hyphen_count": text.count("-"),
+        "parenthesis_count": text.count("(") + text.count(")"),
     }
+
+    # Total punctuation (sum of the chosen categories)
+    punct_counts["punctuation_count_total"] = sum(punct_counts.values())
+
+    # Ratio (punctuation per token)
+    punct_counts["punctuation_ratio"] = punct_counts["punctuation_count_total"] / n_tokens
+
     return punct_counts
 
 
@@ -492,9 +511,6 @@ def stopword_metrics(tokens_alpha: list[str], stopword_set: set) -> dict[str, fl
         A dictionary with the following key:
             stopword_ratio: Proportion of alphabetic tokens that are
                 stopwords.
-
-    Raises:
-        ZeroDivisionError: If `tokens_alpha` is empty.
     """
 
     tokens_alpha = [t.lower() for t in tokens_alpha]
@@ -557,6 +573,27 @@ def sentence_length_ratios(
 
 
 def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str, float]:
+    """Compute a stylometric feature set for a normalized novel text.
+
+    This function preprocesses the input text, tokenizes it, separates
+    alphabetic and non-alphabetic tokens, splits the text into paragraphs
+    and sentences, and computes a broad set of descriptive metrics. These
+    include text quality indicators, token and sentence counts, sentence and
+    paragraph length statistics, lexical richness measures, stopword-based
+    measures, punctuation frequencies, and punctuation counts normalized per
+    1,000 tokens.
+
+    Args:
+        clean_text: The input novel text to analyze.
+        stopword_set: An optional set of stopwords to use for stopword-based
+            metrics. If ``None``, the default ``STOP_WORDS`` set is used.
+
+    Returns:
+        A dictionary mapping metric names to float values. The output includes
+        structural, lexical, stopword, and punctuation-based stylometric
+        features, as well as normalized rates per 1,000 tokens for selected
+        punctuation marks.
+    """
 
     stopwords = stopword_set if stopword_set else STOP_WORDS
 
@@ -566,9 +603,6 @@ def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str
     tokens_all = tokenizer.tokenize(norm_text)
     tokens_alpha = is_alpha_tokens(tokens_all, keep_alpha=True)
     tokens_not_alpha = is_alpha_tokens(tokens_all, keep_alpha=False)
-    avg_token_alpha_len = np.mean([len(t) for t in tokens_alpha])
-    median_token_alpha_len = np.median([len(t) for t in tokens_alpha])
-    long_word_ratio = compute_long_word_ratio(tokens_alpha, min_len=8)
 
     paragraphs = split_paragraphs(norm_text)
     paragraph_sentences = split_sentences_by_paragraph(paragraphs)
@@ -592,9 +626,6 @@ def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str
     out["n_tokens_alpha"] = len(tokens_alpha)
     out["n_tokens_not_alpha"] = len(tokens_not_alpha)
     out["non_alpha_token_ratio"] = len(tokens_not_alpha) / len(tokens_all)
-    out["avg_token_alpha_len"] = avg_token_alpha_len
-    out["median_token_alpha_len"] = median_token_alpha_len
-    out["long_word_ratio"] = long_word_ratio
     out["n_sentences"] = len(sentences)
     out["n_paragraphs"] = len(paragraphs)
     out["avg_sentence_len"] = avg_sentence_len
@@ -615,7 +646,7 @@ def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str
 
     out.update(stopword_metrics(tokens_alpha, stopwords))
 
-    out.update(punctuation_metrics(norm_text))
+    out.update(punctuation_metrics(norm_text, n_tokens=len(tokens_all)))
 
     # Ratios por 1.000 palabras
     for col in [
@@ -628,14 +659,38 @@ def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str
         "ellipsis_count",
         "quote_count",
         "dialog_dash_count",
+        "hyphen_count",
+        "parenthesis_count",
     ]:
-        out[f"{col}_per_1000"] = out[col] * 1000 / out["n_tokens_alpha"]
+        out[f"{col}_per_1000"] = out[col] * 1000 / out["n_tokens_all"]
 
     return out
 
 
 def get_tokens_alpha_by_author(df: pd.DataFrame, is_lower: bool = True) -> dict[str, list[str]]:
+    """Collect alphabetic tokens from book texts grouped by author.
+
+    For each author in the input DataFrame, this function reads the text of all
+    associated books, normalizes the content for tokenization, tokenizes it,
+    filters the tokens to keep only alphabetic ones, and optionally lowercases
+    them. It returns a dictionary mapping each author to the aggregated list of
+    tokens from all of their books.
+
+    Args:
+        df: A DataFrame containing at least the columns ``"author"`` and
+            ``"path"``. Each row represents a book, where ``"author"``
+            identifies the author and ``"path"`` points to the text file.
+        is_lower: Whether to convert alphabetic tokens to lowercase before
+            adding them to the output. Defaults to ``True``.
+
+    Returns:
+        A dictionary where each key is an author name and each value is a list
+        of alphabetic tokens aggregated from all books associated with that
+        author.
+    """
+
     tokenizer = CustomTokenizer()
+
     out = {}
     for author, sub in df.groupby("author"):
         toks = []
@@ -648,6 +703,7 @@ def get_tokens_alpha_by_author(df: pd.DataFrame, is_lower: bool = True) -> dict[
                 tokens_alpha = [t.lower() for t in tokens_alpha]
             toks.extend(tokens_alpha)
         out[author] = toks
+
     return out
 
 
@@ -673,53 +729,69 @@ def top_n_words(counter: Counter, n: int = 20) -> pd.DataFrame:
 
 
 def top_ngrams(tokens: list[str], n: int = 2, top_k: int = 20, stopword_set: set = None) -> list[tuple[str, int]]:
+    """Return the most frequent n-grams from a token sequence.
+
+    This function optionally removes stopwords from the input token list,
+    generates n-grams of size ``n``, counts their frequencies, and returns
+    the ``top_k`` most common n-grams as pairs of joined n-gram text and
+    frequency.
+
+    Args:
+        tokens: A list of input tokens from which to generate n-grams.
+        n: The size of the n-grams to generate. For example, ``2`` for
+            bigrams and ``3`` for trigrams. Defaults to ``2``.
+        top_k: The maximum number of most frequent n-grams to return.
+            Defaults to ``20``.
+        stopword_set: An optional set of stopwords to exclude from the token
+            sequence before generating n-grams. Defaults to ``None``.
+
+    Returns:
+        A list of tuples where each tuple contains:
+            - The n-gram as a space-joined string.
+            - Its frequency as an integer.
+
+        The list is sorted in descending order of frequency.
+    """
+
     if stopword_set is not None:
         tokens = [t for t in tokens if t not in stopword_set]
+
     ng = ngrams(tokens, n)
     c = Counter(ng)
+
     return [(" ".join(t), f) for t, f in c.most_common(top_k)]
 
 
 def compute_ngrams_frecuencies(
     alpha_tokens: dict, stopword_set: set = None, ngram_n: int = 2, top_k: int = 20
 ) -> dict[str, Counter]:
+    """Compute the most frequent n-grams for each author.
+
+    This function takes a dictionary mapping authors to token lists and computes
+    the top ``k`` most frequent n-grams for each author using ``top_ngrams``.
+    A stopword set can be provided to exclude n-grams containing stopwords,
+    depending on the behavior of ``top_ngrams``.
+
+    Args:
+        alpha_tokens: A dictionary where each key is an author name and each
+            value is a list of tokens associated with that author.
+        stopword_set: An optional set of stopwords used when computing n-grams.
+            Defaults to ``None``.
+        ngram_n: The size of the n-grams to compute. For example, ``2`` for
+            bigrams and ``3`` for trigrams. Defaults to ``2``.
+        top_k: The maximum number of most frequent n-grams to return per
+            author. Defaults to ``20``.
+
+    Returns:
+        A dictionary mapping each author to a ``Counter`` containing the most
+        frequent n-grams for that author's token list.
+    """
 
     out = {}
 
     for author, toks in alpha_tokens.items():
         out[author] = top_ngrams(toks, n=ngram_n, top_k=top_k, stopword_set=stopword_set)
-    return out
 
-
-def relative_frequency(counter: Counter) -> dict[str, float]:
-    total = sum(counter.values())
-    if total == 0:
-        return {}
-    return {k: v / total for k, v in counter.items()}
-
-
-def distinctive_words(
-    author_counters: dict[str, Counter], top_k: int = 20, min_freq: int = 10
-) -> dict[str, pd.DataFrame]:
-    # vocab global
-    all_authors = list(author_counters.keys())
-    rel = {a: relative_frequency(c) for a, c in author_counters.items()}
-    raw = author_counters
-
-    out = {}
-    for a in all_authors:
-        rows = []
-        for token, cnt in raw[a].items():
-            if cnt < min_freq:
-                continue
-            rf_a = rel[a].get(token, 0.0)
-            rf_others = (
-                np.mean([rel[o].get(token, 0.0) for o in all_authors if o != a]) if len(all_authors) > 1 else 0.0
-            )
-            score = (rf_a + 1e-12) / (rf_others + 1e-12)  # razón simple
-            rows.append((token, cnt, rf_a, rf_others, score))
-        df = pd.DataFrame(rows, columns=["token", "freq", "rel_freq_author", "rel_freq_others", "ratio"])
-        out[a] = df.sort_values(["ratio", "freq"], ascending=[False, False]).head(top_k)
     return out
 
 
@@ -751,4 +823,4 @@ make them one are being spoken.
     text_n = normalize_text_for_tokenization(fix_gutenberg_linebreaks(text))
 
     print(text_n)
-    print(punctuation_metrics(text_n))
+    print(punctuation_metrics(text_n, n_tokens=100))
