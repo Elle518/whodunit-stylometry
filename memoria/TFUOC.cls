@@ -11,7 +11,6 @@
 \RequirePackage{color}
 \RequirePackage{array}
 \RequirePackage{colortbl}
-%\RequirePackage{hyperref}
 \RequirePackage[usenames,dvipsnames]{xcolor}
 \RequirePackage{array, multirow, multicol}
 \RequirePackage{stackengine}
@@ -49,13 +48,47 @@
 %% --------------- Basat en l'estil article -------------------
 
 \LoadClass[12pt]{report}
+
+% Espacio entre párrafos
+\setlength{\parskip}{0.6\baselineskip}
+
+% Opcional: quitar sangría al inicio de párrafo
+\setlength{\parindent}{0pt}
+
 \RequirePackage{geometry}
 
 \RequirePackage{sectsty}
-\chapterfont{\color{darkblueUOC}}  % sets colour of chapters
-\sectionfont{\color{darkblueUOC}}
-\subsectionfont{\color{darkblueUOC}}
-\subsubsectionfont{\color{darkblueUOC}}
+%\chapterfont{\color{darkblueUOC}}  % sets colour of chapters
+%\sectionfont{\color{darkblueUOC}}
+%\subsectionfont{\color{darkblueUOC}}
+%\subsubsectionfont{\color{darkblueUOC}}
+
+%\chapterfont{\color{darkblueUOC}\fontsize{20}{24}\selectfont}
+\sectionfont{\color{darkblueUOC}\fontsize{15}{18}\selectfont}
+\subsectionfont{\color{darkblueUOC}\fontsize{13}{15}\selectfont}
+\subsubsectionfont{\color{darkblueUOC}\fontsize{12}{14}\selectfont}
+
+% Formato de capítulos en una sola línea:
+% Capítulo 1 - Título del capítulo
+\def\@makechapterhead#1{%
+  \vspace*{30\p@}%
+  {\parindent \z@ \raggedright \normalfont
+    \interlinepenalty\@M
+    \ifnum \c@secnumdepth >\m@ne
+      {\color{darkblueUOC}\fontsize{20}{24}\selectfont\bfseries \chaptername\ \thechapter\ -\ }%
+    \fi
+    {\color{darkblueUOC}\fontsize{20}{24}\selectfont\bfseries #1\par\nobreak}%
+    \vskip 20\p@
+  }}
+
+% Formato de capítulos sin numerar
+\def\@makeschapterhead#1{%
+  \vspace*{30\p@}%
+  {\parindent \z@ \raggedright \normalfont
+    \interlinepenalty\@M
+    {\color{darkblueUOC}\fontsize{20}{24}\selectfont\bfseries #1\par\nobreak}%
+    \vskip 20\p@
+  }}
 
 \ifthenelse{\boolean{langspanish}}
 {\RequirePackage[spanish]{babel}}%%% CASTELLÀ
@@ -581,6 +614,8 @@ All rights reserved. Reproduction in whole or in part of this work by any means 
 	}
 }
 \pagestyle{fancy}
+
+\RequirePackage{hyperref}
 
 %%% https://es.overleaf.com/learn/latex/How_to_Write_a_Thesis_in_LaTeX_(Part_5)%3A_Customising_Your_Title_Page_and_Abstract
 
