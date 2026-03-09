@@ -1,3 +1,5 @@
+"""Data loading and file handling utilities."""
+
 import hashlib
 import logging
 from pathlib import Path
@@ -116,3 +118,40 @@ def read_book_text(path: Path, encoding: str = "utf-8") -> str:
     except Exception as e:
         logging.error(str(e))
         return ""
+
+
+def load_corpus_by_dataframe(
+    df: pd.DataFrame,
+    encoding: str = "utf-8",
+) -> dict[str, str]:
+    """
+    Reads text files listed in a DataFrame and returns a dictionary mapping each
+    author to the concatenated text of all their files.
+
+    The input DataFrame must contain at least these columns:
+        - ``author``: author name
+        - ``file_path``: path to a `.txt` file
+
+    Args:
+        df (pd.DataFrame): DataFrame with columns ``author`` and ``file_path``.
+        encoding (str, optional): Text encoding used to read the files.
+            Defaults to ``"utf-8"``.
+
+    Returns:
+        dict[str, str]: Dictionary where keys are author names and values
+        are the concatenated contents of their files.
+    """
+
+    corpus: dict[str, str] = {}
+
+    for author, group in df.sort_values(["author", "file_path"]).groupby("author"):
+        texts = []
+
+        for file_path in group["file_path"]:
+            path = Path(file_path)
+            with path.open(encoding=encoding) as f:
+                texts.append(f.read())
+
+        corpus[author] = "\n\n".join(texts)
+
+    return corpus
