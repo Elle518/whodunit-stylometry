@@ -17,3 +17,12 @@ AUTHORS_ABREV_MAP = {
     "Richard Austin Freeman": "R.A. Freeman",
     "Wilkie Collins": "W. Collins",
 }
+
+AUTHORS_NORM_MAP = {
+    "Anna Katharine Green": "anna_katharine_green",
+    "Arthur Conan Doyle": "arthur_conan_doyle",
+    "Arthur Morrison": "arthur_morrison",
+    "Gilbert Keith Chesterton": "gilbert_keith_chesterton",
+    "Richard Austin Freeman": "richard_austin_freeman",
+    "Wilkie Collins": "wilkie_collins",
+}
