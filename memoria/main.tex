@@ -58,7 +58,7 @@ Esta plantilla se concibe como una guía para el estudiante. Se puede adaptar a 
 
 \section{Contexto y justificación del trabajo}
 
-Punto de partida del trabajo (¿Cuál es la necesidad a cubrir? ¿Por qué es un tema relevante? ¿Cómo se resuelve el problema de momento?) y aportación realizada (¿Qué resultado se quiere obtener?).\cite{konect:2017:moreno_crime}
+Punto de partida del trabajo (¿Cuál es la necesidad a cubrir? ¿Por qué es un tema relevante? ¿Cómo se resuelve el problema de momento?) y aportación realizada (¿Qué resultado se quiere obtener?).\cite{laramee_introduction_2018}
 
 Es importante tener en cuenta que el trabajo final tiene que ser comprensible para cualquier persona que conozca el área de conocimiento, pero no tiene porque ser experta en el tema del que versa el trabajo.
 
@@ -97,7 +97,45 @@ Breve explicación de los contenidos de cada capítulo y su relación con el pro
 \chapter{Marco teórico y estado del arte}
 
 \section{Estilometría y atribución de autoría: conceptos clave}
+
+La estilometría es la disciplina que analiza de forma cuantitativa, y mediante métodos computacionales, el estilo de un texto para identificar patrones característicos de escritura. Parte de la idea clave de que cada autor suele mantener un estilo de escritura relativamente estable, identificable y único.
+
+De este modo, cada escritor usa su propio vocabulario, el cual puede ser más o menos amplio, sin ser necesariamente esto un indicador de la calidad literaria. Mientras que hay quienes construyen sus textos a partir de oraciones breves y directas, otros se inclinan por frases más largas y complejas, con abundantes subordinadas. Asimismo, el uso de la puntuación también varía de una persona a otra: recursos como el punto y coma, la raya o los dos puntos no aparecen con la misma frecuencia ni cumplen exactamente la misma función en todos los escritores.
+
+Entre los elementos más relevantes para la estilometría se encuentran las palabras funcionales. Estas son unidades gramaticales breves, como los artículos, las preposiciones y las conjunciones, cuya función principal no es aportar contenido léxico, sino organizar y relacionar los elementos del discurso. Su importancia es notable porque se ha comprobado que la manera en que los escritores las emplean ha resultado especialmente significativa para el análisis estilométrico.
+
+Como señala Stamatatos, estas palabras suelen ser utilizadas de forma en gran medida inconsciente por los autores y, además, no dependen del tema del texto\cite{stamatatos2009survey}. Esto las convierte en un recurso de gran utilidad, ya que esos patrones automáticos suelen mantenerse más estables dentro del corpus de un mismo autor que su vocabulario general. A ello se suma que son difíciles de copiar para quien intente imitar un estilo ajeno.
+
+No obstante, una de las utilidades más extendidas de la estilometría es la atribución de autoría, en la cual se centra el presente trabajo. De este modo, cuando se dispone de un texto anónimo, en ocasiones es posible desvelar la identidad de su autor mediante el análisis de ciertos rasgos estilísticos. Además, la estilometría se ha utilizado tradicionalmente en ámbitos muy diversos: la detección de plagio, el análisis de diferencias estilísticas entre géneros o grupos sociales y el estudio de la evolución de la escritura de un autor a lo largo del tiempo.
+
 \section{Métodos clásicos de estilometría}
+
+\subsection{Curvas características de composición de Mendenhall}
+
+Thomas Corwin Mendenhall fue un físico y meteorólogo estadounidense al que hoy se le reconoce en humanidades digitales por haber realizado uno de los primeros intentos cuantitativos de atribución de autoría.
+
+Su propuesta apareció en 1887 en un artículo de la revista \textit{Science} titulado \textit{The Characteristic Curves of Composition}\cite{mendenhall_characteristic_1887}. La idea básica era que cada autor tiende a mostrar una distribución relativamente estable de longitudes de palabra y que esa distribución puede representarse como una curva característica, casi como una “firma” estilística.
+
+Mendenhall proponía lo siguiente:
+
+\begin{enumerate}
+	\item Tomar un texto de un autor.
+	\item Contar cuántas palabras tienen 1 letra, 2 letras, 3 letras, 4 letras, etc.
+	\item Calcular la frecuencia de cada longitud en una muestra fija, por ejemplo cada 10.000 palabras.
+	\item Representar esos datos en una gráfica:
+	\begin{itemize}
+		\item eje horizontal: longitud de palabra
+		\item eje vertical: frecuencia relativa de palabras con esa longitud
+	\end{itemize}
+	\item Comparar esa curva con la de otros textos o autores. Si dos textos muestran curvas muy parecidas, eso sugeriría afinidad de estilo, si difieren bastante, sugeriría autores distintos.
+\end{enumerate}
+
+Mendenhall llamó a esto también una especie de \textit{“word spectrum”} o espectro de palabras. Su hipótesis era que, aunque el tema cambie, ciertos hábitos mecánicos de escritura del autor permanecen y se reflejan en la frecuencia de palabras cortas, medianas y largas.
+
+Esto fue importante porque introdujo una idea que hoy sigue siendo central en estilometría: la autoría puede estudiarse con rasgos cuantificables del lenguaje y no solo con impresiones subjetivas de un experto. Es por esto que Mendenhall se considera un precursor de la atribución de autoría moderna.
+
+Hoy se considera un método históricamente pionero, pero bastante rudimentario. La longitud de palabra por sí sola suele ser una señal débil porque puede verse afectada por numerosos factores (el género, la época, la traducción, la edición, el tema, etc). Como veremos más adelante, la estilometría moderna suele usar rasgos más robustos, como palabras funcionales, n-gramas, patrones sintácticos y modelos estadísticos o de aprendizaje automático.
+
 \section{Enfoques modernos en atribución de autoría}
 \section{Evaluación en atribución de autoría}
 \section{Explicabilidad e interpretabilidad en PLN}
@@ -111,6 +149,9 @@ Breve explicación de los contenidos de cada capítulo y su relación con el pro
 \section{Metadatos y normalización}
 \section{Calidad del texto y control de artefactos}
 \section{Análisis exploratorio del corpus}
+
+Lsy de Zipf \cite{zipf1932selected}
+
 \section{Marco ético y legal del corpus}
 \section{Plan de gestión de datos y reproducibilidad}
 
@@ -207,6 +248,8 @@ Definición de los términos y acrónimos más relevantes utilizados dentro de l
 Listado de apartados que son demasiado extensos para incluir dentro de la memoria y tienen un carácter autocontenido (por ejemplo, manuales de usuario, manuales de instalación, etc.)
 
 Dependiendo del tipo de trabajo, es posible que no haya que añadir algún anexo.
+
+Normalización:  en cuánto a la puntuación puede haber posibles efectos editoriales o de normalización, ya que cambios de edición pueden alterar la puntuación y, con ello, el perfil estilométrico del texto.
 
 \bibliographystyle{apalike-es}
 \bibliography{bibliography.bib}
