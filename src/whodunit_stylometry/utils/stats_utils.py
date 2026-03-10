@@ -321,3 +321,174 @@ def classify_test_works_by_average_curve(
         results.append(result)
 
     return pd.DataFrame(results)
+
+
+def build_global_vocab(
+    corpora: dict[str, list[str]],
+    vocab_size: int = 500,
+    min_freq: int = 1,
+) -> list[str]:
+    """Build a fixed global vocabulary from the training corpora.
+
+    The vocabulary is created from the combined token frequencies of all
+    reference corpora. Only the most frequent tokens that satisfy the minimum
+    frequency threshold are kept.
+
+    Args:
+        corpora: Mapping from author name to list of tokens.
+        vocab_size: Maximum number of tokens to keep.
+        min_freq: Minimum global frequency required for a token to be included.
+
+    Returns:
+        A list of tokens defining the global vocabulary.
+    """
+    total_counts = Counter()
+
+    for tokens in corpora.values():
+        total_counts.update(tokens)
+
+    vocab = [token for token, freq in total_counts.most_common() if freq >= min_freq][:vocab_size]
+    return vocab
+
+
+def kilgariff_chi2(
+    tokens_a: list[str],
+    tokens_b: list[str],
+    vocab: list[str],
+):
+    """Compute Kilgariff's chi-square distance using a fixed global vocabulary.
+
+    Args:
+        tokens_a: Token sequence for the reference corpus.
+        tokens_b: Token sequence for the test work.
+        vocab: Fixed vocabulary used in all comparisons.
+
+    Returns:
+        A tuple with:
+            - chi2_total: Total chi-square distance.
+            - contributions: List of per-token contributions sorted from
+              highest to lowest. Each item has the form:
+              (token, chi_token, obs_a, exp_a, obs_b, exp_b)
+    """
+    freq_a = Counter(tokens_a)
+    freq_b = Counter(tokens_b)
+
+    total_a = sum(freq_a.values())
+    total_b = sum(freq_b.values())
+    total = total_a + total_b
+
+    if total == 0:
+        raise ValueError("Both token sequences are empty.")
+
+    chi2_total = 0.0
+    contributions = []
+
+    for token in vocab:
+        obs_a = freq_a.get(token, 0)
+        obs_b = freq_b.get(token, 0)
+        combined_f = obs_a + obs_b
+
+        # If the token does not appear in either text, it contributes nothing.
+        if combined_f == 0:
+            continue
+
+        # Expected frequencies based on relative sample sizes
+        exp_a = combined_f * (total_a / total)
+        exp_b = combined_f * (total_b / total)
+
+        chi_a = ((obs_a - exp_a) ** 2 / exp_a) if exp_a > 0 else 0.0
+        chi_b = ((obs_b - exp_b) ** 2 / exp_b) if exp_b > 0 else 0.0
+
+        chi_token = chi_a + chi_b
+        chi2_total += chi_token
+
+        contributions.append((token, chi_token, obs_a, exp_a, obs_b, exp_b))
+
+    contributions.sort(key=lambda x: x[1], reverse=True)
+
+    return chi2_total, contributions
+
+
+def classify_test_works_kilgariff(
+    corpora: dict[str, list[str]],
+    test_works: dict[str, list[str]],
+    vocab_size: int = 500,
+    min_freq: int = 1,
+):
+    """Classify test works by minimum Kilgariff chi-square distance.
+
+    A fixed global vocabulary is built from the training corpora and then used
+    in every corpus-vs-test comparison.
+
+    Args:
+        corpora: Mapping from author name to training tokens.
+        test_works: Mapping from work title/name to test tokens.
+        vocab_size: Maximum size of the global vocabulary.
+        min_freq: Minimum global frequency threshold for vocabulary inclusion.
+
+    Returns:
+        A dictionary of classification results:
+            results[work] = {
+                "prediccion": predicted_author,
+                "ranking": [(author, chi2), ...]
+            }
+    """
+    global_vocab = build_global_vocab(corpora, vocab_size=vocab_size, min_freq=min_freq)
+
+    results = {}
+
+    for work, work_tokens in test_works.items():
+        ranking = []
+
+        for author, tokens_corpus in corpora.items():
+            chi2, _ = kilgariff_chi2(tokens_corpus, work_tokens, vocab=global_vocab)
+            ranking.append((author, chi2))
+
+        ranking.sort(key=lambda x: x[1])  # smaller chi2 = more similar
+        results[work] = {
+            "prediccion": ranking[0][0],
+            "ranking": ranking,
+        }
+
+    return results
+
+
+def get_pairwise_contributions(
+    corpora: dict[str, list[str]],
+    test_works: dict[str, list[str]],
+    vocab_size: int = 500,
+    min_freq: int = 1,
+):
+    """Compute detailed chi-square contributions for each work-author pair.
+
+    This is useful if you want not only the predicted author, but also the
+    token-level contribution breakdown for inspection.
+
+    Args:
+        corpora: Mapping from author name to training tokens.
+        test_works: Mapping from work title/name to test tokens.
+        vocab_size: Maximum size of the global vocabulary.
+        min_freq: Minimum global frequency threshold.
+
+    Returns:
+        A nested dictionary:
+            details[work][author] = {
+                "chi2": float,
+                "contributions": [...]
+            }
+    """
+    global_vocab = build_global_vocab(corpora, vocab_size=vocab_size, min_freq=min_freq)
+
+    details = {}
+
+    for work, work_tokens in test_works.items():
+        details[work] = {}
+
+        for author, tokens_corpus in corpora.items():
+            chi2, contributions = kilgariff_chi2(tokens_corpus, work_tokens, vocab=global_vocab)
+            details[work][author] = {
+                "chi2": chi2,
+                "contributions": contributions,
+            }
+
+    return details
