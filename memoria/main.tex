@@ -149,6 +149,38 @@ Esto fue importante porque introdujo una idea que hoy sigue siendo central en es
 
 Hoy se considera un método históricamente pionero, pero bastante rudimentario. La longitud de palabra por sí sola suele ser una señal débil porque puede verse afectada por numerosos factores (el género, la época, la traducción, la edición, el tema, etc). Como veremos más adelante, la estilometría moderna suele usar rasgos más robustos, como palabras funcionales, n-gramas, patrones sintácticos y modelos estadísticos o de aprendizaje automático.
 
+\subsection{Método del chi-cuadrado de Kilgariff}
+
+Adam Kilgariff es una figura destacada en lingüística de corpus y estilometría por haber defendido el uso de medidas estadísticas para comparar distribuciones léxicas entre textos\cite{kilgarriff2001comparing}. En este contexto, el método del chi-cuadrado asociado a su nombre se utiliza como una forma de cuantificar hasta qué punto dos textos presentan patrones semejantes o distintos en el uso de determinadas palabras, especialmente las más frecuentes.
+
+La idea general del método es sencilla: si dos textos pertenecen al mismo autor, o al menos comparten hábitos estilísticos similares, entonces la frecuencia relativa con la que emplean ciertas palabras debería ser parecida. Si, por el contrario, esas frecuencias divergen de forma sistemática, esa diferencia puede interpretarse como una señal de distancia estilística.
+
+El procedimiento básico consiste en lo siguiente:
+
+\begin{enumerate}
+	\item Seleccionar un conjunto de palabras para la comparación, normalmente las más frecuentes del corpus o de los textos analizados.
+	\item Contar cuántas veces aparece cada una de esas palabras en los dos textos o conjuntos de textos que se desean comparar.
+	\item Calcular, para cada palabra, la diferencia entre la frecuencia observada y la frecuencia esperada si ambos textos siguieran una misma distribución.
+	\item Sumar esas discrepancias mediante la estadística de chi-cuadrado.
+	\item Interpretar el valor obtenido como una medida de distancia entre ambos perfiles léxicos.
+\end{enumerate}
+
+La fórmula general utilizada es la siguiente:
+
+$$\chi^2 = \sum \frac{(O - E)^2}{E}$$
+
+donde $O$ representa la frecuencia observada y $E$ la frecuencia esperada. Aplicada al análisis estilométrico, esta expresión permite estimar cuánto se aparta cada texto de lo que cabría esperar si ambos compartieran un comportamiento léxico similar.
+
+En la práctica, este método suele aplicarse no tanto a palabras de contenido semántico fuerte, sino a palabras funcionales, como artículos, preposiciones, conjunciones o pronombres. La razón es que estas unidades dependen menos del tema tratado y reflejan mejor hábitos inconscientes y relativamente estables del autor. De este modo, el chi-cuadrado se convierte en una herramienta útil para comparar estilos de escritura minimizando, en la medida de lo posible, la influencia del contenido temático.
+
+Su interés para la atribución de autoría reside en que permite comparar una obra de prueba con varios corpus de referencia y asignarla al autor cuyo perfil de frecuencias produzca la menor distancia. Así, el método no se limita a describir diferencias, sino que puede emplearse también como criterio de clasificación.
+
+Este enfoque fue importante porque contribuyó a consolidar una idea central en la estilometría moderna: las diferencias entre autores pueden modelarse como diferencias cuantificables entre distribuciones lingüísticas. Frente a aproximaciones puramente subjetivas, el método introduce un criterio explícito, reproducible y verificable para comparar textos.
+
+No obstante, también presenta limitaciones. En primer lugar, sus resultados dependen del tamaño y de la representatividad de las muestras comparadas y las palabras que aparecen con mucha frecuencia tienden a tener un peso desproporcionado en el cálculo final. A veces esto es correcto pero, otras veces, las sutiles diferencias de estilo, representadas por la forma en que los autores usan palabras menos comunes, pasan desapercibidas. En segundo lugar, la selección del vocabulario influye de manera decisiva en la distancia obtenida: si se incluyen palabras demasiado raras o demasiado ligadas al tema, la comparación puede volverse menos fiable. Por último, el chi-cuadrado solo captura diferencias de frecuencia léxica y no tiene en cuenta de forma directa otros aspectos del estilo, como la sintaxis, la estructura discursiva o las relaciones semánticas.
+
+Por ello, aunque el método del chi-cuadrado de Kilgariff publicado en 2001 sigue siendo una herramienta útil y conceptualmente clara para la comparación en estilomatría, en la actualidad suele emplearse junto con procedimientos más robustos, como la distancia Delta de Burrows, los n-gramas de caracteres, el análisis multivariante o los métodos de clasificación supervisada.
+
 \section{Enfoques modernos en atribución de autoría}
 \section{Evaluación en atribución de autoría}
 \section{Explicabilidad e interpretabilidad en PLN}
