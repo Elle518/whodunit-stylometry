@@ -430,7 +430,7 @@ All rights reserved. Reproduction in whole or in part of this work by any means 
 \cellcolor{lightblueUOC}{
 \begin{minipage}[t][7cm][t]{\textwidth}
 \vspace*{\fill}
-\Huge{\textbf{\@title}}
+\LARGE{\textbf{\@title}}
 \vspace*{\fill}
 \end{minipage}}}\\
 &&\\
