@@ -1,5 +1,6 @@
 """Statistical utilities for stylometric analysis."""
 
+import math
 import random
 from collections import Counter, defaultdict
 
@@ -488,6 +489,260 @@ def get_pairwise_contributions(
             chi2, contributions = kilgariff_chi2(tokens_corpus, work_tokens, vocab=global_vocab)
             details[work][author] = {
                 "chi2": chi2,
+                "contributions": contributions,
+            }
+
+    return details
+
+
+def relative_frequencies(tokens: list[str], vocab: list[str]) -> dict[str, float]:
+    """Compute relative frequencies for a fixed vocabulary.
+
+    Args:
+        tokens: Token sequence of a text or corpus.
+        vocab: Fixed vocabulary.
+
+    Returns:
+        A dictionary mapping each token in `vocab` to its relative frequency
+        in the input sequence.
+    """
+    counts = Counter(tokens)
+    total = len(tokens)
+
+    if total == 0:
+        raise ValueError("Token sequence is empty.")
+
+    return {token: counts.get(token, 0) / total for token in vocab}
+
+
+def compute_feature_stats(
+    corpora: dict[str, list[str]],
+    vocab: list[str],
+) -> tuple[dict[str, float], dict[str, float], dict[str, dict[str, float]]]:
+    """Compute mean and standard deviation for each token across corpora.
+
+    Frequencies are computed corpus by corpus over the fixed global vocabulary.
+
+    Args:
+        corpora: Mapping from author name to training tokens.
+        vocab: Fixed vocabulary.
+
+    Returns:
+        A tuple containing:
+            - means: Mean relative frequency of each token across corpora.
+            - stds: Standard deviation of each token across corpora.
+            - author_freqs: Relative frequencies for each author corpus.
+    """
+    author_freqs = {author: relative_frequencies(tokens, vocab) for author, tokens in corpora.items()}
+
+    means = {}
+    stds = {}
+
+    n_authors = len(author_freqs)
+    if n_authors < 2:
+        raise ValueError("At least two author corpora are needed to compute Burrows's Delta.")
+
+    for token in vocab:
+        values = [author_freqs[author][token] for author in author_freqs]
+        mean = sum(values) / len(values)
+
+        # Sample standard deviation
+        variance = sum((x - mean) ** 2 for x in values) / (len(values) - 1)
+        std = math.sqrt(variance)
+
+        means[token] = mean
+        stds[token] = std
+
+    return means, stds, author_freqs
+
+
+def z_scores(
+    freqs: dict[str, float],
+    means: dict[str, float],
+    stds: dict[str, float],
+    vocab: list[str],
+) -> dict[str, float]:
+    """Convert relative frequencies into z-scores.
+
+    Tokens whose standard deviation is zero are skipped, since they do not help
+    discriminate between authors.
+
+    Args:
+        freqs: Relative frequencies for one text/corpus.
+        means: Mean relative frequency for each token.
+        stds: Standard deviation for each token.
+        vocab: Fixed vocabulary.
+
+    Returns:
+        A dictionary of z-scores for tokens with non-zero standard deviation.
+    """
+    z = {}
+
+    for token in vocab:
+        std = stds[token]
+        if std == 0:
+            continue
+        z[token] = (freqs[token] - means[token]) / std
+
+    return z
+
+
+def burrows_delta_from_zscores(
+    z_ref: dict[str, float],
+    z_test: dict[str, float],
+) -> tuple[float, list[tuple[str, float, float, float]]]:
+    """Compute Burrows's Delta between two z-score profiles.
+
+    Args:
+        z_ref: Z-scores for the reference corpus.
+        z_test: Z-scores for the test work.
+
+    Returns:
+        A tuple containing:
+            - delta: Mean absolute difference between z-scores.
+            - contributions: List of token-level contributions sorted from
+              highest to lowest. Each tuple has the form:
+              (token, abs_diff, z_ref, z_test)
+    """
+    common_tokens = list(set(z_ref.keys()) & set(z_test.keys()))
+    if not common_tokens:
+        raise ValueError("No comparable tokens with non-zero standard deviation were found.")
+
+    contributions = []
+    for token in common_tokens:
+        diff = abs(z_ref[token] - z_test[token])
+        contributions.append((token, diff, z_ref[token], z_test[token]))
+
+    contributions.sort(key=lambda x: x[1], reverse=True)
+    delta = sum(row[1] for row in contributions) / len(contributions)
+
+    return delta, contributions
+
+
+def burrows_delta(
+    reference_tokens: list[str],
+    test_tokens: list[str],
+    vocab: list[str],
+    means: dict[str, float],
+    stds: dict[str, float],
+) -> tuple[float, list[tuple[str, float, float, float]]]:
+    """Compute Burrows's Delta between a reference corpus and a test work.
+
+    Args:
+        reference_tokens: Tokens from the reference corpus.
+        test_tokens: Tokens from the test work.
+        vocab: Fixed global vocabulary.
+        means: Mean relative frequency for each token.
+        stds: Standard deviation for each token.
+
+    Returns:
+        A tuple containing:
+            - delta: Burrows's Delta distance.
+            - contributions: List of token-level contributions sorted from
+              highest to lowest. Each tuple contains:
+              (token, abs_diff, z_ref, z_test)
+    """
+    ref_freqs = relative_frequencies(reference_tokens, vocab)
+    test_freqs = relative_frequencies(test_tokens, vocab)
+
+    z_ref = z_scores(ref_freqs, means, stds, vocab)
+    z_test = z_scores(test_freqs, means, stds, vocab)
+
+    return burrows_delta_from_zscores(z_ref, z_test)
+
+
+def classify_test_works_burrows(
+    corpora: dict[str, list[str]],
+    test_works: dict[str, list[str]],
+    vocab_size: int = 500,
+    min_freq: int = 1,
+):
+    """Classify test works using Burrows's Delta.
+
+    A fixed global vocabulary is built from the training corpora. Relative
+    frequencies are standardized using corpus-level means and standard
+    deviations, and each test work is assigned to the author with the lowest
+    Delta distance.
+
+    Args:
+        corpora: Mapping from author name to training tokens.
+        test_works: Mapping from work title/name to test tokens.
+        vocab_size: Maximum size of the global vocabulary.
+        min_freq: Minimum global frequency threshold for vocabulary inclusion.
+
+    Returns:
+        A dictionary of classification results:
+            results[work] = {
+                "prediccion": predicted_author,
+                "ranking": [(author, delta), ...]
+            }
+    """
+    vocab = build_global_vocab(corpora, vocab_size=vocab_size, min_freq=min_freq)
+    means, stds, _ = compute_feature_stats(corpora, vocab)
+
+    results = {}
+
+    for work, work_tokens in test_works.items():
+        ranking = []
+
+        for author, author_tokens in corpora.items():
+            delta, _ = burrows_delta(
+                reference_tokens=author_tokens,
+                test_tokens=work_tokens,
+                vocab=vocab,
+                means=means,
+                stds=stds,
+            )
+            ranking.append((author, delta))
+
+        ranking.sort(key=lambda x: x[1])  # smaller Delta = more similar
+        results[work] = {
+            "prediccion": ranking[0][0],
+            "ranking": ranking,
+        }
+
+    return results
+
+
+def get_pairwise_burrows_contributions(
+    corpora: dict[str, list[str]],
+    test_works: dict[str, list[str]],
+    vocab_size: int = 500,
+    min_freq: int = 1,
+):
+    """Compute detailed Burrows's Delta contributions for each work-author pair.
+
+    Args:
+        corpora: Mapping from author name to training tokens.
+        test_works: Mapping from work title/name to test tokens.
+        vocab_size: Maximum size of the global vocabulary.
+        min_freq: Minimum global frequency threshold.
+
+    Returns:
+        A nested dictionary:
+            details[work][author] = {
+                "delta": float,
+                "contributions": [...]
+            }
+    """
+    vocab = build_global_vocab(corpora, vocab_size=vocab_size, min_freq=min_freq)
+    means, stds, _ = compute_feature_stats(corpora, vocab)
+
+    details = {}
+
+    for work, work_tokens in test_works.items():
+        details[work] = {}
+
+        for author, author_tokens in corpora.items():
+            delta, contributions = burrows_delta(
+                reference_tokens=author_tokens,
+                test_tokens=work_tokens,
+                vocab=vocab,
+                means=means,
+                stds=stds,
+            )
+            details[work][author] = {
+                "delta": delta,
                 "contributions": contributions,
             }
 
