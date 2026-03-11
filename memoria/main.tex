@@ -181,6 +181,41 @@ No obstante, también presenta limitaciones. En primer lugar, sus resultados dep
 
 Por ello, aunque el método del chi-cuadrado de Kilgariff publicado en 2001 sigue siendo una herramienta útil y conceptualmente clara para la comparación en estilomatría, en la actualidad suele emplearse junto con procedimientos más robustos, como la distancia Delta de Burrows, los n-gramas de caracteres, el análisis multivariante o los métodos de clasificación supervisada.
 
+\subsection{Delta de Burrows}
+
+John Burrows es una de las figuras más influyentes en el desarrollo de la estilometría contemporánea. Su propuesta de la medida conocida como \textit{Delta}, formulada a comienzos de la década de 2000, supuso un avance importante en los métodos cuantitativos de atribución de autoría, ya que ofrecía una forma simple, interpretable y eficaz de comparar el estilo de distintos textos a partir de las frecuencias de palabras funcionales.
+
+La idea central del método parte de una observación básica: los autores no solo difieren en qué palabras usan, sino también en la frecuencia relativa con la que emplean las palabras más comunes del idioma. Estas palabras, especialmente las funcionales, suelen depender poco del tema tratado y reflejan con mayor fidelidad hábitos lingüísticos relativamente estables. Burrows propuso aprovechar esta regularidad para medir la cercanía estilística entre textos.
+
+El procedimiento general puede resumirse del siguiente modo:
+
+\begin{enumerate}
+	\item Seleccionar un conjunto de palabras frecuentes, normalmente las más comunes del corpus de estudio.
+	\item Calcular la frecuencia relativa de cada una de esas palabras en todos los textos.
+	\item Estandarizar esas frecuencias mediante puntuaciones \textit{z}, es decir, expresando para cada palabra cuánto se aleja su frecuencia en un texto respecto de la media del conjunto, en unidades de desviación típica.
+	\item Comparar los textos calculando la distancia media entre sus puntuaciones \textit{z} para todas las palabras seleccionadas.
+\end{enumerate}
+
+La forma clásica de la medida se basa en la siguiente idea: para cada palabra del vocabulario seleccionado se calcula primero su puntuación \textit{z},
+
+$$z_{i,j} = \frac{f_{i,j} - \mu_i}{\sigma_i}$$
+
+donde $f_{i,j}$ es la frecuencia relativa de la palabra $i$ en el texto $j$, $\mu_i$ es la media de esa palabra en el conjunto de textos y $\sigma_i$ su desviación típica. Una vez obtenidas estas puntuaciones, la distancia Delta entre un texto de prueba y un autor o texto de referencia se calcula como la media de las diferencias absolutas entre sus valores \textit{z}:
+
+$$\Delta = \frac{1}{n} \sum_{i=1}^{n} |z_{i,\text{prueba}} - z_{i,\text{referencia}}|$$
+
+donde $n$ es el número de palabras consideradas. Cuanto menor sea el valor de Delta, mayor será la proximidad estilística entre ambos textos.
+
+El aspecto más característico de este método es la estandarización previa de las frecuencias. A diferencia de otros procedimientos que comparan directamente los recuentos o proporciones observadas, Burrows normaliza el comportamiento de cada palabra en relación con el conjunto del corpus. Esto permite que palabras muy frecuentes y palabras menos frecuentes puedan contribuir de manera comparable a la distancia final, evitando que unas pocas unidades extremadamente comunes dominen por completo la comparación.
+
+En la práctica, Delta suele aplicarse sobre un vocabulario común de palabras funcionales o de palabras muy frecuentes extraídas del conjunto de entrenamiento. Igual que en otros métodos estilométricos, el uso de un vocabulario compartido garantiza que todas las comparaciones se realicen sobre los mismos rasgos lingüísticos y hace que las distancias sean más consistentes y comparables entre sí. Después, para cada texto de prueba, se calcula su distancia Delta respecto de cada autor o cada corpus de referencia y se atribuye la autoría al candidato con la distancia más baja.
+
+La importancia de este método radica en que consolidó una forma de análisis estilométrico basada en la combinación de tres principios: selección de rasgos frecuentes, normalización estadística y comparación de distancias. Gracias a ello, Delta de Burrows se convirtió en uno de los procedimientos más influyentes y más utilizados en atribución de autoría, especialmente en estudios literarios y de lingüística de corpus.
+
+Entre sus ventajas destaca que suele ofrecer resultados robustos incluso con conjuntos relativamente simples de rasgos, que es fácil de interpretar y que permite comparar textos de forma sistemática a partir de una representación numérica homogénea. Además, ha servido como base para muchas variantes posteriores, como \textit{Argamon's Delta}, \textit{Eder's Delta} o \textit{Cosine Delta}, que intentan adaptar la medida a distintos tipos de corpus y problemas de clasificación.
+
+No obstante, también presenta limitaciones. Su rendimiento depende de decisiones metodológicas como el número de palabras seleccionadas, el tipo de normalización aplicada o la composición del corpus de referencia. Asimismo, aunque las palabras funcionales reducen la influencia del tema, no la eliminan por completo, y la estabilidad de las medias y desviaciones típicas puede verse afectada si el corpus de entrenamiento es pequeño o poco equilibrado. Por ello, aunque Delta de Burrows es uno de los métodos clásicos más sólidos de la estilometría, sus resultados deben interpretarse siempre en relación con el diseño del experimento y, cuando sea posible, contrastarse con otras métricas complementarias.
+
 \section{Enfoques modernos en atribución de autoría}
 \section{Evaluación en atribución de autoría}
 \section{Explicabilidad e interpretabilidad en PLN}
