@@ -14,6 +14,7 @@
 \RequirePackage[usenames,dvipsnames]{xcolor}
 \RequirePackage{array, multirow, multicol}
 \RequirePackage{stackengine}
+\RequirePackage{amsmath}
 
 %% ----------------------- Opcions d'entrada pròpies del paquet: català, castellà o anglès-----
 \newboolean{langspanish}
