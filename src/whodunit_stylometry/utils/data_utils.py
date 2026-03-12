@@ -155,3 +155,56 @@ def load_corpus_by_dataframe(
         corpus[author] = "\n\n".join(texts)
 
     return corpus
+
+
+def load_test_by_dataframe(
+    df: pd.DataFrame,
+    encoding: str = "utf-8",
+) -> dict[str, str]:
+    """Build a corpus dictionary from file paths stored in a DataFrame.
+
+    Args:
+        df: DataFrame with ``author`` and ``file_path`` columns.
+        encoding: Encoding used to read the text files.
+
+    Returns:
+        A dictionary where each key is ``"{author}_{stem}"`` and each value is the
+        file content.
+    """
+
+    corpus: dict[str, str] = {}
+
+    for author, group in df.sort_values(["author", "file_path"]).groupby("author"):
+
+        for file_path in group["file_path"]:
+            path = Path(file_path)
+            with path.open(encoding=encoding) as f:
+                text = f.read()
+
+            work_key = f"{author}_{path.stem}"
+            corpus[work_key] = text
+
+    return corpus
+
+
+def get_work_key(author_test_tokens: dict[str, list[str]], file_name: str):
+    """Retrieve the value associated with a work key matching a file name.
+
+    This function searches the keys of ``author_test_tokens`` for the first key
+    containing ``file_name`` without its last four characters, typically used to
+    remove a file extension such as ``.txt``. If a match is found, the
+    corresponding value is returned. Otherwise, ``None`` is returned.
+
+    Args:
+        author_test_tokens (dict[str, list[str]]): Dictionary-like object whose keys represent work
+            identifiers and whose values contain the associated data.
+        file_name (str): Name of the file used to search for a matching work key.
+
+    Returns:
+        (str): The value associated with the first matching key, or ``None`` if no match
+        is found.
+    """
+
+    key = [k for k in author_test_tokens.keys() if file_name[:-4] in k]
+
+    return author_test_tokens.get(key[0], None)
