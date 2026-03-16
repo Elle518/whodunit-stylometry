@@ -59,15 +59,15 @@ En las últimas décadas, el avance de la ciencia de datos y del procesamiento d
 
 El presente Trabajo de Fin de Grado (TFG) se enmarca precisamente en esa confluencia entre la tecnología y las humanidades. Su objetivo general es explorar el potencial de las técnicas de análisis computacional del estilo literario para el estudio de la novela de misterio clásica, aplicando herramientas de PLN y aprendizaje automático a obras de autores canónicos como Anna Katharine Green, Arthur Conan Doyle, G. K. Chesterton o Wilkie Collins. Este enfoque no solo busca identificar las particularidades del estilo de cada autor, sino también reflexionar sobre el papel que la inteligencia artificial puede desempeñar en la interpretación de la literatura.
 
-Este trabajo tiene una doble motivación: profesional y personal. Por un lado, mi interés por aplicar metodologías de ciencia de datos en un campo menos explorado dentro del PLN, alejándome de los dominios clínico o empresarial a los que estoy habituada y, por otro, mi afición personal a la literatura de misterio, un género que pienso que ofrece un marco especialmente interesante para el análisis estilométrico. A través de este proyecto pretendo, además, contribuir a la democratización del acceso a las herramientas digitales de análisis literario, desarrollando soluciones en Python que combinen rigor científico, reproducibilidad y accesibilidad para investigadores con diferentes niveles de formación técnica.
+Este trabajo tiene una doble motivación profesional y personal. Por un lado, mi interés por aplicar metodologías de ciencia de datos en un campo menos explorado dentro del PLN, alejándome de los dominios clínico o empresarial a los que estoy habituada y, por otro, mi afición personal a la literatura de misterio, un género que pienso que ofrece un marco especialmente interesante para el análisis estilométrico. A través de este proyecto pretendo, además, contribuir a la democratización del acceso a las herramientas digitales de análisis literario, desarrollando soluciones en Python que combinen rigor científico, reproducibilidad y accesibilidad para investigadores con diferentes niveles de formación técnica.
 
-El contexto actual de las humanidades digitales se caracteriza por un creciente interés en integrar métodos cuantitativos en el análisis de los textos. Iniciativas como el \textit{Computational Stylistics Group}\cite{csg2025web} (Universidad de Amberes) o el proyecto español ETSO\cite{gonzalez2017etso} (\textit{Estilometría del Teatro del Siglo de Oro}) demuestran que los enfoques basados en datos pueden complementar, nunca sustituir, el análisis filológico clásico. En esta misma línea, el presente trabajo espera demostrar que la programación y el análisis de datos pueden convertirse en herramientas útiles para profundizar en la comprensión del estilo literario, ofreciendo un enfoque objetivo que refuerce el análisis e interpretación de los textos.
+El contexto actual de las humanidades digitales se caracteriza por un creciente interés en integrar métodos cuantitativos en el análisis de los textos. Iniciativas como el \textit{Computational Stylistics Group}\cite{csg2025web} (Universidad de Amberes) o el proyecto español ETSO\cite{gonzalez2017etso} (\textit{Estilometría del Teatro del Siglo de Oro}) han demostrado que los enfoques basados en datos pueden complementar (nunca sustituir) el análisis filológico clásico. En esta misma línea, el presente trabajo espera demostrar que la programación y el análisis de datos pueden convertirse en herramientas útiles para profundizar en la comprensión del estilo literario, ofreciendo un enfoque objetivo que refuerce el análisis e interpretación de los textos.
 
 \section{Objetivos del trabajo}
 
 \subsection{Objetivo general}
 
-Como objetivo general este trabajo tiene desarrollar un modelo de análisis estilométrico, implementado en Python, capaz de identificar los rasgos propios del estilo de autores clásicos de la novela de misterio mediante técnicas de PLN y aprendizaje automático, contribuyendo a la aplicación de la ciencia de datos al estudio literario.
+Como objetivo general este trabajo tiene desarrollar un modelo de análisis estilométrico, implementado en Python, capaz de identificar los rasgos propios del estilo de autores clásicos de la novela de misterio mediante técnicas de PLN y aprendizaje automático, contribuyendo con ello a la aplicación de la ciencia de datos al estudio literario.
 
 \subsection{Objetivos específicos}
 
@@ -85,37 +85,220 @@ Así, el proyecto aspira a tener un doble impacto. En el plano científico-técn
 
 \section{Impacto en sostenibilidad, ético-social y de diversidad}
 
-Este TFG se sitúa en la intersección entre la ciencia de datos, el procesamiento del lenguaje natural y las humanidades digitales, por lo que su impacto debe analizarse no solo desde una perspectiva técnica, sino también en términos de sostenibilidad, responsabilidad ético-social y diversidad\cite{onuodsweb}. Aunque se trata de un proyecto académico y no de un sistema implantado a gran escala, presenta implicaciones relevantes en estas tres dimensiones.
+Este TFG debe analizarse no solo desde una perspectiva técnica, sino también en los términos de sostenibilidad, responsabilidad ético-social y diversidad que marca la Organización de Naciones Unidas\cite{onuodsweb} ya que, aunque se trata de un proyecto académico y no de un sistema implantado a gran escala, presenta implicaciones relevantes en estas tres dimensiones.
 
-En cuanto a la sostenibilidad, el trabajo tiene un impacto positivo sobre todo en su dimensión científica y tecnológica. La propuesta se apoya en el uso de textos de dominio público, herramientas \textit{open source} y entornos reproducibles en Python, lo que favorece una investigación más accesible, reutilizable y eficiente. Además, la documentación del proceso y la posible publicación del código contribuyen a la circulación del conocimiento y reducen la duplicación de esfuerzos en investigaciones futuras. En este sentido, el proyecto se alinea especialmente con el ODS 9 (Industria, Innovación e Infraestructura), al desarrollar una metodología analítica reproducible y transferible, y con el ODS 4 (Educación de calidad), al generar recursos útiles para el aprendizaje y la investigación. Como contrapartida, el uso de modelos de PLN puede implicar un cierto coste computacional y energético, por lo que resulta importante priorizar soluciones proporcionadas al alcance real del proyecto y reutilizar modelos ya entrenados cuando sea posible.
+En cuanto a la sostenibilidad, el trabajo tiene un impacto positivo sobre todo en su dimensión científica y tecnológica. Esta propuesta se apoya en el uso de textos de dominio público, herramientas \textit{open source} y entornos reproducibles en Python, lo que promueve una investigación más accesible, reutilizable y eficiente. Además, la documentación del proceso y la publicación del código contribuyen a la circulación del conocimiento y reducen la duplicación de esfuerzos en futuras investigaciones. En este sentido, el proyecto se alinea especialmente con el ODS 9 (Industria, Innovación e Infraestructura), al desarrollar una metodología analítica reproducible, y con el ODS 4 (Educación de calidad), al generar recursos útiles para el aprendizaje y la investigación. Como contrapartida, el uso de modelos de PLN puede implicar un cierto coste computacional y energético, por lo que resulta importante priorizar soluciones proporcionadas al alcance real del proyecto y reutilizar modelos ya entrenados cuando sea posible.
 
-Desde la dimensión ético-social, el TFG también presenta una aportación positiva. El proyecto acerca herramientas avanzadas de análisis de textos a ámbitos no exclusivamente técnicos y favorece el diálogo entre tecnología y estudios literarios. Esto permite vincularlo con el ODS 10 (Reducción de las desigualdades), ya que contribuye a democratizar el acceso a metodologías que tradicionalmente han estado más asociadas a perfiles especializados. Asimismo, el empleo de textos de dominio público y la apuesta por la transparencia metodológica pueden relacionarse también con el ODS 16 (Paz, justicia e instituciones sólidas), en la medida en que promueven el acceso al conocimiento y unas prácticas de investigación más responsables. Aun así, el trabajo debe reconocer algunos riesgos éticos, especialmente la posibilidad de interpretar de forma excesivamente determinista los resultados. Por ello, los modelos utilizados deben entenderse como herramientas de apoyo al análisis humano, y no como sustitutos de la interpretación crítica.
+Desde la dimensión ético-social, el TFG también conlleva una aportación positiva. El proyecto acerca herramientas avanzadas de análisis de textos a ámbitos no exclusivamente técnicos y conecta tecnología y literatura. Esto permite vincularlo con el ODS 10 (Reducción de las desigualdades), ya que contribuye a democratizar el acceso a metodologías que tradicionalmente han estado más asociadas a perfiles especializados, al tiempo que promueve el acceso al conocimiento y unas prácticas de investigación más responsables. Aun así, el trabajo implica algunos riesgos éticos, especialmente la posibilidad de interpretar de forma excesivamente determinista los resultados. Por ello, los modelos utilizados deben entenderse como herramientas de apoyo, pero nunca como sustitutos del análisis crítico por parte de los especialistas.
 
-Por último, en relación con la diversidad, el impacto del proyecto es positivo, aunque con matices. Por una parte, la creación de una metodología reutilizable y bien documentada puede facilitar la participación de perfiles diversos dentro de las humanidades digitales. En este sentido, el trabajo puede vincularse indirectamente con el ODS 5 (Igualdad de género) y con el ODS 10, al favorecer una reflexión crítica sobre quiénes están representados en el corpus de estudio. Sin embargo, esta misma dimensión pone de manifiesto una limitación importante: la selección de autores canónicos de la novela de misterio de los siglos XIX y XX responde a una tradición literaria condicionada por filtros culturales, editoriales y de género. Esto puede traducirse en una representación limitada de voces diversas. Por tanto, las conclusiones del trabajo deben entenderse como válidas para un corpus concreto y no como generalizables al conjunto de la literatura. Para ello, será fundamental explicitar de forma transparente los criterios de selección del corpus y sus posibles sesgos.
+Por último, en relación con la diversidad, el impacto del proyecto es positivo, aunque con matices. Por una parte, la creación de una metodología reutilizable y bien documentada puede facilitar la participación de perfiles diversos dentro de las humanidades digitales. En este sentido, el trabajo puede vincularse indirectamente con el ODS 5 (Igualdad de género) y con el ODS 10, al promover una reflexión crítica sobre quiénes están representados en el corpus de estudio. Sin embargo, esta misma dimensión pone de manifiesto una limitación importante: la selección de autores canónicos de la novela de misterio de los siglos XIX y XX responde a una tradición literaria condicionada por filtros culturales, editoriales y de género. Esto puede traducirse en una representación limitada de voces diversas. Por tanto, las conclusiones del trabajo deben entenderse como válidas para un corpus concreto y no como generalizables al conjunto de la literatura.
 
 En conclusión, este TFG presenta un impacto mayoritariamente positivo en términos de sostenibilidad, ética y diversidad. Su principal valor no reside únicamente en los resultados técnicos que pueda obtener, sino también en proponer una aplicación de la inteligencia artificial al análisis literario de forma reproducible, crítica y socialmente responsable.
 
 \section{Preguntas de investigación e hipótesis de trabajo}
 
+De forma general, este trabajo pretende dar respuesta a un conjunto de preguntas de investigación orientadas a evaluar la viabilidad, el rendimiento y la interpretabilidad de distintas técnicas de estilometría computacional aplicadas a la novela de misterio clásica. En coherencia con los objetivos planteados, las siguientes preguntas se centran no solo en la capacidad de clasificar correctamente la autoría, sino también en comprender qué rasgos lingüísticos resultan más útiles y qué grado de explicabilidad ofrecen los modelos empleados.
+
+\textbf{PI1.} ¿Es posible identificar automáticamente la autoría de textos pertenecientes a la novela de misterio clásica a partir de sus rasgos estilísticos, sin recurrir a información externa al propio texto?
+
+\textbf{H1.} Los textos de autores canónicos de la novela de misterio presentan patrones lingüísticos suficientemente consistentes y diferenciables como para permitir una atribución automática de la autoría con resultados significativamente superiores al azar mediante técnicas de PLN y aprendizaje automático.
+
+\textbf{PI2.} ¿Qué tipos de rasgos estilométricos resultan más eficaces para distinguir entre autores dentro de un corpus literario de la novela de misterio?
+
+\textbf{H2.} Los rasgos estilométricos clásicos, como la frecuencia de palabras funcionales, la longitud media de oración, los patrones de puntuación y los n-gramas de caracteres, permitirán diferenciar con precisión entre autores, especialmente cuando se combinen de forma complementaria.
+
+\textbf{PI3.} ¿Qué técnicas de clasificación ofrecen un mejor equilibrio entre rendimiento predictivo e interpretabilidad en la tarea de atribución de autoría?
+
+\textbf{H3.} Los modelos supervisados clásicos, como la regresión logística, las máquinas de vectores de soporte o los métodos basados en árboles, mostrarán un desempeño sólido y, al mismo tiempo, facilitarán una interpretación más clara de los rasgos relevantes que los modelos más complejos.
+
+\textbf{PI4.} ¿Aportan las representaciones distribuidas del lenguaje y los modelos basados en \textit{embeddings} o \textit{transformers} una mejora sustancial respecto a los enfoques estilométricos tradicionales?
+
+\textbf{H4.} Las representaciones distribuidas permitirán detectar patrones de significado y de contexto que no se aprecian fácilmente mediante rasgos seleccionados manualmente, lo que podría traducirse en mejoras de rendimiento. Sin embargo, dichas mejoras no siempre compensarán la pérdida de interpretabilidad frente a los enfoques clásicos.
+
+\textbf{PI5.} ¿Hasta qué punto las decisiones de los modelos pueden explicarse mediante técnicas de interpretabilidad y relacionarse con rasgos estilísticos significativos desde una perspectiva literaria?
+
+\textbf{H5.} Las técnicas de explicabilidad, como SHAP o el análisis de atención, permitirán identificar un conjunto de rasgos lingüísticos relevantes para la predicción de la autoría, y una parte de estos rasgos podrá interpretarse de forma coherente con características de estilo reconocibles desde una perspectiva literaria.
+
+Globalmente, estas preguntas e hipótesis buscan estructurar el trabajo en torno a una evaluación rigurosa de la atribución de autoría, entendida no solo como un problema de clasificación automática, sino también como un ejercicio de interpretación responsable y explicable del estilo. De este modo, la investigación se alinea con el propósito general del proyecto de combinar rigor metodológico, reproducibilidad y valor interpretativo dentro del marco de las humanidades digitales.
+
 \section{Alcance, supuestos y limitaciones iniciales}
+
+El alcance de este trabajo se sitúa en el ámbito de la atribución de autoría literaria mediante técnicas de estilometría computacional aplicadas a la novela de misterio clásica. En concreto, el proyecto se centrará en la construcción de un corpus de obras de dominio público de los siglos XIX y XX, seleccionadas de autores canónicos del género, y en el desarrollo de un \textit{pipeline} reproducible en Python para su preprocesamiento, extracción de rasgos estilométricos, modelado y análisis de interpretabilidad. El propósito no será únicamente obtener buenos resultados de clasificación, sino también examinar hasta qué punto los modelos utilizados permiten identificar patrones estilísticos relevantes y comprensibles desde una perspectiva literaria.
+
+Desde el punto de vista operativo, el trabajo abarcará la comparación de enfoques clásicos basados en rasgos obtenidos manualmente y de enfoques más recientes apoyados en representaciones distribuidas del lenguaje. Asimismo, incluirá la evaluación de distintos modelos supervisados, el análisis de errores, la aplicación de técnicas de explicabilidad y la elaboración de visualizaciones que faciliten la interpretación de los resultados. Quedan, por tanto, dentro del alcance tanto la dimensión técnica del problema como su dimensión metodológica y ética, siempre desde una perspectiva aplicada y reproducible.
+
+Este planteamiento parte de varios supuestos iniciales. En primer lugar, se asume que los textos seleccionados contienen rasgos estilísticos relativamente estables y diferenciables entre autores, de manera que sea posible modelarlos computacionalmente sin recurrir a información externa al propio texto. En segundo lugar, se presupone que las ediciones digitales empleadas, aun pudiendo presentar cierto nivel de ruido, tendrán una calidad suficiente para permitir un análisis estilométrico fiable tras las fases de limpieza y normalización. En tercer lugar, se parte de que un corpus equilibrado en número de autores, obras y extensión de los textos contribuirá a reducir sesgos y a hacer más comparables los resultados obtenidos. Finalmente, se asume que las técnicas de interpretabilidad seleccionadas permitirán relacionar, al menos en parte, las decisiones de los modelos con rasgos lingüísticos relevantes para el estudio del estilo.
+
+No obstante, el trabajo presenta también una serie de limitaciones iniciales que conviene poner de manifiesto desde el comienzo. La primera de ellas tiene que ver con el propio corpus, ya que la disponibilidad de textos del dominio público y en formatos digitalizados homogéneos puede condicionar tanto la selección de autores como el número de obras finalmente incorporadas. Del mismo modo, la calidad desigual de las fuentes, la presencia de errores de OCR o la inclusión de elementos editoriales ajenos al estilo del autor pueden afectar al análisis si no se controlan adecuadamente.
+
+Una segunda limitación se relaciona con el nivel de interpretación posible de los resultados. Aunque el proyecto incorpora técnicas de explicabilidad, no puede asumirse que todo patrón detectado por los modelos equivalga automáticamente a un rasgo estilístico significativo desde el punto de vista literario. Existe el riesgo de que algunos patrones respondan a aspectos editoriales, formales o relacionados con la temática o el género, y no estén directamente vinculados con el estilo del autor. Por ello, los resultados deberán interpretarse con cautela y presentarse como apoyo al análisis por parte de los expertos, no como una evidencia concluyente.
+
+A ello se suma una limitación de carácter técnico y práctico. La comparación entre modelos clásicos y modelos más complejos, especialmente aquellos basados en \textit{transformers}, puede verse condicionada por el tiempo disponible, los recursos computacionales y la necesidad de priorizar los objetivos principales del TFG. En consecuencia, el alcance definitivo podrá ajustarse durante el desarrollo del proyecto si determinadas líneas de trabajo resultan desproporcionadas en coste respecto a su aportación real. Esta posible acotación no alteraría el núcleo del trabajo, centrado en construir un marco metodológico riguroso, reproducible y útil para el análisis estilométrico de la novela de misterio.
 
 \section{Enfoque y método seguido}
 
-Mención de cuáles son las posibles estrategias para llevar a cabo el trabajo y cuál es la estrategia elegida (desarrollar un producto nuevo, adaptar un producto existente...). Hay que incluir una valoración de por qué esta es la estrategia más apropiada para conseguir los objetivos.
+Para desarrollar este trabajo podían contemplarse distintas estrategias. Una primera opción habría sido realizar un estudio comparativo a partir de herramientas de estilometría ya existentes, aplicándolas directamente al corpus seleccionado. Una segunda posibilidad habría consistido en adaptar un producto o \textit{pipeline} previo, introduciendo modificaciones parciales en función de las características del corpus o de los objetivos del análisis. Frente a estas alternativas, la estrategia finalmente elegida es el desarrollo de un producto nuevo, entendido como un \textit{pipeline} propio, modular y reproducible para la atribución de autoría en novela de misterio clásica.
+
+Esta elección resulta la más adecuada porque los objetivos del TFG no se limitan a aplicar técnicas ya disponibles, sino que incluyen la construcción del corpus, la comparación entre enfoques estilométricos clásicos y modelos más recientes, el análisis de interpretabilidad y la creación de una herramienta reutilizable. Por ello, una solución propia ofrece un mayor control sobre todas las fases del proceso y permite ajustar mejor la metodología a las particularidades del problema planteado.
+
+No obstante, desarrollar un producto nuevo no implica partir de cero desde el punto de vista técnico. El trabajo se apoyará en bibliotecas y recursos ya consolidados en Python para tareas como el preprocesamiento de textos, la representación características lingüísticas, la clasificación supervisada o la explicabilidad. La aportación del proyecto radica, por tanto, en la integración de estos componentes en una solución coherente, orientada específicamente al análisis estilométrico de un corpus literario y diseñada poniendo énfasis en la trazabilidad y la reproducibilidad.
+
+Desde el punto de vista metodológico, se seguirá un enfoque aplicado, incremental y experimental. En primer lugar, se construirá y documentará el corpus de trabajo. A continuación, se llevará a cabo el preprocesamiento de los textos y la extracción de rasgos estilométricos y representaciones vectoriales. Posteriormente, se entrenarán y evaluarán distintos modelos de clasificación, comparando su rendimiento y su capacidad de interpretación. Finalmente, se analizarán los resultados mediante técnicas de explicabilidad y se organizará el conjunto en forma de un \textit{toolkit} reutilizable.
 
 \section{Planificación del trabajo}
 
-Descripción de los recursos necesarios para hacer el trabajo, las tareas a realizar y una planificación temporal de cada tarea mediante un diagrama de Gantt o similar. Esta planificación tendría que marcar cuáles son los hitos parciales de cada una de las PEC.
+\subsection{Recursos}
 
-Identificación de los posibles riesgos que pueden hacer que esta planificación no se cumpla y descripción de los planes de mitigación o alternativos en caso de que estos riesgos sean un problema.
+Para llevar a cabo este trabajo serán necesarios, en primer lugar, recursos documentales y de datos, que consistirán en un corpus de obras literarias de dominio público procedentes de repositorios abiertos como \textit{Project Gutenberg} e \textit{Internet Archive}, junto con sus metadatos normalizados y la documentación de sus licencias. Dado que todos los materiales seleccionados son de dominio público y accesibles sin coste, no se prevén limitaciones legales ni económicas para la obtención de los datos necesarios.
+
+En segundo lugar, serán necesarios recursos técnicos de software, principalmente un entorno de desarrollo en Python y distintas bibliotecas especializadas como \texttt{spaCy} para el preprocesamiento, \texttt{scikit-learn}, \texttt{gensim} y \texttt{Hugging Face} para la extracción de características y el modelado, así como \texttt{Pandas}, \texttt{Plotly} y \texttt{Streamlit} para el análisis y la visualización de resultados. El control de versiones se llevará a cabo mediante \texttt{Git} y \texttt{GitHub}, y las dependencias se gestionarán con \texttt{Poetry} para garantizar la portabilidad del entorno.
+
+Por último, se requerirán recursos de hardware estándar, consistentes en un ordenador personal con capacidad suficiente para ejecutar el preprocesamiento del corpus, entrenar modelos clásicos y realizar los experimentos previstos. En principio no se prevé necesario recurrir a infraestructura en la nube y, en el caso de modelos más costosos computacionalmente donde se requiera el uso de GPU, como algunos basados en \textit{transformers}, se podrá recurrir a servicios externos como \href{https://colab.research.google.com}{\textit{Google Colab}} o \href{https://www.kaggle.com/code}{\textit{Kaggle Notebooks}} puesto que no existe riesgo de exposición de datos sensibles al tratarse de un proyecto que emplea exclusivamente textos de dominio público.
+
+\subsection{Tareas y calendario}
+
+\begin{figure}[H]
+	 \centering
+	 \includegraphics[width=1\textwidth]{img/TFG_Gantt.png}
+	 \caption{Diagrama de Gantt de la planificación del TFG}
+     \label{fig:gantt-tfg}
+\end{figure}
+
+\textbf{Nota:} Dado lo extenso de la bibliografía recopilada, y con el fin de ir ganando tiempo a la planificación, esta se revisará previo al inicio del segundo semestre aprovechando el mes de pausa entre ambos.
+
+\subsection{Hitos}
+\begin{longtable}{|p{1cm}|p{10.5cm}|p{2.5cm}|}
+\hline
+\textbf{Hito} & \textbf{Descripción} & \textbf{Fecha límite} \\
+\hline
+
+1 & Definición final del alcance, preparación del entorno y planificación detallada. Configuración del repositorio, entorno y estructura del proyecto.
+& 25/02 \\
+\hline
+
+2 & Construcción del corpus y documentación inicial: selección de autores, descarga de textos, creación y normalización de metadatos.
+& 11/03 \\
+\hline
+
+3 & Preprocesamiento completo y análisis exploratorio del corpus (EDA): limpieza profunda, tokenización, detección de artefactos y validación de calidad.
+& 18/03 \\
+\hline
+
+4 & Definición de rasgos estilométricos base y primeros modelos de autoría (SVM, regresión logística, Random Forest).
+& 1/04 \\
+\hline
+
+5 & Integración de representaciones distribuidas (Word2Vec, FastText, BERT) y ampliación del modelado con métodos avanzados.
+& 15/04 \\
+\hline
+
+6 & Evaluación exhaustiva y análisis de errores por autor: validación cruzada, métricas por clase y revisión de confusiones sistemáticas.
+& 22/04 \\
+\hline
+
+7 & Explicabilidad global y local de los modelos (\textit{permutation importance}, SHAP, análisis de atención).
+& 29/04 \\
+\hline
+
+8 & Diseño de visualizaciones y construcción del \textit{toolkit} funcional en Python, con \textit{dashboards} y documentación.
+& 13/05 \\
+\hline
+
+9 & Redacción completa de la memoria: metodología, resultados, discusión y anexos.
+& 25/05 \\
+\hline
+
+10 & Revisión final con el tutor, integración de feedback y preparación de la defensa (diapositivas y guion).
+& 4/06 \\
+\hline
+\caption{Hitos principales del TFG}\label{tab:hitos_tfg}\\
+\end{longtable}
+
+\subsection{Análisis y gestión de riesgos}
+
+{\small
+\begin{longtable}{|p{3.5cm}|p{2.5cm}|p{1.6cm}|p{3.6cm}|p{3.6cm}|}
+\hline
+\textbf{Riesgo} & \textbf{Probabilidad} & \textbf{Impacto} & \textbf{Señales tempranas} & \textbf{Plan contingencia} \\
+\hline
+Corpus desequilibrado entre autores (número de obras o extensión desigual) &
+Media &
+Alto &
+Diferencias notables en métricas por autor, modelos que favorecen sistemáticamente a un autor &
+Reducir o ampliar el corpus para equilibrar, hacer un muestreo por fragmentos y documentar explícitamente el sesgo \\
+\hline
+Calidad deficiente de los textos digitalizados (errores de OCR, ediciones inconsistentes, etc.) &
+Media &
+Alto &
+Rasgos estilísticos dominados por caracteres extraños, puntuación anómala o tokens raros &
+Aplicar filtros de limpieza más estrictos, descartar ediciones problemáticas y registrar versiones \\
+\hline
+Interpretación errónea o excesiva de pequeñas diferencias estilísticas &
+Alta &
+Alto &
+Resultados muy próximos entre autores interpretados como evidencias concluyentes &
+Reformular las conclusiones como hipótesis, contrastar con la literatura y enfatizar los límites del enfoque \\
+\hline
+Modelos con baja interpretabilidad (efecto caja negra) &
+Media &
+Alto &
+Dificultad para explicar decisiones del modelo o justificar rasgos relevantes &
+Priorizar modelos explicables, aplicar SHAP/LIME e incluir análisis de errores cualitativos \\
+\hline
+Dependencia excesiva de recursos computacionales (\textit{transformers}) &
+Media &
+Medio &
+Tiempos de entrenamiento elevados o imposibilidad de ejecutar experimentos completos &
+Reducir tamaño de modelos, usar \textit{embeddings} precomputados o limitar el alcance experimental \\
+\hline
+Sesgos introducidos por el preprocesamiento (longitud, formato, etc.) &
+Media &
+Medio &
+Importancia alta de rasgos no estilísticos (longitud del texto, encabezados editoriales, metadatos, etc.) &
+Normalizar los textos, eliminar los metadatos y evaluar importancia por permutación \\
+\hline
+Uso incorrecto de obras supuestamente de dominio público &
+Baja &
+Alto &
+Dudas sobre licencias o ediciones específicas de las obras utilizadas &
+Verificar licencias de cada edición, priorizar \textit{Project Gutenberg} y excluir textos dudosos \\
+\hline
+Dificultad para conectar los resultados cuantitativos con la interpretación literaria &
+Media &
+Medio &
+Resultados técnicamente correctos pero difíciles de contextualizar humanísticamente &
+Complementar las métricas con un análisis cualitativo y buscar conexiones con estudios previos \\
+\hline
+Gestión ineficiente del tiempo por la curva de aprendizaje de múltiples disciplinas &
+Media &
+Alto &
+Retrasos en hitos clave o acumulación de tareas técnicas y teóricas &
+Ajustar el alcance, priorizar los objetivos esenciales y replanificar las fases menos críticas \\
+\hline
+Resultados de clasificación inferiores a lo esperado &
+Media &
+Medio &
+Precisión baja o confusión sistemática entre autores del mismo género &
+Revisar la selección de rasgos y el análisis exploratorio y ajustar los modelos \\
+\hline
+Falta de consenso en la literatura sobre métricas y métodos estilométricos &
+Media &
+Medio &
+Resultados contradictorios entre artículos o dificultad para justificar decisiones metodológicas &
+Comparar varios enfoques y justificar mis elecciones con la bibliografía \\
+\hline
+\caption{Tabla de gestión de riesgos del TFG}
+\label{tab:gestion_riesgos_tfg}
+\end{longtable}
+}
 
 \section{Breve sumario de productos obtenidos}
 
-No hay que entrar en detalle: la descripción detallada se hará en el resto de capítulos.
+\textit{No hay que entrar en detalle: la descripción detallada se hará en el resto de capítulos.}
 
 \section{Estructura de la memoria}
 
-Breve explicación de los contenidos de cada capítulo y su relación con el proyecto global.
+\textit{Breve explicación de los contenidos de cada capítulo y su relación con el proyecto global.}
 
 \chapter{Marco teórico y estado del arte}
 
@@ -129,7 +312,7 @@ Entre los elementos más relevantes para la estilometría se encuentran las pala
 
 Como señala Stamatatos, estas palabras suelen ser utilizadas de forma en gran medida inconsciente por los autores y, además, no dependen del tema del texto\cite{stamatatos2009survey}. Esto las convierte en un recurso de gran utilidad, ya que esos patrones automáticos suelen mantenerse más estables dentro del corpus de un mismo autor que su vocabulario general. A ello se suma que son difíciles de copiar para quien intente imitar un estilo ajeno.
 
-No obstante, una de las utilidades más extendidas de la estilometría es la atribución de autoría, en la cual se centra el presente trabajo. De este modo, cuando se dispone de un texto anónimo, en ocasiones es posible desvelar la identidad de su autor mediante el análisis de ciertos rasgos estilísticos. Además, la estilometría se ha utilizado tradicionalmente en ámbitos muy diversos: la detección de plagio, el análisis de diferencias estilísticas entre géneros o grupos sociales y el estudio de la evolución de la escritura de un autor a lo largo del tiempo.
+No obstante, una de las utilidades más extendidas de la estilometría es la atribución de autoría, en la cual se centra el presente trabajo. De este modo, cuando se dispone de un texto anónimo, en ocasiones es posible desvelar la identidad de su autor mediante el análisis de ciertos rasgos estilísticos. Del mismo modo, la estilometría se ha utilizado tradicionalmente en otros muchos ámbitos tan diversos como la detección de plagio, el análisis de diferencias estilísticas entre géneros o grupos sociales y el estudio de la evolución de la escritura de un autor a lo largo del tiempo.
 
 \section{Métodos clásicos de estilometría}
 
@@ -191,9 +374,9 @@ No obstante, también presenta limitaciones. En primer lugar, sus resultados dep
 
 Por ello, aunque el método del chi-cuadrado de Kilgariff publicado en 2001 sigue siendo una herramienta útil y conceptualmente clara para la comparación en estilomatría, en la actualidad suele emplearse junto con procedimientos más robustos, como la distancia Delta de Burrows, los n-gramas de caracteres, el análisis multivariante o los métodos de clasificación supervisada.
 
-\subsection{Delta de Burrows}
+\subsection{Delta de Burrow}
 
-John Burrows es una de las figuras más influyentes en el desarrollo de la estilometría contemporánea. Su propuesta de la medida conocida como \textit{Delta}, formulada a comienzos de la década de 2000, supuso un avance importante en los métodos cuantitativos de atribución de autoría, ya que ofrecía una forma simple, interpretable y eficaz de comparar el estilo de distintos textos a partir de las frecuencias de palabras funcionales.
+John Burrows es una de las figuras más influyentes en el desarrollo de la estilometría contemporánea. Su propuesta de la medida conocida como \textit{Delta}, formulada a comienzos de la década de 2000\cite{burrows2002delta}, supuso un avance importante en los métodos cuantitativos de atribución de autoría, ya que ofrecía una forma simple, interpretable y eficaz de comparar el estilo de distintos textos a partir de las frecuencias de palabras funcionales.
 
 La idea central del método parte de una observación básica: los autores no solo difieren en qué palabras usan, sino también en la frecuencia relativa con la que emplean las palabras más comunes del idioma. Estas palabras, especialmente las funcionales, suelen depender poco del tema tratado y reflejan con mayor fidelidad hábitos lingüísticos relativamente estables. Burrows propuso aprovechar esta regularidad para medir la cercanía estilística entre textos.
 
@@ -267,22 +450,13 @@ Lsy de Zipf \cite{zipf1932selected}
 \section{Interpretabilidad local y análisis de casos}
 \section{Robustez y validez}
 
-Detallad en este apartado los resultados obtenidos utilizando la metodología descrita en el apartado anterior.
-
-Las figuras tienen que estar explicadas y citadas en el texto, como la \ref{fig:my_label}, en la cual se muestra el error en función de la distancia, en unidades arbitrarias. En todas las gráficas tiene que haber el título de los ejes.
-
-\begin{figure}[!htbp]
-    \centering
-    \includegraphics[width=7truecm]{Rplotmanh.png}
-    \caption{Error en función de la distancia en unidades arbitrarias.}
-    \label{fig:my_label}
-\end{figure}
+\textit{Detallad en este apartado los resultados obtenidos utilizando la metodología descrita en el apartado anterior.}
 
 \chapter{Discusión y conclusiones}
 
 \section{Discusión de hallazgos}
 
-Discusión de los resultados en el contexto del proyecto. Es en este apartado donde cobran sentido y en el cual se responden las preguntas de investigación y se muestra como los resultados dan respuesta a los problemas planteados.
+\textit{Discusión de los resultados en el contexto del proyecto. Es en este apartado donde cobran sentido y en el cual se responden las preguntas de investigación y se muestra como los resultados dan respuesta a los problemas planteados.}
 
 \section{Limitaciones}
 
@@ -312,25 +486,26 @@ Este capítulo tiene que incluir:
 	\item Las líneas de trabajo futuro que no se han podido explorar en este trabajo y han quedado pendientes.
 	\item Una descripción de las conclusiones del trabajo: Qué lecciones se han aprendido del trabajo?
 	\item Una reflexión crítica sobre el logro de los objetivos planteados inicialmente: Hemos conseguido todos los objetivos? Si la respuesta es negativa, por qué motivo?
-	\item De los impactos previstos a la sección \ref{s:etic}, una evaluación, o al menos, mención, sobre si se han mitigado (si eran negativos) o si se han conseguido (si eran positivos).
+	\item De los impactos previstos, una evaluación, o al menos, mención, sobre si se han mitigado (si eran negativos) o si se han conseguido (si eran positivos).
 \end{itemize}
 
 \section{Trabajos futuros}
 
-Las líneas de trabajo futuro que no se han podido explorar en este trabajo y han quedado pendientes.
+\textit{Las líneas de trabajo futuro que no se han podido explorar en este trabajo y han quedado pendientes.}
 
 \section{Seguimiento de la planificación}
 
 Un análisis crítico del seguimiento de la planificación y metodología a lo largo del trabajo:
+
 \begin{itemize}
-    \item  Se ha seguido la planificación?
+    \item Se ha seguido la planificación?
     \item La metodología prevista ha sido la adecuada?
     \item Ha habido que introducir cambios para garantizar el éxito del trabajo? ¿Por qué?
 \end{itemize}
 
 \chapter{Glosario}
 
-Definición de los términos y acrónimos más relevantes utilizados dentro de la Memoria.
+\textit{Definición de los términos y acrónimos más relevantes utilizados dentro de la Memoria.}
 
 
 \chapter{Apéndices}
