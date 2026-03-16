@@ -316,6 +316,12 @@ No obstante, una de las utilidades más extendidas de la estilometría es la atr
 
 \section{Métodos clásicos de estilometría}
 
+Los métodos clásicos de estilometría constituyen la base sobre la que se ha desarrollado buena parte de la investigación posterior en atribución de autoría. Antes de la incorporación de técnicas más avanzadas de aprendizaje automático y representaciones distribuidas del lenguaje, el análisis estilométrico se apoyaba en procedimientos estadísticos orientados a medir regularidades observables en la escritura. Estos enfoques parten de la idea de que ciertos rasgos formales, como la longitud de las palabras, la frecuencia de determinados términos o la distribución de palabras funcionales, pueden describirse cuantitativamente y compararse entre textos para detectar similitudes y diferencias entre autores.
+
+Aunque muchos de estos métodos fueron formulados en momentos históricos muy distintos y con recursos computacionales mucho más limitados que los actuales, su relevancia sigue siendo notable. Por un lado, porque sentaron las bases conceptuales de la estilometría moderna. Por otro, porque varios de ellos continúan utilizándose como referencia en estudios contemporáneos debido a su sencillez, interpretabilidad y valor comparativo. Estos métodos permiten observar cómo la estilometría ha evolucionado desde aproximaciones descriptivas basadas en conteos y distribuciones hasta técnicas más refinadas de análisis estadístico entre estilos de escritura.
+
+Entre los enfoques clásicos más representativos se encuentran las curvas características de composición propuestas por Mendenhall, el método del chi-cuadrado aplicado por Kilgariff y la medida Delta de Burrows. Cada uno de ellos refleja una forma distinta de aproximarse a las diferencias de estilo: mientras que el primero analiza patrones globales en la distribución de la longitud de las palabras, los otros dos se basan en la comparación estadística entre textos a partir de la frecuencia de palabras de uso común. A continuación, se describen brevemente estos métodos por su relevancia histórica y por su contribución al desarrollo de la atribución de autoría como campo de estudio.
+
 \subsection{Curvas características de composición de Mendenhall}
 
 Thomas Corwin Mendenhall fue un físico y meteorólogo estadounidense al que hoy se le reconoce en humanidades digitales por haber realizado uno de los primeros intentos cuantitativos de atribución de autoría.
@@ -330,28 +336,28 @@ Mendenhall proponía lo siguiente:
 	\item Calcular la frecuencia de cada longitud en una muestra fija, por ejemplo cada 10.000 palabras.
 	\item Representar esos datos en una gráfica:
 	\begin{itemize}
-		\item eje horizontal: longitud de palabra
-		\item eje vertical: frecuencia relativa de palabras con esa longitud
+		\item Cuyo eje horizontal $x$ representa la longitud de palabra.
+		\item Cuyo eje vertical $y$ representa la frecuencia relativa de palabras con esa longitud.
 	\end{itemize}
 	\item Comparar esa curva con la de otros textos o autores. Si dos textos muestran curvas muy parecidas, eso sugeriría afinidad de estilo, si difieren bastante, sugeriría autores distintos.
 \end{enumerate}
 
 Mendenhall llamó a esto también una especie de \textit{“word spectrum”} o espectro de palabras. Su hipótesis era que, aunque el tema cambie, ciertos hábitos mecánicos de escritura del autor permanecen y se reflejan en la frecuencia de palabras cortas, medianas y largas.
 
-Esto fue importante porque introdujo una idea que hoy sigue siendo central en estilometría: la autoría puede estudiarse con rasgos cuantificables del lenguaje y no solo con impresiones subjetivas de un experto. Es por esto que Mendenhall se considera un precursor de la atribución de autoría moderna.
+Esto fue importante porque introdujo una idea que hoy sigue siendo central en estilometría: la autoría puede estudiarse con rasgos cuantificables del lenguaje y no solo con las impresiones subjetivas de un experto. Es por esto que Mendenhall se considera un precursor de la atribución de autoría moderna.
 
 Hoy se considera un método históricamente pionero, pero bastante rudimentario. La longitud de palabra por sí sola suele ser una señal débil porque puede verse afectada por numerosos factores (el género, la época, la traducción, la edición, el tema, etc). Como veremos más adelante, la estilometría moderna suele usar rasgos más robustos, como palabras funcionales, n-gramas, patrones sintácticos y modelos estadísticos o de aprendizaje automático.
 
 \subsection{Método del chi-cuadrado de Kilgariff}
 
-Adam Kilgariff es una figura destacada en lingüística de corpus y estilometría por haber defendido el uso de medidas estadísticas para comparar distribuciones léxicas entre textos\cite{kilgarriff2001comparing}. En este contexto, el método del chi-cuadrado asociado a su nombre se utiliza como una forma de cuantificar hasta qué punto dos textos presentan patrones semejantes o distintos en el uso de determinadas palabras, especialmente las más frecuentes.
+Adam Kilgariff fue una figura destacada en lingüística de corpus y estilometría por haber defendido el uso de métodos estadísticos para comparar distribuciones léxicas entre textos\cite{kilgarriff2001comparing}. En este contexto, el método del chi-cuadrado asociado a su nombre se utiliza como una forma de cuantificar hasta qué punto dos textos presentan patrones semejantes o distintos en el uso de determinadas palabras, especialmente las más frecuentes.
 
-La idea general del método es sencilla: si dos textos pertenecen al mismo autor, o al menos comparten hábitos estilísticos similares, entonces la frecuencia relativa con la que emplean ciertas palabras debería ser parecida. Si, por el contrario, esas frecuencias divergen de forma sistemática, esa diferencia puede interpretarse como una señal de distancia estilística.
+La idea general del método es sencilla: si dos textos pertenecen al mismo autor, o al menos comparten estilos similares, entonces la frecuencia relativa con la que emplean ciertas palabras debería ser parecida. Si, por el contrario, esas frecuencias se alejan de forma sistemática, esa diferencia puede interpretarse como una señal de que se trata de diferentes estilos o autores.
 
-El procedimiento básico consiste en lo siguiente:
+El procedimiento básico de este método consiste en lo siguiente:
 
 \begin{enumerate}
-	\item Seleccionar un conjunto de palabras para la comparación, normalmente las más frecuentes del corpus o de los textos analizados.
+	\item Seleccionar un conjunto de palabras para hacer la comparación, normalmente las más frecuentes del corpus o de los textos analizados.
 	\item Contar cuántas veces aparece cada una de esas palabras en los dos textos o conjuntos de textos que se desean comparar.
 	\item Calcular, para cada palabra, la diferencia entre la frecuencia observada y la frecuencia esperada si ambos textos siguieran una misma distribución.
 	\item Sumar esas discrepancias mediante la estadística de chi-cuadrado.
@@ -362,23 +368,30 @@ La fórmula general utilizada es la siguiente:
 
 $$\chi^2 = \sum \frac{(O - E)^2}{E}$$
 
-donde $O$ representa la frecuencia observada y $E$ la frecuencia esperada. Aplicada al análisis estilométrico, esta expresión permite estimar cuánto se aparta cada texto de lo que cabría esperar si ambos compartieran un comportamiento léxico similar.
+donde $O$ representa la frecuencia observada y $E$ la frecuencia esperada. Aplicada al análisis estilométrico, esta expresión permite estimar cuánto se aparta cada texto de lo que cabría esperar si ambos compartieran un uso del vocabulario similar.
 
-En la práctica, este método suele aplicarse no tanto a palabras de contenido semántico fuerte, sino a palabras funcionales, como artículos, preposiciones, conjunciones o pronombres. La razón es que estas unidades dependen menos del tema tratado y reflejan mejor hábitos inconscientes y relativamente estables del autor. De este modo, el chi-cuadrado se convierte en una herramienta útil para comparar estilos de escritura minimizando, en la medida de lo posible, la influencia del contenido temático.
+En la práctica, este método suele aplicarse no tanto a palabras de contenido semántico fuerte, sino a palabras funcionales, como artículos, preposiciones, conjunciones o pronombres. La razón es que estas unidades dependen menos del tema tratado y reflejan mejor hábitos inconscientes y relativamente estables del autor. De este modo, el chi-cuadrado se convierte en una herramienta útil para comparar estilos de escritura minimizando, en la medida de lo posible, la influencia de la temática del texto.
 
 Su interés para la atribución de autoría reside en que permite comparar una obra de prueba con varios corpus de referencia y asignarla al autor cuyo perfil de frecuencias produzca la menor distancia. Así, el método no se limita a describir diferencias, sino que puede emplearse también como criterio de clasificación.
 
-Este enfoque fue importante porque contribuyó a consolidar una idea central en la estilometría moderna: las diferencias entre autores pueden modelarse como diferencias cuantificables entre distribuciones lingüísticas. Frente a aproximaciones puramente subjetivas, el método introduce un criterio explícito, reproducible y verificable para comparar textos.
+Este enfoque fue importante porque contribuyó a consolidar una idea central en la estilometría moderna: las diferencias entre autores pueden modelarse como diferencias cuantificables entre distribuciones lingüísticas. Frente a otras aproximaciones puramente subjetivas, el método introduce un criterio explícito, reproducible y verificable para comparar textos.
 
-No obstante, también presenta limitaciones. En primer lugar, sus resultados dependen del tamaño y de la representatividad de las muestras comparadas y las palabras que aparecen con mucha frecuencia tienden a tener un peso desproporcionado en el cálculo final. A veces esto es correcto pero, otras veces, las sutiles diferencias de estilo, representadas por la forma en que los autores usan palabras menos comunes, pasan desapercibidas. En segundo lugar, la selección del vocabulario influye de manera decisiva en la distancia obtenida: si se incluyen palabras demasiado raras o demasiado ligadas al tema, la comparación puede volverse menos fiable. Por último, el chi-cuadrado solo captura diferencias de frecuencia léxica y no tiene en cuenta de forma directa otros aspectos del estilo, como la sintaxis, la estructura discursiva o las relaciones semánticas.
+No obstante, también presenta limitaciones:
 
-Por ello, aunque el método del chi-cuadrado de Kilgariff publicado en 2001 sigue siendo una herramienta útil y conceptualmente clara para la comparación en estilomatría, en la actualidad suele emplearse junto con procedimientos más robustos, como la distancia Delta de Burrows, los n-gramas de caracteres, el análisis multivariante o los métodos de clasificación supervisada.
+\begin{enumerate}
+	\item Sus resultados dependen del tamaño y de la representatividad de las muestras comparadas.
+	\item Las palabras que aparecen con mucha frecuencia tienden a tener un peso desproporcionado en el cálculo final. A veces esto es correcto pero, otras veces, las sutiles diferencias de estilo, representadas por la forma en que los autores usan palabras menos comunes, pasan desapercibidas.
+	\item La selección del vocabulario influye de manera decisiva en la distancia obtenida, de modo que si se incluyen palabras demasiado raras o demasiado ligadas al tema, la comparación puede volverse menos fiable.
+	\item El chi-cuadrado solo captura diferencias de frecuencia léxica y no tiene en cuenta de forma directa otros aspectos del estilo, como la sintaxis, la estructura del discurso o las relaciones semánticas.
+\end{enumerate}
 
-\subsection{Delta de Burrow}
+Por ello, aunque el método del chi-cuadrado de Kilgariff publicado en 2001 sigue siendo una herramienta útil y conceptualmente sencilla para el análisis estilométrico, en la actualidad suele emplearse junto con procedimientos más robustos, como la distancia Delta de Burrows, los n-gramas de caracteres, el análisis multivariante o los métodos de clasificación supervisada.
+
+\subsection{Delta de Burrows}
 
 John Burrows es una de las figuras más influyentes en el desarrollo de la estilometría contemporánea. Su propuesta de la medida conocida como \textit{Delta}, formulada a comienzos de la década de 2000\cite{burrows2002delta}, supuso un avance importante en los métodos cuantitativos de atribución de autoría, ya que ofrecía una forma simple, interpretable y eficaz de comparar el estilo de distintos textos a partir de las frecuencias de palabras funcionales.
 
-La idea central del método parte de una observación básica: los autores no solo difieren en qué palabras usan, sino también en la frecuencia relativa con la que emplean las palabras más comunes del idioma. Estas palabras, especialmente las funcionales, suelen depender poco del tema tratado y reflejan con mayor fidelidad hábitos lingüísticos relativamente estables. Burrows propuso aprovechar esta regularidad para medir la cercanía estilística entre textos.
+La idea central del método parte de una observación básica: los autores no solo difieren en qué palabras usan, sino también en la frecuencia relativa con la que emplean las palabras más comunes del idioma. Estas palabras, especialmente las funcionales, suelen depender poco del tema tratado y reflejan con mayor fidelidad hábitos lingüísticos relativamente estables. Burrows propuso aprovechar esta regularidad para medir la similitud de estilo entre textos.
 
 El procedimiento general puede resumirse del siguiente modo:
 
@@ -389,7 +402,7 @@ El procedimiento general puede resumirse del siguiente modo:
 	\item Comparar los textos calculando la distancia media entre sus puntuaciones \textit{z} para todas las palabras seleccionadas.
 \end{enumerate}
 
-La forma clásica de la medida se basa en la siguiente idea: para cada palabra del vocabulario seleccionado se calcula primero su puntuación \textit{z},
+La forma clásica de esta medida se basa en la idea de que para cada palabra del vocabulario seleccionado se calcula primero su puntuación \textit{z},
 
 $$z_{i,j} = \frac{f_{i,j} - \mu_i}{\sigma_i}$$
 
@@ -403,18 +416,16 @@ El aspecto más característico de este método es la estandarización previa de
 
 En la práctica, Delta suele aplicarse sobre un vocabulario común de palabras funcionales o de palabras muy frecuentes extraídas del conjunto de entrenamiento. Igual que en otros métodos estilométricos, el uso de un vocabulario compartido garantiza que todas las comparaciones se realicen sobre los mismos rasgos lingüísticos y hace que las distancias sean más consistentes y comparables entre sí. Después, para cada texto de prueba, se calcula su distancia Delta respecto de cada autor o cada corpus de referencia y se atribuye la autoría al candidato con la distancia más baja.
 
-La importancia de este método radica en que consolidó una forma de análisis estilométrico basada en la combinación de tres principios: selección de rasgos frecuentes, normalización estadística y comparación de distancias. Gracias a ello, Delta de Burrows se convirtió en uno de los procedimientos más influyentes y más utilizados en atribución de autoría, especialmente en estudios literarios y de lingüística de corpus.
+La importancia de este método radica en que consolidó una forma de análisis estilométrico basada en la combinación de tres principios: selección de rasgos frecuentes, normalización estadística y comparación de distancias. Gracias a ello, el Delta de Burrows se convirtió en uno de los procedimientos más influyentes y más utilizados en atribución de autoría, especialmente en estudios literarios y de lingüística de corpus.
 
-Entre sus ventajas destaca que suele ofrecer resultados robustos incluso con conjuntos relativamente simples de rasgos, que es fácil de interpretar y que permite comparar textos de forma sistemática a partir de una representación numérica homogénea. Además, ha servido como base para muchas variantes posteriores, como \textit{Argamon's Delta}, \textit{Eder's Delta} o \textit{Cosine Delta}, que intentan adaptar la medida a distintos tipos de corpus y problemas de clasificación.
+Entre sus ventajas destaca que suele ofrecer resultados robustos incluso con conjuntos relativamente simples de rasgos, que es fácil de interpretar y que permite comparar textos de forma sistemática a partir de una representación numérica homogénea. Además, ha servido como base para muchas variantes posteriores, como Argamon's Delta, Eder's Delta o Cosine Delta, que intentan adaptar la medida a distintos tipos de corpus y problemas de clasificación.
 
-No obstante, también presenta limitaciones. Su rendimiento depende de decisiones metodológicas como el número de palabras seleccionadas, el tipo de normalización aplicada o la composición del corpus de referencia. Asimismo, aunque las palabras funcionales reducen la influencia del tema, no la eliminan por completo, y la estabilidad de las medias y desviaciones típicas puede verse afectada si el corpus de entrenamiento es pequeño o poco equilibrado. Por ello, aunque Delta de Burrows es uno de los métodos clásicos más sólidos de la estilometría, sus resultados deben interpretarse siempre en relación con el diseño del experimento y, cuando sea posible, contrastarse con otras métricas complementarias.
+No obstante, también presenta limitaciones. Su rendimiento depende de ciertas decisiones metodológicas como el número de palabras seleccionadas, el tipo de normalización aplicada o la composición del corpus de referencia. Asimismo, aunque las palabras funcionales reducen la influencia del tema, no la eliminan por completo, y la estabilidad de las medias y desviaciones típicas puede verse afectada si el corpus de entrenamiento es pequeño o está poco equilibrado. Por ello, aunque el Delta de Burrows es uno de los métodos clásicos más sólidos de la estilometría, sus resultados deben interpretarse siempre en relación con el diseño del experimento y, cuando sea posible, contrastarse con otras métricas complementarias.
 
 \section{Enfoques modernos en atribución de autoría}
 \section{Evaluación en atribución de autoría}
 \section{Explicabilidad e interpretabilidad en PLN}
 \section{Herramientas y trabajos de referencia}
-
-%Estado del arte del tema en cuestión. Tendría que acabar mostrando por qué el trabajo es importante y aporta algo, y con las hipótesis del trabajo.
 
 \chapter{Datos: construcción del corpus y gestión de la información}
 
@@ -423,7 +434,7 @@ No obstante, también presenta limitaciones. Su rendimiento depende de decisione
 \section{Calidad del texto y control de artefactos}
 \section{Análisis exploratorio del corpus}
 
-Lsy de Zipf \cite{zipf1932selected}
+Ley de Zipf \cite{zipf1932selected}
 
 \section{Marco ético y legal del corpus}
 \section{Plan de gestión de datos y reproducibilidad}
