@@ -15,6 +15,7 @@
 \RequirePackage{array, multirow, multicol}
 \RequirePackage{stackengine}
 \RequirePackage{amsmath}
+\RequirePackage{float}
 
 %% ----------------------- Opcions d'entrada pròpies del paquet: català, castellà o anglès-----
 \newboolean{langspanish}
@@ -159,7 +160,7 @@
 \end{tabular}
 %\scriptsize \nouppercase{\leftmark}
 }
-\setlength{\arrayrulewidth}{1mm}
+\setlength{\arrayrulewidth}{0.5mm}
 \fancyhead[R]{
 \begin{tabular}{p{5.5truecm}}
 \arrayrulecolor{lightblueUOC}\hline
@@ -167,21 +168,8 @@
 \rule{0mm}{1truecm}{\color{darkblueUOC}{\footnotesize \uppercase{\@titcrt}}}\\
 \arrayrulecolor{lightblueUOC}\hline
 \end{tabular}
-%\scriptsize \nouppercase{\leftmark}
 }
 
-%\fancyhf{}
-%\fancyhead[LE]{\scriptsize \@author}
-%\fancyhead[RE]{\scriptsize \@titcrt}
-%\fancyhead[RO]{\scriptsize \@author}
-%%\fancyhead[RO]{\scriptsize \nouppercase{\leftmark}}
-%\fancyhead[LO]{\scriptsize \nouppercase{\leftmark}}
-%\renewcommand{\chaptermark}[1]{ \markboth{\chaptername\ \thechapter.\ #1}{} }
-%\fancyfoot[LO]{\thepage \hspace*{0.25truecm} \includegraphics[height=0.35truecm,keepaspectratio=true]{eimt.png} }
-%\fancyfoot[C]{}
-%\fancyfoot[RE]{\includegraphics[height=0.35truecm,keepaspectratio=true]{eimt.png} \hspace*{0.25truecm} \thepage}
-%% --------------- Definició de comandes -------------------
-%\newcommand{\bluepac}{\color{airblueuoc}} %% Definició del color blau de la plantilla.
 \definecolor{airblueuoc}{rgb}{0.36, 0.54, 0.66}
 \definecolor{lightblueUOC}{RGB}{147,234,252}
 \definecolor{darkblueUOC}{RGB}{1,0,115}
@@ -192,10 +180,6 @@
 \newcommand{\subsectiongray}[1]{\section*{\graypac #1}}
 \newcommand{\HRule}{\noindent\rule{\linewidth}{1.5pt}}
 \newcommand{\Hrule}{\noindent\rule{\linewidth}{0.75pt}}
-%{\color{airblueuoc}\hrule}
-%\newcommand{\headrulecolor}[4]{\patchcmd{\headrule}{\hrule}{\color{#1}\hrule}{}{}}
-%\renewcommand{\headrulewidth}{2pt}% 2pt header rule
-%\renewcommand{\headrule}{\hbox to\headwidth{\color{headercolor}\leaders\hrule height \headrulewidth\hfill}}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -617,6 +601,14 @@ All rights reserved. Reproduction in whole or in part of this work by any means 
 \pagestyle{fancy}
 
 \RequirePackage{hyperref}
+\RequirePackage{caption}
+\RequirePackage{longtable}
+
+\AtBeginEnvironment{longtable}{%
+  \setlength{\arrayrulewidth}{0.4pt}%
+  \arrayrulecolor{black}%
+}
+
 
 %%% https://es.overleaf.com/learn/latex/How_to_Write_a_Thesis_in_LaTeX_(Part_5)%3A_Customising_Your_Title_Page_and_Abstract
 
