@@ -272,21 +272,6 @@ def plot_bars_by_author_with_std(
     agg: str,
     save_path: Path | None = None,
 ):
-    """Plot the mean of a metric per author with standard-deviation error bars.
-
-    The function groups the input DataFrame by the ``author`` column and
-    computes summary statistics for the selected metric (mean, standard
-    deviation, median, and count). It then plots a bar chart of the mean value
-    per author and overlays error bars corresponding to one standard deviation.
-
-    Args:
-        df: Input DataFrame containing an ``author`` column and the specified
-            metric column.
-        metric: Name of the numeric column to summarize and plot.
-        save_path: Optional path where the generated figure will be saved.
-            If ``None``, the figure is only displayed.
-    """
-
     """Plot one bar chart per metric showing an aggregated value by author.
 
     This function groups the input DataFrame by the ``author`` column and
@@ -309,14 +294,6 @@ def plot_bars_by_author_with_std(
             saved. The aggregation name and metric name are appended to the
             file name before the extension. If ``None``, the figures are only
             displayed.
-
-    Raises:
-        KeyError: If ``author`` or any metric in ``metrics`` is not present in
-            ``df``.
-        ValueError: If ``agg`` is not one of the supported values.
-
-    Returns:
-        None
     """
 
     agg_labels = {
@@ -494,7 +471,7 @@ def plot_authors_pca(
     pca: PCA,
     pca_df: pd.DataFrame,
     save_path: Path | None = None,
-) -> None:
+):
     """Plot the first two principal components for author-level stylometric data.
 
     This function creates a scatter plot of authors projected onto the first
@@ -509,17 +486,6 @@ def plot_authors_pca(
             the PCA space.
         savepath: Optional path where the generated figure will be saved.
             If ``None``, the figure is not saved. Defaults to ``None``.
-
-    Returns:
-        None.
-
-    Raises:
-        KeyError: If ``pca_df`` does not contain the required columns
-            ``"PC1"``, ``"PC2"``, or ``"author"``.
-        AttributeError: If ``pca`` does not provide the
-            ``explained_variance_ratio_`` attribute.
-        Exception: Propagates any exception raised during plotting or saving.
-
     """
     explained = pca.explained_variance_ratio_
 

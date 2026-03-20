@@ -89,8 +89,7 @@ def word_length_distributions_random_blocks(
     normalize: bool = True,
     seed: int | None = None,
 ) -> list[dict[int, float]]:
-    """
-    Compute word-length distributions for randomly sampled contiguous blocks.
+    """Compute word-length distributions for randomly sampled contiguous blocks.
 
     Args:
         tokens (List[str]): Tokenized corpus of a single author.
@@ -180,6 +179,7 @@ def distance_matrix(distributions: list[list[float]]) -> np.ndarray:
         input distributions. Each entry ``[i, j]`` contains the Jensen-Shannon
         distance between distributions ``i`` and ``j``.
     """
+
     n = len(distributions)
     D = np.zeros((n, n))
 
@@ -270,7 +270,7 @@ def classify_test_works_by_average_curve(
     for idx, row in df_test.iterrows():
         tokens = row[token_col]
 
-        # Si el texto es demasiado pequeño, lo saltamos
+        # If the work is too short to sample even one block, we cannot compute
         if len(tokens) <= block_size:
             results.append(
                 {
@@ -284,7 +284,7 @@ def classify_test_works_by_average_curve(
             )
             continue
 
-        # 1) Distribuciones por bloques de la obra de test
+        # 1) Block distributions of the test work
         test_distributions = word_length_distributions_random_blocks(
             tokens=tokens,
             block_size=block_size,
@@ -293,17 +293,17 @@ def classify_test_works_by_average_curve(
             seed=seed,
         )
 
-        # 2) Curva media de la obra de test
+        # 2) Average curve of the test work
         test_curve = compute_average_curve(test_distributions)
 
-        # 3) Comparar con cada autor
+        # 3) Compare with each author
         distances = {}
         for author, author_curve in average_curves.items():
             aligned, _ = align_distributions([test_curve, author_curve], max_len=max_len)
             v_test, v_author = aligned
             distances[author] = jensenshannon(v_test, v_author)
 
-        # 4) Autor más cercano
+        # 4) Nearest author
         pred_author = min(distances, key=distances.get)
         min_distance = distances[pred_author]
 
@@ -315,7 +315,7 @@ def classify_test_works_by_average_curve(
             "min_distance": min_distance,
         }
 
-        # Guardamos también todas las distancias
+        # We keep all distances for analysis, not just the minimum
         for author, dist in distances.items():
             result[f"dist_{author}"] = dist
 
@@ -343,6 +343,7 @@ def build_global_vocab(
     Returns:
         A list of tokens defining the global vocabulary.
     """
+
     total_counts = Counter()
 
     for tokens in corpora.values():
@@ -371,6 +372,7 @@ def kilgariff_chi2(
               highest to lowest. Each item has the form:
               (token, chi_token, obs_a, exp_a, obs_b, exp_b)
     """
+
     freq_a = Counter(tokens_a)
     freq_b = Counter(tokens_b)
 
@@ -434,6 +436,7 @@ def classify_test_works_kilgariff(
                 "ranking": [(author, chi2), ...]
             }
     """
+
     global_vocab = build_global_vocab(corpora, vocab_size=vocab_size, min_freq=min_freq)
 
     results = {}
@@ -478,6 +481,7 @@ def get_pairwise_contributions(
                 "contributions": [...]
             }
     """
+
     global_vocab = build_global_vocab(corpora, vocab_size=vocab_size, min_freq=min_freq)
 
     details = {}
@@ -506,6 +510,7 @@ def relative_frequencies(tokens: list[str], vocab: list[str]) -> dict[str, float
         A dictionary mapping each token in `vocab` to its relative frequency
         in the input sequence.
     """
+
     counts = Counter(tokens)
     total = len(tokens)
 
@@ -533,6 +538,7 @@ def compute_feature_stats(
             - stds: Standard deviation of each token across corpora.
             - author_freqs: Relative frequencies for each author corpus.
     """
+
     author_freqs = {author: relative_frequencies(tokens, vocab) for author, tokens in corpora.items()}
 
     means = {}
@@ -576,6 +582,7 @@ def z_scores(
     Returns:
         A dictionary of z-scores for tokens with non-zero standard deviation.
     """
+
     z = {}
 
     for token in vocab:
@@ -604,11 +611,14 @@ def burrows_delta_from_zscores(
               highest to lowest. Each tuple has the form:
               (token, abs_diff, z_ref, z_test)
     """
+
     common_tokens = list(set(z_ref.keys()) & set(z_test.keys()))
+
     if not common_tokens:
         raise ValueError("No comparable tokens with non-zero standard deviation were found.")
 
     contributions = []
+
     for token in common_tokens:
         diff = abs(z_ref[token] - z_test[token])
         contributions.append((token, diff, z_ref[token], z_test[token]))
@@ -642,6 +652,7 @@ def burrows_delta(
               highest to lowest. Each tuple contains:
               (token, abs_diff, z_ref, z_test)
     """
+
     ref_freqs = relative_frequencies(reference_tokens, vocab)
     test_freqs = relative_frequencies(test_tokens, vocab)
 
@@ -677,6 +688,7 @@ def classify_test_works_burrows(
                 "ranking": [(author, delta), ...]
             }
     """
+
     vocab = build_global_vocab(corpora, vocab_size=vocab_size, min_freq=min_freq)
     means, stds, _ = compute_feature_stats(corpora, vocab)
 
@@ -725,6 +737,7 @@ def get_pairwise_burrows_contributions(
                 "contributions": [...]
             }
     """
+
     vocab = build_global_vocab(corpora, vocab_size=vocab_size, min_freq=min_freq)
     means, stds, _ = compute_feature_stats(corpora, vocab)
 

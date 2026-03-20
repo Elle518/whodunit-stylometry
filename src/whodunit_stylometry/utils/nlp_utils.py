@@ -710,6 +710,25 @@ def get_tokens_alpha_by_author(df: pd.DataFrame, is_lower: bool = True) -> dict[
 def compute_word_frecuencies(
     alpha_tokens: dict, stopword_set: set = None, remove_stopwords: bool = False
 ) -> dict[str, float]:
+    """Computes word frequencies for each author from tokenized texts.
+
+    The function iterates over a dictionary whose keys are author identifiers
+    and whose values are token lists. For each author, it builds a `Counter`
+    with the frequency of each token. Optionally, it can exclude tokens that
+    appear in a provided stopword set before counting.
+
+    Args:
+        alpha_tokens (dict): A dictionary mapping each author to a list of tokens
+            associated with that author's text or corpus.
+        stopword_set (set, optional): A set of stopwords to remove before counting. Defaults
+            to None.
+        remove_stopwords (bool, optional): Whether to filter out stopwords before computing
+            frequencies. Defaults to False.
+
+    Returns:
+        A dictionary mapping each author to a `Counter` containing token
+        frequencies.
+    """
 
     counters = {}
 
@@ -724,6 +743,20 @@ def compute_word_frecuencies(
 
 
 def top_n_words(counter: Counter, n: int = 20) -> pd.DataFrame:
+    """Returns the `n` most frequent tokens as a pandas DataFrame.
+
+    The function extracts the most common items from a `Counter` object and
+    converts them into a DataFrame with two columns: one for the token and
+    another for its frequency.
+
+    Args:
+        counter: A `Counter` containing token frequencies.
+        n: The number of most frequent tokens to return. Defaults to 20.
+
+    Returns:
+        A pandas DataFrame with columns `"token"` and `"freq"`, sorted by
+        descending frequency.
+    """
     data = counter.most_common(n)
     return pd.DataFrame(data, columns=["token", "freq"])
 
