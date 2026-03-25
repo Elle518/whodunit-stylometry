@@ -60,10 +60,10 @@ repos:
         args:
             - --line-length=120
 # Remove all output from notebooks
--   repo: https://github.com/kynan/nbstripout
-    rev: 0.9.0
-    hooks:
-    -   id: nbstripout
+# -   repo: https://github.com/kynan/nbstripout
+#     rev: 0.9.0
+#     hooks:
+#     -   id: nbstripout
 # Automatically convert %-strings into f-strings
 -   repo: https://github.com/ikamensh/flynt/
     rev: 1.0.6
