@@ -8,20 +8,23 @@ packages = [{ include = "whodunit_stylometry", from = "src" }]
 
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.15"
+python = ">=3.11,<3.14"
 
-pandas = ">=3,<4"
-numpy = ">=2.4,<3"
-matplotlib = ">=3.10,<4"
+pandas = ">=2.2,<3.1"
+numpy = ">=2.0,<2.5"
+matplotlib = ">=3.8,<3.11"
 seaborn = ">=0.13,<0.14"
 spacy = ">=3.8,<4"
 nltk = ">=3.9,<4"
-scipy = ">=1.17,<2"
+scipy = ">=1.16,<1.18"
 unidecode = "^1.4.0"
 ipywidgets = "^8.1.8"
 plotly = "^6.6.0"
 nbformat = "^5.10.4"
-scikit-learn = "^1.8.0"
+scikit-learn = ">=1.7,<1.9"
+shap = "^0.50.0"
+numba = ">=0.61,<0.62"
+llvmlite = ">=0.44,<0.46"
 
 
 [tool.poetry.group.dev.dependencies]
