@@ -3709,8 +3709,6 @@ mountains. As civilization broke upon us Mr. Felt drew himself up, and
 began to question me about the changes which the revolution had made in
 our noble country.
 
-. . . . .
-
 I will not weary you, my dear Mrs. Truax, with the formalities which
 followed upon our return to Albany. I will merely add that you may
 expect a duly authorized person to come to you presently for such
@@ -3766,8 +3764,6 @@ The other excitement to which I referred was the coming of two new
 guests from New York, elegant ladies, whose appearance and manners quite
 overpowered me in the few minutes of conversation I held with them when
 they first entered my house.
-
-. . . . .
 
 Good God! what is that? I thought I felt something brush my sleeve. Yet
 there is no one near me, and nothing astir in the room! And why should
@@ -4862,30 +4858,6 @@ guests who insist upon inhabiting the accursed oak parlor.
 What this work is can be best understood by a glance at the accompanying
 diagram, which is a copy of the one drawn up by the Englishman for Mr.
 Tamworth.
-
-                     +-----------------------+
-                     |                       |
-                     |          C            |
-                     |                       |
-            +--------+----+--------+---------+
-            |        |-   |        |
-            |    B   |6   |        |
-            |     D  |=|= |        |
-            |    | | |=|= |        |
-            |--------|=|  |        |
-            | 1   _  |    |        |
-            |----|2|-|    |        |
-           -|       3|    |        |
-           4|        |    |        |
-           -|        |    |        |
-            |        |-   |        |
-            |   A    |5   |        |
-            |        |-   |        |
-            +--------+    +--------+
-
-            +--------+    +--------+
-            |        |    |        |
-
 
 Here you see that the secret chamber lies between the rooms A and B. A
 is the parlor and B is the small room in which I had put up my bed after
@@ -6786,8 +6758,6 @@ shriek from within, I rushed forward, and turning over the head, looked
 upon the face of the fallen man. It was not a new one to me. Though
 changed and seamed and white now in death, I recognized it at once. It
 was that of Edwin Urquhart.
-
-. . . . .
 
 This noon I took down the sign which has swung for twenty years over my
 front door. "Happy-Go-Lucky" is scarcely the name for an inn accursed by
