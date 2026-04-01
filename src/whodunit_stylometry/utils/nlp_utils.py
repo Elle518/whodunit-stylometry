@@ -197,6 +197,10 @@ def normalize_text_for_tokenization(text: str) -> str:
     text = re.sub(r"…", "...", text)
     text = re.sub(r"(\. ?){3,}", " ... ", text)
     text = re.sub(r"\.\.\.", " ... ", text)
+    text = re.sub(r"—+”", " ... ”", text)
+    text = re.sub(r"-+”", " ... ”", text)
+    text = re.sub(r'—+"', ' ... "', text)
+    text = re.sub(r'-+"', ' ... "', text)
     text = re.sub(r"_", "", text)
     text = re.sub(r"\[", " [", text)
     text = re.sub(r"\]", "] ", text)
@@ -857,3 +861,47 @@ make them one are being spoken.
 
     print(text_n)
     print(punctuation_metrics(text_n, n_tokens=100))
+
+
+def build_mfw_features(tokens_by_file, function_words, top_n=100):
+    function_words = set(function_words)
+
+    # 2. frecuencia global de function words en train
+    global_fw_counts = Counter()
+    for tokens in tokens_by_file.values():
+        global_fw_counts.update(tok for tok in tokens if tok in function_words)
+
+    # 3. seleccionar MFW
+    mfw = [word for word, _ in global_fw_counts.most_common(top_n)]
+
+    # 4. matriz de features por obra
+    rows = []
+    for file_name, tokens in tokens_by_file.items():
+        counts = Counter(tokens)
+        total_tokens = len(tokens)
+
+        row = {"file_name": file_name}
+        for word in mfw:
+            row[f"fw_{word}"] = counts[word] / total_tokens if total_tokens > 0 else 0.0
+
+        rows.append(row)
+
+    train_mfw_df = pd.DataFrame(rows)
+
+    return mfw, train_mfw_df
+
+
+def transform_with_mfw(tokens_by_file, mfw):
+    rows = []
+
+    for file_name, tokens in tokens_by_file.items():
+        counts = Counter(tokens)
+        total_tokens = len(tokens)
+
+        row = {"file_name": file_name}
+        for word in mfw:
+            row[f"fw_{word}"] = counts[word] / total_tokens if total_tokens > 0 else 0.0
+
+        rows.append(row)
+
+    return pd.DataFrame(rows)
