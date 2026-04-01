@@ -81,6 +81,7 @@ target/
 # With preceding / ignore folder and its content at top level, e.g. /data/
 # Without preceding / ignore folder and its content at any level, e.g. wanddb/
 output/
+artifacts/
 
 
 # Mac OS-specific storage files
