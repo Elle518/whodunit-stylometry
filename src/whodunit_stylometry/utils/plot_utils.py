@@ -506,3 +506,35 @@ def plot_authors_pca(
         plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     plt.show()
+
+
+def plot_confussion_matrix(
+    cm: np.ndarray, labels: list[str], model_name: str, features: str, save_path: Path | None = None
+):
+    """Plot a confusion matrix as a heatmap with annotations.
+
+    This function takes a confusion matrix and corresponding class labels, and
+    visualizes it as a heatmap using Seaborn. Each cell is annotated with the
+    integer count from the confusion matrix. The x-axis and y-axis are labeled
+    with the provided class names.
+
+    Args:
+        cm: A 2D NumPy array representing the confusion matrix counts.
+        labels: A list of class names corresponding to the rows and columns of
+            the confusion matrix.
+        model_name: Name of the model used for prediction.
+        save_path: Optional path where the generated figure will be saved.
+            If ``None``, the figure is only displayed.
+    """
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels)
+    plt.xlabel("Autor predicho")
+    plt.ylabel("Autor real")
+    plt.title(f"Matriz de confusión en test de {model_name} con {features}")
+    plt.tight_layout()
+
+    if save_path is not None:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    plt.show()
