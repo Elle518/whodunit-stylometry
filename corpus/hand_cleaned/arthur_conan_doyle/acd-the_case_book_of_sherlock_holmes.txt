@@ -638,13 +638,11 @@ news-vendor displayed his evening papers.  The date was just two days
 after the last conversation.  There, black upon yellow, was the
 terrible news-sheet:
 
-  +-------------+
   |  MURDEROUS  |
   |   ATTACK    |
   |    UPON     |
   |  SHERLOCK   |
   |   HOLMES.   |
-  +-------------+
 
 
 I think I stood stunned for some moments.  Then I have a confused
@@ -4759,7 +4757,6 @@ He handed over the paper to our client, who stood staring at a marked
 advertisement.  Holmes and I leaned forward and read it over his
 shoulder.  This is how it ran:
 
-  +-----------------------------------------------------+
   |                                                     |
   | HOWARD GARRIDEB.                                    |
   |                                                     |
@@ -4773,8 +4770,6 @@ shoulder.  This is how it ran:
   |                                                     |
   | Apply Grosvenor Buildings, Aston.                   |
   |                                                     |
-  +-----------------------------------------------------+
-
 
 "Glorious!" gasped our host.  "That makes our third man."
 
