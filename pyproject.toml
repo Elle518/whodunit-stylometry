@@ -27,6 +27,7 @@ numba = ">=0.61,<0.62"
 llvmlite = ">=0.44,<0.46"
 pyarrow = "^23.0.1"
 fastparquet = "^2026.3.0"
+rpy2 = "^3.6.7"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -36,6 +37,12 @@ black = ">=26.1,<27"
 pre-commit = ">=4.5,<5"
 ipykernel = ">=7.1,<8"
 
+
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
