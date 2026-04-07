@@ -29,6 +29,7 @@ pyarrow = "^23.0.1"
 fastparquet = "^2026.3.0"
 rpy2 = "^3.6.7"
 statsmodels = "^0.14.6"
+xgboost = "^3.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
