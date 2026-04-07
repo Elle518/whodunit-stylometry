@@ -19,7 +19,7 @@ from whodunit_stylometry.utils.data_utils import read_book_text
 # internal apostrophes or periods, and allowing a single trailing period.
 # It excludes digits, underscores, leading punctuation, and trailing
 # apostrophes.
-# Examples of matching tokens: "don't", "rock'n'roll", "a.m.", "hello", "etc."
+# Examples of matching tokens: "don't", "rock'n'roll", "a.m.", "hello"
 # Examples of non-matching tokens: "123", "3rd", '3:30', "\n\n", "B.31", "£"
 ALPHA_TOKENS = re.compile(r"^[^\W\d_\.']+(?:[.'][^\W\d_\.']+)*\.?$", re.UNICODE)
 
@@ -71,7 +71,7 @@ class CustomTokenizer:
         # Words with apostrophes: don't, we'll, rock'n'roll
         apos_pat = r"[A-Za-z]+(?:['’][A-Za-z]+)+"
 
-        # Abbreviations with periods: a.m., p.m., i.e., e.g., U.S.A., etc.
+        # Abbreviations with periods: a.m., p.m., i.e., e.g., U.S.A.
         # Requires a trailing period to preserve it within the token.
         abbrev_pat = r"(?:[A-Za-z]\.){2,}|(?:[A-Za-z]{1,10}\.){2,}"
 
