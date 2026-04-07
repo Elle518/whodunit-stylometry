@@ -205,7 +205,6 @@ def normalize_text_for_tokenization(text: str) -> str:
     text = re.sub(r"\[", " [", text)
     text = re.sub(r"\]", "] ", text)
     text = re.sub(r"——+|--+", " — ", text)
-    text = re.sub(r"-", " - ", text)
     text = re.sub(r"—", " — ", text)
     text = re.sub(r"‘|’", "'", text)
     text = re.sub(r"“|”", '"', text)
