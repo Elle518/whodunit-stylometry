@@ -82,6 +82,8 @@ target/
 # Without preceding / ignore folder and its content at any level, e.g. wanddb/
 output/
 artifacts/
+corpus/normalized/
+corpus/tokenized/
 
 
 # Mac OS-specific storage files
