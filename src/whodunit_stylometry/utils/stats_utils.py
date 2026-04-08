@@ -760,3 +760,41 @@ def get_pairwise_burrows_contributions(
             }
 
     return details
+
+
+def drop_highly_correlated_features(
+    df: pd.DataFrame,
+    threshold: float = 0.85,
+    method: str = "pearson",
+) -> tuple[list[str], list[str], pd.DataFrame]:
+    """Identify highly correlated columns and return which to keep and drop.
+
+    Computes the absolute pairwise correlation matrix for the input DataFrame,
+    masks its lower triangle and diagonal, and selects columns whose correlation
+    with any previous column exceeds the given threshold.
+
+    Args:
+        df: Input DataFrame whose columns are evaluated for pairwise correlation.
+        threshold: Correlation threshold above which a column is marked for
+            removal. Defaults to 0.85.
+        method: Correlation method passed to ``DataFrame.corr()``. Defaults to
+            ``"pearson"``.
+
+    Returns:
+        A tuple containing:
+            - kept: Column names not marked for removal.
+            - to_drop: Column names whose upper-triangle correlation with at
+              least one other column exceeds ``threshold``.
+            - upper: Upper-triangular masked absolute correlation matrix.
+
+    Notes:
+        The selection of dropped columns depends on column order because only
+        the upper triangle of the correlation matrix is considered.
+    """
+    corr = df.corr(method=method).abs()
+    upper = corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool))
+
+    to_drop = [col for col in upper.columns if any(upper[col] > threshold)]
+    kept = [col for col in df.columns if col not in to_drop]
+
+    return kept, to_drop, upper
