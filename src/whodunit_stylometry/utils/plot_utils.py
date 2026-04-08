@@ -538,3 +538,75 @@ def plot_confussion_matrix(
         plt.savefig(save_path, dpi=150, bbox_inches="tight")
 
     plt.show()
+
+
+def plot_mfw_performance_robustness(
+    summary_by_topn: pd.DataFrame,
+    best_mean_score: float,
+    threshold_score: float,
+    selected_top_n_mfw: int,
+):
+    """Plot model performance robustness as a function of ``TOP_N_MFW``.
+
+    The plot shows the mean ``test_f1_macro`` for each ``top_n_mfw`` value,
+    a shaded band representing plus/minus one standard deviation, and reference
+    lines for the best mean score, the acceptance threshold, and the selected
+    minimum ``TOP_N_MFW`` value.
+
+    Args:
+        summary_by_topn: DataFrame containing at least the columns
+            ``"top_n_mfw"``, ``"mean_test_f1_macro"``, and
+            ``"std_test_f1_macro"``.
+        best_mean_score: Best mean ``test_f1_macro`` value to display as a
+            horizontal reference line.
+        threshold_score: Threshold score to display as a horizontal reference
+            line.
+        selected_top_n_mfw: Selected ``TOP_N_MFW`` value to display as a
+            vertical reference line.
+
+    Notes:
+        Missing values in ``std_test_f1_macro`` are replaced with ``0`` before
+        plotting the shaded variability band.
+        This function produces a plot as a side effect by calling
+        ``matplotlib.pyplot.show()``.
+    """
+    plt.figure(figsize=(10, 6))
+    plt.plot(
+        summary_by_topn["top_n_mfw"],
+        summary_by_topn["mean_test_f1_macro"],
+        marker="o",
+        label="Media test_f1_macro",
+    )
+
+    std_values = summary_by_topn["std_test_f1_macro"].fillna(0)
+
+    plt.fill_between(
+        summary_by_topn["top_n_mfw"],
+        summary_by_topn["mean_test_f1_macro"] - std_values,
+        summary_by_topn["mean_test_f1_macro"] + std_values,
+        alpha=0.2,
+        label="±1 std",
+    )
+
+    plt.axhline(
+        best_mean_score,
+        linestyle="--",
+        label=f"Mejor media = {best_mean_score:.4f}",
+    )
+    plt.axhline(
+        threshold_score,
+        linestyle=":",
+        label=f"Umbral = {threshold_score:.4f}",
+    )
+    plt.axvline(
+        selected_top_n_mfw,
+        linestyle="--",
+        label=f"TOP_N_MFW mínimo = {selected_top_n_mfw}",
+    )
+
+    plt.xlabel("TOP_N_MFW")
+    plt.ylabel("test_f1_macro")
+    plt.title("Robustez del rendimiento según TOP_N_MFW")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
