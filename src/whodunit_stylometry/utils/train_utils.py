@@ -1,12 +1,22 @@
 """Model training and evaluation utilities."""
 
+from typing import Any
+
 import pandas as pd
 from sklearn.base import clone
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
+from sklearn.svm import SVC, LinearSVC
+
+from whodunit_stylometry.constants import STOPWORDS
+from whodunit_stylometry.utils.nlp_utils import build_mfw_features, transform_with_mfw
 
 
 def run_experiment(
@@ -134,3 +144,164 @@ def run_experiment(
         "pred_df": pred_df,
         "feature_cols": feature_cols,
     }
+
+
+def build_models_with_seed(seed: int) -> dict[str, Any]:
+    """Build a collection of classifier instances using a shared random seed.
+
+    The returned mapping contains preconfigured scikit-learn classifier objects.
+    Models that support reproducibility receive the provided ``seed`` through
+    their ``random_state`` parameter.
+
+    Args:
+        seed: Random seed used for estimators that expose a ``random_state``
+            parameter.
+
+    Returns:
+        A dictionary mapping model names to instantiated classifier objects.
+
+    Notes:
+        The returned estimators are newly created on each call.
+        Not all estimators in the mapping use ``seed``. For example,
+        ``KNeighborsClassifier`` and ``GaussianNB`` are instantiated without a
+        random state because they do not use one in this configuration.
+    """
+    return {
+        "logreg": LogisticRegression(
+            max_iter=5000,
+            class_weight="balanced",
+            random_state=seed,
+        ),
+        "linear_svc": LinearSVC(
+            class_weight="balanced",
+            random_state=seed,
+            max_iter=10000,
+        ),
+        "svc_rbf": SVC(
+            kernel="rbf",
+            class_weight="balanced",
+            random_state=seed,
+        ),
+        "random_forest": RandomForestClassifier(
+            n_estimators=300,
+            class_weight="balanced",
+            random_state=seed,
+        ),
+        "knn": KNeighborsClassifier(n_neighbors=3),
+        "gaussian_nb": GaussianNB(),
+    }
+
+
+def get_mfw_feature_cols(df: pd.DataFrame) -> list[str]:
+    """Return column names that start with the ``"fw_"`` prefix.
+
+    Args:
+        df: Input DataFrame whose columns are inspected.
+
+    Returns:
+        A list of column names from ``df.columns`` that start with ``"fw_"``.
+    """
+    return [c for c in df.columns if c.startswith("fw_")]
+
+
+def summarize_result_row(
+    seed: int,
+    top_n_mfw: int,
+    result_dict: dict,
+) -> dict:
+    """Build a flat summary row from an experiment result dictionary.
+
+    The summary includes the seed, the selected ``top_n_mfw`` value, the best
+    model name, and the overall test macro F1 score.
+
+    Args:
+        seed: Random seed associated with the experiment.
+        top_n_mfw: Number of top MFW features used in the experiment.
+        result_dict: Dictionary containing experiment outputs. It must include
+            ``"best_model_name"`` and ``"test_f1_macro"``.
+
+    Returns:
+        A dictionary representing a single flattened summary row.
+    """
+    row = {
+        "seed": seed,
+        "top_n_mfw": top_n_mfw,
+        "best_model_name": result_dict["best_model_name"],
+        "test_f1_macro": result_dict["test_f1_macro"],
+    }
+
+    return row
+
+
+def build_train_test_mfw(
+    top_n: int,
+    train_tokens_by_file: dict[str, list[str]],
+    test_tokens_by_file: dict[str, list[str]],
+    train_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+) -> tuple[Any, pd.DataFrame, pd.DataFrame, list[str]]:
+    """Build MFW-based train and test feature sets and merge them with metadata.
+
+    The MFW vocabulary is learned from the training tokens only, then reused to
+    transform the test tokens so both datasets share the same feature space.
+    The resulting feature tables are merged with ``file_name`` and
+    ``author_norm`` metadata from the corresponding input DataFrames.
+
+    Args:
+        top_n: Number of most frequent function-word features to keep when
+            building the training vocabulary.
+        train_tokens_by_file: Mapping from training file name to its tokenized
+            content.
+        test_tokens_by_file: Mapping from test file name to its tokenized
+            content.
+        train_df: Training metadata DataFrame. It must contain at least the
+            ``"file_name"`` and ``"author_norm"`` columns.
+        test_df: Test metadata DataFrame. It must contain at least the
+            ``"file_name"`` and ``"author_norm"`` columns.
+
+    Returns:
+        A tuple containing:
+            - The learned MFW vocabulary.
+            - The training DataFrame with MFW features and metadata.
+            - The test DataFrame with MFW features and metadata.
+            - The list of MFW feature column names.
+
+    Raises:
+        KeyError: If ``train_df`` or ``test_df`` does not contain required
+            columns such as ``"file_name"`` or ``"author_norm"``.
+        NameError: If required external names such as ``STOPWORDS``,
+            ``build_mfw_features``, ``transform_with_mfw``, or
+            ``get_mfw_feature_cols`` are not defined.
+
+    Notes:
+        The exact type of ``mfw_vocab`` cannot be inferred safely from this
+        function alone, so it is annotated as ``Any``.
+    """
+    # MFW vocabulary learned from training data only.
+    mfw_vocab, train_mfw_df = build_mfw_features(
+        tokens_by_file=train_tokens_by_file,
+        function_words=STOPWORDS,
+        top_n=top_n,
+    )
+
+    # Transform test data using the vocabulary learned on the training set.
+    test_mfw_df = transform_with_mfw(
+        tokens_by_file=test_tokens_by_file,
+        mfw=mfw_vocab,
+    )
+
+    # Merge with metadata.
+    train_fw = train_mfw_df.merge(
+        train_df[["file_name", "author_norm"]],
+        on="file_name",
+        how="left",
+    )
+
+    test_fw = test_mfw_df.merge(
+        test_df[["file_name", "author_norm"]],
+        on="file_name",
+        how="left",
+    )
+
+    fw_cols = get_mfw_feature_cols(train_fw)
+    return mfw_vocab, train_fw, test_fw, fw_cols
