@@ -531,7 +531,7 @@ def plot_confussion_matrix(
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels)
     plt.xlabel("Autor predicho")
     plt.ylabel("Autor real")
-    plt.title(f"Matriz de confusión en test de {model_name} con {features}")
+    plt.title(f"Matriz de confusión de {model_name} con {features}")
     plt.tight_layout()
 
     if save_path is not None:
