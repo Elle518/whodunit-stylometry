@@ -1,14 +1,19 @@
 import math
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
+from numpy.typing import NDArray
+from scipy.cluster.hierarchy import dendrogram, linkage
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+from sklearn.manifold import TSNE
+from sklearn.preprocessing import RobustScaler, StandardScaler
 
 from whodunit_stylometry.constants import AUTHORS_ABREV_MAP
 
@@ -610,3 +615,181 @@ def plot_mfw_performance_robustness(
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.show()
+
+
+def plot_clusters_2d(
+    X_scaled: np.ndarray,
+    y_true: Sequence[object],
+    clusters: Sequence[int],
+    title_prefix: str = "",
+    method: Literal["pca", "tsne"] = "pca",
+    seed: int = 0,
+    figsize: tuple[float, float] = (14, 6),
+) -> None:
+    """Plot a 2D projection of samples colored by true labels and clusters.
+
+    This function reduces the input feature matrix to two dimensions using
+    either PCA or t-SNE, then displays two side-by-side scatter plots:
+    one colored by the true labels and the other colored by the predicted
+    cluster assignments.
+
+    Args:
+        X_scaled: Scaled feature matrix with shape ``(n_samples, n_features)``.
+        y_true: Sequence of ground-truth labels, one per sample.
+        clusters: Sequence of cluster assignments, one per sample.
+        title_prefix: Text prefix added to both subplot titles. Defaults to
+            an empty string.
+        method: Dimensionality reduction method to use. Must be ``"pca"``
+            or ``"tsne"``. Defaults to ``"pca"``.
+        seed: Random seed passed to the dimensionality reduction method.
+            Defaults to ``0``.
+        figsize: Figure size passed to ``matplotlib.pyplot.subplots``.
+            Defaults to ``(14, 6)``.
+    """
+    if method == "pca":
+        reducer = PCA(n_components=2, random_state=seed)
+        coords = reducer.fit_transform(X_scaled)
+        xlab, ylab = "PC1", "PC2"
+    elif method == "tsne":
+        reducer = TSNE(
+            n_components=2,
+            random_state=seed,
+            init="pca",
+            learning_rate="auto",
+        )
+        coords = reducer.fit_transform(X_scaled)
+        xlab, ylab = "t-SNE 1", "t-SNE 2"
+    else:
+        raise ValueError("method must be 'pca' or 'tsne'")
+
+    fig, axes = plt.subplots(1, 2, figsize=figsize)
+
+    # Color by true author
+    authors = pd.Series(y_true).astype("category")
+    author_codes = authors.cat.codes
+    scatter1 = axes[0].scatter(coords[:, 0], coords[:, 1], c=author_codes, s=50)
+    axes[0].set_title(f"{title_prefix} - Coloreado por autor real")
+    axes[0].set_xlabel(xlab)
+    axes[0].set_ylabel(ylab)
+
+    # Author legend
+    handles1, _ = scatter1.legend_elements()
+    axes[0].legend(
+        handles1,
+        authors.cat.categories,
+        title="Author",
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left",
+    )
+
+    # Color by cluster
+    scatter2 = axes[1].scatter(coords[:, 0], coords[:, 1], c=clusters, s=50)
+    axes[1].set_title(f"{title_prefix} - Coloreado por cluster")
+    axes[1].set_xlabel(xlab)
+    axes[1].set_ylabel(ylab)
+
+    handles2, labels2 = scatter2.legend_elements()
+    axes[1].legend(
+        handles2,
+        labels2,
+        title="Cluster",
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left",
+    )
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_dendrogram_colored_labels(
+    data: pd.DataFrame,
+    feature_cols: Sequence[str],
+    label_col: str = "author_norm",
+    file_col: str = "file_name",
+    method: str = "ward",
+    metric: str = "euclidean",
+    figsize: tuple[float, float] = (8, 18),
+    truncate_mode: str | None = None,
+    p: int = 30,
+    leaf_rotation: float = 0,
+    leaf_font_size: float = 10,
+    save_path: Path | None = None,
+) -> NDArray:
+    """Plot a dendrogram with leaf labels colored by category and return linkage data.
+
+    The function standardizes the selected feature columns, computes a hierarchical
+    clustering linkage matrix, plots a dendrogram using file names as leaf labels,
+    and colors each visible leaf label according to the category defined in
+    ``label_col``.
+
+    Args:
+        data: Input DataFrame containing feature columns and metadata columns.
+        feature_cols: Names of numeric columns used to compute clustering.
+        label_col: Column whose categorical values are used to color leaf labels.
+        file_col: Column used as the displayed label for each dendrogram leaf.
+        method: Linkage method passed to ``scipy.cluster.hierarchy.linkage``.
+            When set to ``"ward"``, the ``metric`` argument is not passed.
+        metric: Distance metric passed to ``linkage`` for non-``"ward"`` methods.
+        figsize: Figure size passed to Matplotlib as ``(width, height)``.
+        truncate_mode: Dendrogram truncation mode passed to ``dendrogram``.
+        p: Dendrogram truncation parameter passed to ``dendrogram``.
+        leaf_rotation: Rotation angle for leaf labels.
+        leaf_font_size: Font size for leaf labels.
+        savepath: Optional path where the generated figure will be saved.
+            If ``None``, the figure is only displayed.
+
+    Returns:
+        NDArray: The hierarchical clustering linkage matrix returned by ``linkage``.
+    """
+    X = data[feature_cols].copy()
+    y = data[label_col].astype("category")
+    labels = [name.replace(".txt", "")[:30] for name in data[file_col].tolist()]
+
+    scaler = RobustScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    if method == "ward":
+        Z = linkage(X_scaled, method=method)
+    else:
+        Z = linkage(X_scaled, method=method, metric=metric)
+
+    plt.figure(figsize=figsize)
+    dendrogram(
+        Z,
+        labels=labels,
+        orientation="left",
+        leaf_rotation=leaf_rotation,
+        leaf_font_size=leaf_font_size,
+        truncate_mode=truncate_mode,
+        p=p,
+    )
+
+    authors = y.cat.categories
+    cmap = plt.cm.get_cmap("tab10", len(authors))
+    color_map = {author: cmap(i) for i, author in enumerate(authors)}
+
+    ax = plt.gca()
+    label_to_author = dict(zip(labels, data[label_col]))
+
+    ticklabels = ax.get_ymajorticklabels()
+    for lbl in ticklabels:
+        text = lbl.get_text()
+        author = label_to_author.get(text)
+        if author in color_map:
+            lbl.set_color(color_map[author])
+
+    handles = [plt.Line2D([0], [0], color=color_map[a], lw=4, label=a) for a in authors]
+    plt.legend(handles=handles, title="Autor", loc="upper left")
+
+    plt.title(f"Dendrograma ({method})")
+    plt.xlabel("Distancia")
+    plt.ylabel("Obras")
+    plt.subplots_adjust(right=0.72)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    plt.show()
+
+    return Z
