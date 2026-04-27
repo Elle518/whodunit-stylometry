@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import seaborn as sns
 from numpy.typing import NDArray
 from scipy.cluster.hierarchy import dendrogram, linkage
@@ -793,3 +794,174 @@ def plot_dendrogram_colored_labels(
     plt.show()
 
     return Z
+
+
+def plot_work_length_distribution_by_author(works_df: pd.DataFrame, save_path: Path | None = None):
+    """Plot the distribution of work lengths grouped by author.
+
+    Creates a horizontal boxplot and stripplot showing the distribution of
+    `word_count` values for each author in `works_df`. Authors are ordered by
+    the median word count of their works to make the visualization easier to
+    compare.
+
+    Args:
+        works_df: DataFrame containing at least the columns `author` and
+            `word_count`.
+        save_path: Optional path where the generated figure will be saved.
+            If ``None``, the figure is only displayed.
+    """
+    plt.figure(figsize=(12, 6))
+
+    order = works_df.groupby("author")["word_count"].median().sort_values().index
+
+    sns.boxplot(
+        data=works_df,
+        y="author",
+        x="word_count",
+        order=order,
+        showfliers=False,
+    )
+
+    sns.stripplot(
+        data=works_df,
+        y="author",
+        x="word_count",
+        order=order,
+        size=4,
+    )
+
+    plt.title("Distribución de longitud de las obras por autor")
+    plt.xlabel("Palabras")
+    plt.ylabel("Autor")
+    plt.grid(axis="x", alpha=0.25)
+    plt.tight_layout()
+
+    if save_path:
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+
+    plt.show()
+
+
+def add_projection(df: pd.DataFrame, coords: np.ndarray, prefix: str) -> pd.DataFrame:
+    """Add two projection coordinate columns to a DataFrame.
+
+    Creates a copy of `df` and adds two columns using values from the first two
+    columns of `coords`. The new columns are named `{prefix}_1` and
+    `{prefix}_2`.
+
+    Args:
+        df: Source DataFrame to copy and augment.
+        coords: Two-dimensional array containing projection coordinates. Its
+            first dimension must align with the number of rows in `df`, and it
+            must have at least two columns.
+        prefix: Prefix used to build the new coordinate column names.
+
+    Returns:
+        A copy of `df` with the added projection columns.
+    """
+    out = df.copy()
+    out[f"{prefix}_1"] = coords[:, 0]
+    out[f"{prefix}_2"] = coords[:, 1]
+    out[f"{prefix}_3"] = coords[:, 2]
+    return out
+
+
+# def plot_projection(
+#     df: pd.DataFrame,
+#     x: str,
+#     y: str,
+#     title: str,
+#     hover_cols: list[str] | None = None,
+#     size_col: str = "token_count",
+# ) -> go.Figure:
+#     """Plot a two-dimensional projection as an interactive scatter plot.
+
+#     Creates a Plotly scatter plot from `df`, using `x` and `y` as coordinate
+#     columns. Points are colored by the `author` column. If `size_col` exists in
+#     `df`, it is used to scale marker sizes; otherwise, marker sizes are not
+#     scaled. The figure is displayed with `fig.show()` and returned.
+
+#     Args:
+#         df: DataFrame containing the projection coordinates and metadata.
+#         x: Name of the column to use for the x-axis.
+#         y: Name of the column to use for the y-axis.
+#         title: Plot title.
+#         hover_cols: Column names to display in the hover tooltip. If `None`,
+#             defaults to `["author", "work", "n_chunks", "token_count"]`.
+#         size_col: Column name used to scale marker sizes when present in `df`.
+
+#     Returns:
+#         The Plotly figure object created and displayed by the function.
+#     """
+#     hover_cols = hover_cols or ["author", "work", "n_chunks", "token_count"]
+
+#     fig = px.scatter(
+#         df,
+#         x=x,
+#         y=y,
+#         color="author",
+#         size=size_col if size_col in df.columns else None,
+#         hover_data=hover_cols,
+#         title=title,
+#         height=720,
+#     )
+#     fig.update_traces(marker=dict(opacity=0.82, line=dict(width=0.5)))
+#     fig.update_layout(legend_title_text="Autor")
+#     fig.show()
+
+#     return fig
+
+
+def plot_projection(
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    title: str,
+    z: str | None = None,
+    hover_cols: list[str] | None = None,
+    size_col: str = "token_count",
+) -> go.Figure:
+    hover_cols = hover_cols or ["author", "work", "n_chunks", "token_count"]
+    size_arg = size_col if size_col in df.columns else None
+
+    if z is None:
+        fig = px.scatter(
+            df,
+            x=x,
+            y=y,
+            color="author",
+            size=size_arg,
+            hover_data=hover_cols,
+            title=title,
+            height=720,
+        )
+        fig.update_traces(marker=dict(opacity=0.82, line=dict(width=0.5)))
+        fig.update_layout(
+            legend_title_text="Autor",
+            xaxis_title=x,
+            yaxis_title=y,
+        )
+    else:
+        fig = px.scatter_3d(
+            df,
+            x=x,
+            y=y,
+            z=z,
+            color="author",
+            size=size_arg,
+            hover_data=hover_cols,
+            title=title,
+            height=720,
+        )
+        fig.update_traces(marker=dict(opacity=0.82, line=dict(width=0.5)))
+        fig.update_layout(
+            legend_title_text="Autor",
+            scene=dict(
+                xaxis_title=x,
+                yaxis_title=y,
+                zaxis_title=z,
+            ),
+        )
+
+    fig.show()
+    return fig

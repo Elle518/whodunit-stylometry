@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -208,3 +209,44 @@ def get_work_key(author_test_tokens: dict[str, list[str]], file_name: str):
     key = [k for k in author_test_tokens.keys() if file_name[:-4] in k]
 
     return author_test_tokens.get(key[0], None)
+
+
+def discover_corpus(corpus_dir: Path) -> pd.DataFrame:
+    """Build a metadata table for text files grouped by author directories.
+
+    Scans the given corpus directory for immediate subdirectories. Each
+    subdirectory is treated as an author name, and each `.txt` file inside it is
+    read with `read_book_text`. Empty texts are skipped.
+
+    Args:
+        corpus_dir: Directory containing one subdirectory per author. Each
+            author directory is expected to contain `.txt` files.
+
+    Returns:
+        A DataFrame with one row per non-empty text file. The columns are:
+        `author`, `work`, `filename`, `path`, `text`, `char_count`, and
+        `word_count`.
+    """
+    rows = []
+
+    for author_dir in sorted([p for p in corpus_dir.iterdir() if p.is_dir()]):
+        author = author_dir.name
+        for txt_path in sorted(author_dir.glob("*.txt")):
+            text = read_book_text(txt_path)
+            if not text:
+                continue
+            rows.append(
+                {
+                    "author": author,
+                    "work": txt_path.stem,
+                    "filename": txt_path.name,
+                    "path": str(txt_path),
+                    "text": text,
+                    "char_count": len(text),
+                    "word_count": len(re.findall(r"\b\w+\b", text)),
+                }
+            )
+
+    df = pd.DataFrame(rows)
+
+    return df
