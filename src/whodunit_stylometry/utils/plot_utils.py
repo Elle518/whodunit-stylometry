@@ -965,3 +965,42 @@ def plot_projection(
 
     fig.show()
     return fig
+
+
+def plot_local_contributions(
+    local_df: pd.DataFrame,
+    work: str,
+    output_path: str | Path,
+    top_n: int = 25,
+    figsize: tuple[float, float] = (9, 6),
+    dpi: int = 200,
+) -> None:
+    """Plot and save the strongest local linear feature contributions.
+
+    This function selects the top `top_n` rows from `local_df`, sorts them by
+    contribution value, and creates a horizontal bar chart showing each feature's
+    local linear contribution for a given prediction.
+
+    Args:
+        local_df: DataFrame containing local feature contributions. It must
+            include the columns `feature` and `contribution`.
+        work: Label or title element identifying the predicted work or instance.
+        output_path: File path where the figure will be saved.
+        top_n: Number of rows from `local_df` to include in the plot.
+        figsize: Figure size passed to Matplotlib.
+        dpi: Resolution used when saving the figure.
+
+    Returns:
+        None. The function saves the figure to `output_path` and displays it.
+    """
+    plot_local = local_df.head(top_n).sort_values("contribution")
+
+    plt.figure(figsize=figsize)
+    plt.barh(plot_local["feature"], plot_local["contribution"])
+    plt.axvline(0, linewidth=1)
+    plt.title(f"Contribuciones locales para la predicción: {work}")
+    plt.xlabel("Contribución lineal en el espacio del modelo")
+    plt.ylabel("Palabra funcional")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=dpi, bbox_inches="tight")
+    plt.show()

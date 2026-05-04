@@ -3,6 +3,7 @@
 from collections.abc import Hashable, Sequence
 from typing import Any
 
+import numpy as np
 import pandas as pd
 from scipy.cluster.hierarchy import fcluster, linkage
 from sklearn.base import clone
@@ -757,3 +758,213 @@ def compare_hierarchical_methods(
         rows.append(result["results"])
 
     return pd.concat(rows, ignore_index=True).sort_values(["ARI", "NMI", "silhouette"], ascending=False)
+
+
+def coefficients_long(coef_matrix: pd.DataFrame) -> pd.DataFrame:
+    """Convert a class-by-feature coefficient matrix to long format.
+
+    The returned DataFrame contains one row per class-feature pair. It also adds
+    the absolute coefficient value and a direction label based on whether the
+    coefficient is non-negative or negative.
+
+    Args:
+        coef_matrix: DataFrame whose index contains author or class labels and
+            whose columns contain feature names. Cell values are coefficients.
+
+    Returns:
+        A DataFrame with the columns:
+            - `author`: The author or class label from `coef_matrix.index`.
+            - `feature`: The feature name from `coef_matrix.columns`.
+            - `coefficient`: The coefficient value for the class-feature pair.
+            - `abs_coefficient`: The absolute value of `coefficient`.
+            - `direction`: `"pushes_toward_author"` when `coefficient >= 0`,
+              otherwise `"pushes_away_from_author"`.
+
+    Raises:
+        AttributeError: If `coef_matrix` does not provide DataFrame-like methods
+            such as `rename_axis`, `reset_index`, or `melt`.
+        TypeError: If coefficient values do not support `.abs()` or comparison
+            with zero.
+    """
+    long_df = (
+        coef_matrix.rename_axis("author")
+        .reset_index()
+        .melt(id_vars="author", var_name="feature", value_name="coefficient")
+    )
+    long_df["abs_coefficient"] = long_df["coefficient"].abs()
+    long_df["direction"] = np.where(
+        long_df["coefficient"] >= 0,
+        "pushes_toward_author",
+        "pushes_away_from_author",
+    )
+    return long_df
+
+
+def top_coefficients_per_author(coef_matrix: pd.DataFrame, top_n: int = 10) -> pd.DataFrame:
+    """Return the strongest positive and negative coefficients for each author.
+
+    For each author row in `coef_matrix`, this function selects the `top_n`
+    largest coefficients and the `top_n` smallest coefficients. The result is
+    returned in long format with one row per selected author-feature pair.
+
+    Args:
+        coef_matrix: DataFrame whose index contains author labels and whose
+            columns contain feature names. Cell values are coefficients.
+        top_n: Number of largest and smallest coefficients to include for each
+            author.
+
+    Returns:
+        A DataFrame with the columns:
+            - `author`: The author label from `coef_matrix.index`.
+            - `feature`: The feature name from `coef_matrix.columns`.
+            - `coefficient`: The selected coefficient value.
+            - `direction`: `"pushes_toward_author"` for the largest
+              coefficients, or `"pushes_away_from_author"` for the smallest
+              coefficients.
+    """
+    rows = []
+    for author, row in coef_matrix.iterrows():
+        positive = row.sort_values(ascending=False).head(top_n)
+        negative = row.sort_values(ascending=True).head(top_n)
+
+        for feature, value in positive.items():
+            rows.append(
+                {
+                    "author": author,
+                    "feature": feature,
+                    "coefficient": value,
+                    "direction": "pushes_toward_author",
+                }
+            )
+
+        for feature, value in negative.items():
+            rows.append(
+                {
+                    "author": author,
+                    "feature": feature,
+                    "coefficient": value,
+                    "direction": "pushes_away_from_author",
+                }
+            )
+
+    return pd.DataFrame(rows)
+
+
+def upper_triangle_pairs(corr: pd.DataFrame, threshold: float = 0.70) -> pd.DataFrame:
+    """Return upper-triangle correlation pairs above an absolute threshold.
+
+    This function extracts unique feature pairs from the upper triangle of a
+    correlation matrix, excluding the diagonal. It computes the absolute
+    correlation for each pair and returns only pairs whose absolute correlation
+    is greater than or equal to `threshold`.
+
+    Args:
+        corr: Square correlation matrix as a DataFrame. The index and columns
+            are expected to contain feature names.
+        threshold: Minimum absolute correlation required for a pair to be
+            included.
+
+    Returns:
+        A DataFrame with the columns:
+            - `feature_1`: The row feature name.
+            - `feature_2`: The column feature name.
+            - `spearman_corr`: The correlation value from `corr`.
+            - `abs_corr`: The absolute value of `spearman_corr`.
+
+        Rows are sorted by `abs_corr` in descending order.
+
+    Raises:
+        ValueError: If `corr` is not two-dimensional or if its shape is invalid
+            for the NumPy upper-triangle mask operation.
+        TypeError: If correlation values do not support absolute-value
+            calculation or comparison with `threshold`.
+    """
+    mask = np.triu(np.ones(corr.shape), k=1).astype(bool)
+    pairs = (
+        corr.where(mask)
+        .stack()
+        .rename("spearman_corr")
+        .reset_index()
+        .rename(columns={"level_0": "feature_1", "level_1": "feature_2"})
+    )
+    pairs["abs_corr"] = pairs["spearman_corr"].abs()
+    return pairs[pairs["abs_corr"] >= threshold].sort_values("abs_corr", ascending=False)
+
+
+def transformed_features(pipeline: Any, X: pd.DataFrame, feature_names: list[str]) -> pd.DataFrame:
+    """Apply all pipeline steps except the final classifier.
+
+    This function copies `X`, applies each transformer from `pipeline.steps`
+    except the last step, and returns the transformed data as a DataFrame using
+    the original index and the provided feature names.
+
+    Args:
+        pipeline: Pipeline-like object with a `steps` attribute containing
+            `(name, transformer)` pairs. Each transformer is expected to provide
+            a `transform` method.
+        X: Input feature DataFrame to transform.
+        feature_names: Column names to assign to the transformed output. Its
+            length must match the number of columns in the transformed data.
+
+    Returns:
+        A DataFrame containing the transformed feature values, with `X.index` as
+        its index and `feature_names` as its columns.
+    """
+    steps = list(pipeline.steps[:-1])
+    Xt = X.copy()
+
+    for _, transformer in steps:
+        Xt = transformer.transform(Xt)
+
+    return pd.DataFrame(Xt, index=X.index, columns=feature_names)
+
+
+def local_linear_contributions(
+    X_model_space: pd.DataFrame,
+    coef_matrix: pd.DataFrame,
+    instance_index: Hashable,
+    author: str,
+) -> pd.DataFrame:
+    """Compute feature-level linear contributions for one instance and author.
+
+    For the selected instance and author, this function multiplies each
+    transformed feature value by the corresponding model coefficient. The result
+    shows how much each feature contributes to the linear score for that author,
+    before any intercept or probability transformation is applied.
+
+    Args:
+        X_model_space: DataFrame containing transformed model features. Its
+            columns are expected to match `coef_matrix.columns`.
+        coef_matrix: DataFrame whose index contains author labels and whose
+            columns contain feature names. Cell values are linear model
+            coefficients.
+        instance_index: Index label used to select the target row from
+            `X_model_space`.
+        author: Author label used to select the target coefficient row from
+            `coef_matrix`.
+
+    Returns:
+        A DataFrame with the columns:
+            - `feature`: Feature name from `coef_matrix.columns`.
+            - `x_transformed`: Transformed feature value for the selected
+              instance.
+            - `coefficient`: Coefficient for the selected author and feature.
+            - `contribution`: Product of `x_transformed` and `coefficient`.
+            - `abs_contribution`: Absolute value of `contribution`.
+
+        Rows are sorted by `abs_contribution` in descending order.
+    """
+    x = X_model_space.loc[instance_index]
+    beta = coef_matrix.loc[author]
+
+    out = pd.DataFrame(
+        {
+            "feature": coef_matrix.columns,
+            "x_transformed": x.values,
+            "coefficient": beta.values,
+            "contribution": x.values * beta.values,
+        }
+    )
+    out["abs_contribution"] = out["contribution"].abs()
+
+    return out.sort_values("abs_contribution", ascending=False)
