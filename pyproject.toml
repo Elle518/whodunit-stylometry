@@ -1,67 +1,71 @@
-[tool.poetry]
+[project]
 name = "whodunit-stylometry"
 version = "0.1.0"
 description = "Modelado estilístico de la novela de misterio - Un análisis computacional de autores canónicos"
 readme = "README.md"
-authors = ["Teresa García Ceva <tgarciace@uoc.edu>"]
-packages = [{ include = "whodunit_stylometry", from = "src" }]
+authors = [
+    { name = "Teresa García Ceva", email = "tgarciace@uoc.edu" },
+]
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "pandas>=2.2,<3.1",
+    "numpy>=2.0,<2.5",
+    "matplotlib>=3.8,<3.11",
+    "seaborn>=0.13,<0.14",
+    "spacy>=3.8,<4",
+    "nltk>=3.9,<4",
+    "scipy>=1.16,<1.18",
+    "unidecode>=1.4.0,<2.0.0",
+    "ipywidgets>=8.1.8,<9.0.0",
+    "plotly>=6.6.0,<7.0.0",
+    "nbformat>=5.10.4,<6.0.0",
+    "scikit-learn>=1.7,<1.9",
+    "shap>=0.50.0,<0.51.0",
+    "numba>=0.61,<0.62",
+    "llvmlite>=0.44,<0.46",
+    "pyarrow>=23.0.1,<24.0.0",
+    "fastparquet>=2026.3.0,<2027.0.0",
+    "rpy2>=3.6.7,<4.0.0",
+    "statsmodels>=0.14.6,<0.15.0",
+    "xgboost>=3.2.0,<4.0.0",
+    "openai>=2.32.0,<3.0.0",
+    "tiktoken>=0.12.0,<0.13.0",
+    "umap-learn>=0.5.12,<0.6.0",
+    "networkx>=3.6.1,<4.0.0",
+    "tqdm>=4.67.3,<5.0.0",
+    "kaleido>=1.2.0,<2.0.0",
+    "python-dotenv>=1.2.2,<2.0.0",
+]
 
-
-[tool.poetry.dependencies]
-python = ">=3.11,<3.12"
-
-pandas = ">=2.2,<3.1"
-numpy = ">=2.0,<2.5"
-matplotlib = ">=3.8,<3.11"
-seaborn = ">=0.13,<0.14"
-spacy = ">=3.8,<4"
-nltk = ">=3.9,<4"
-scipy = ">=1.16,<1.18"
-unidecode = "^1.4.0"
-ipywidgets = "^8.1.8"
-plotly = "^6.6.0"
-nbformat = "^5.10.4"
-scikit-learn = ">=1.7,<1.9"
-shap = "^0.50.0"
-numba = ">=0.61,<0.62"
-llvmlite = ">=0.44,<0.46"
-pyarrow = "^23.0.1"
-fastparquet = "^2026.3.0"
-rpy2 = "^3.6.7"
-statsmodels = "^0.14.6"
-xgboost = "^3.2.0"
-openai = "^2.32.0"
-tiktoken = "^0.12.0"
-umap-learn = "^0.5.12"
-networkx = "^3.6.1"
-tqdm = "^4.67.3"
-kaleido = "^1.2.0"
-python-dotenv = "^1.2.2"
-
-
-[tool.poetry.group.dev.dependencies]
-pytest = ">=9,<10"
-ruff = ">=0.15,<0.16"
-black = ">=26.1,<27"
-pre-commit = ">=4.5,<5"
-ipykernel = ">=7.1,<8"
-
-
-
-[[tool.poetry.source]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-priority = "explicit"
+[dependency-groups]
+dev = [
+    "pytest>=9,<10",
+    "ruff>=0.15,<0.16",
+    "black>=26.1,<27",
+    "pre-commit>=4.5,<5",
+    "ipykernel>=7.1,<8",
+]
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/whodunit_stylometry"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/whodunit_stylometry",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.black]
 line-length = 120
 target-version = ["py311"]
-
 
 [tool.ruff]
 line-length = 120

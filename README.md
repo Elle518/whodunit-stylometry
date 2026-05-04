@@ -1,45 +1,55 @@
 # Whodunit Stylometry
 
-Este repositorio contiene el código y los recursos relacionados con mi Trabajo de Fin de Grado (TFG) titulado "Modelado estilístico de la novela de misterio - Un análisis computacional de autores canónicos".
+Este repositorio contiene el código y los recursos relacionados con el Trabajo de Fin de Grado (TFG) titulado "Modelado estilístico de la novela de misterio - Un análisis computacional de autores canónicos".
 
 ## Creación del entorno virtual
 
-```bash
-> poetry init
-> poetry env use python3.11
-> poetry install
-> poetry add pandas numpy
-> poetry add --group dev pytest ruff black
-> poetry add --group dev ipykernel ipywidgets
-```
+1. Instala en tu máquina `uv` si no lo tienes:
 
-Activa el entorno virtual:
+    En MacOS o Linux:
 
-```bash
-> source .venv/bin/activate
-```
+    ```bash
+    > curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
 
-Instalar el src como paquete editable:
+    En Windows:
 
-```bash
-> pip install -e .
-```
+    ```powershell
+    > powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+    ```
+
+2. Crea el entorno virtual a partir del pyproject.toml:
+
+    ```bash
+    > uv sync
+    ```
+
+3. Comprueba que el paquete `whodunit_stylometry` se ha instalado correctamente:
+
+    ```bash
+    > uv run python -c "import whodunit_stylometry; print(whodunit_stylometry.__file__)"
+    ```
+
+4. Instala el modelo de spacy:
+
+    ```bash
+    > uv run python -m spacy download en_core_web_sm
+    ```
 
 ## Uso de git hook para formatear el código antes de cada commit
 
 Este repositorio utiliza hooks de pre-commit. Es necesario instalar y configurar estos hooks antes de realizar cambios en el repositorio.
 
-Una vez que hayas clonado el repositorio, ejecuta el siguiente comando para configurar los hooks de pre-commit (solo es necesario hacerlo una vez):
+Una vez que hayas clonado el repositorio y creado el entorno virtual, ejecuta el siguiente comando para configurar los hooks de pre-commit (solo es necesario hacerlo una vez):
 
 ```bash
-> poetry add -G dev pre-commit
-> poetry run pre-commit install
+> uv run pre-commit install
 ```
 
 Para validar, antes de subir cambios al repositorio, ejecuta:
 
 ```bash
-> poetry run pre-commit run --all-files
+> uv run pre-commit run --all-files
 ```
 
 Esto pasará todos los hooks configurados en los archivos del repositorio.
@@ -47,13 +57,13 @@ Esto pasará todos los hooks configurados en los archivos del repositorio.
 Si quieres hacerlo solo en un archivo específico, puedes usar:
 
 ```bash
-> poetry run pre-commit run --files ruta/al/archivo
+> uv run pre-commit run --files ruta/al/archivo
 ```
 
 Si quieres hacerlo de los archivos modificados en el staging area, puedes usar:
 
 ```bash
-> poetry run pre-commit run
+> uv run pre-commit run
 ```
 
 En este caso no te hará falta especificar los archivos.
@@ -64,4 +74,17 @@ Si quieres saltarte los hooks de pre-commit en un commit específico, puedes usa
 
 ```bash
 git commit --no-verify -m "my_commit"
+```
+
+## Para añadir nuevas dependencias al entorno virtual
+
+Cuando queramos añadir nuevas dependencias al entorno virtual, es importante seguir estos pasos para asegurarnos de que el entorno se mantiene actualizado y que los cambios se reflejan correctamente en el control de versiones:
+
+```bash
+> uv add <nueva-dependencia>
+> uv lock
+> uv sync
+> git add pyproject.toml uv.lock
+> git commit -m "Add <nueva-dependencia>"
+> git push
 ```
