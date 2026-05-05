@@ -1,10 +1,15 @@
 """Model training and evaluation utilities."""
 
+from __future__ import annotations
+
 from collections.abc import Hashable, Sequence
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
+import shap
+from IPython.display import display
 from scipy.cluster.hierarchy import fcluster, linkage
 from sklearn.base import clone
 from sklearn.cluster import AgglomerativeClustering, KMeans
@@ -32,6 +37,10 @@ from sklearn.svm import SVC, LinearSVC
 
 from whodunit_stylometry.constants import STOPWORDS
 from whodunit_stylometry.utils.nlp_utils import build_mfw_features, transform_with_mfw
+from whodunit_stylometry.utils.plot_utils import (
+    plot_local_shap_bar,
+    plot_shap_waterfall,
+)
 
 
 def run_experiment(
@@ -968,3 +977,272 @@ def local_linear_contributions(
     out["abs_contribution"] = out["contribution"].abs()
 
     return out.sort_values("abs_contribution", ascending=False)
+
+
+def clean_feature_name(feature: str) -> str:
+    """Remove all occurrences of the firmware feature prefix from a feature name.
+
+    Args:
+        feature: Feature name to clean.
+
+    Returns:
+        The feature name with every occurrence of ``"fw_"`` removed.
+    """
+    return feature.replace("fw_", "")
+
+
+def shap_matrix_for_author(author: str, classes: list[str], values: np.ndarray) -> np.ndarray:
+    """Return the SHAP value matrix for a specific author class.
+
+    Args:
+        author: Author class whose SHAP values should be selected.
+        classes: Ordered list of class labels corresponding to the SHAP output.
+        values: Array of SHAP values.
+
+    Returns:
+        A SHAP value matrix for the requested author. For multiclass SHAP values
+        with three dimensions, this returns the slice for the author's class
+        position. For binary classification with two classes, this returns
+        ``values`` for the positive class and ``-values`` for the negative class.
+    """
+    pos = classes.index(author)
+    if values.ndim == 3:
+        return values[:, :, pos]
+    if len(classes) == 2:
+        return values if pos == 1 else -values
+
+
+def base_value_for_author(
+    author: str,
+    classes: list[str],
+    base_values: np.ndarray,
+    row_pos: int = 0,
+) -> float:
+    """Return the base SHAP value for a specific author class.
+
+    Args:
+        author: Author class whose base value should be returned.
+        classes: Ordered list of class labels corresponding to the SHAP output.
+        base_values: Base SHAP values. Can be a scalar, a one-dimensional array,
+            or a two-dimensional array.
+        row_pos: Row position to use when ``base_values`` contains per-row values.
+
+    Returns:
+        The selected base value as a float.
+
+    Raises:
+        ValueError: If ``author`` is not present in ``classes``.
+        IndexError: If ``row_pos`` or the author's class position is out of bounds.
+        TypeError: If the selected value cannot be converted to ``float``.
+    """
+    pos = classes.index(author)
+    arr = np.asarray(base_values)
+    if arr.ndim == 0:
+        return float(arr)
+    if arr.ndim == 1:
+        if len(arr) == len(classes):
+            return float(arr[pos])
+        return float(arr[row_pos])
+    return float(arr[row_pos, pos])
+
+
+def top_shap_table_for_author(
+    author: str, feature_cols: list[str], classes: list[str], shap_values: np.ndarray, top_n: int = 15
+) -> pd.DataFrame:
+    """Build a table with the top SHAP features for a specific author.
+
+    Args:
+        author: Author class for which SHAP feature statistics should be computed.
+        feature_cols: List of feature column names.
+        classes: Ordered list of class labels corresponding to the SHAP output.
+        shap_values: Array of SHAP values.
+        top_n: Maximum number of rows to return, ordered by descending mean
+            absolute SHAP value.
+
+    Returns:
+        A DataFrame containing feature-level SHAP summary statistics for the
+        requested author. The returned rows are sorted by ``mean_abs_shap`` in
+        descending order and limited to ``top_n`` rows.
+    """
+    mat = shap_matrix_for_author(author, classes, shap_values)
+    out = pd.DataFrame(
+        {
+            "author": author,
+            "feature": feature_cols,
+            "word": [clean_feature_name(c) for c in feature_cols],
+            "mean_abs_shap": np.abs(mat).mean(axis=0),
+            "mean_shap": mat.mean(axis=0),
+            "median_shap": np.median(mat, axis=0),
+            "share_positive": (mat > 0).mean(axis=0),
+        }
+    )
+    out["direction"] = np.where(
+        out["mean_shap"] >= 0,
+        "pushes_toward_author",
+        "pushes_away_from_author",
+    )
+    return out.sort_values("mean_abs_shap", ascending=False).head(top_n)
+
+
+def shap_row_table(
+    X_test: pd.DataFrame,
+    X_test_model_space: pd.DataFrame,
+    instance_id: object,
+    author: str,
+    feature_cols: list[str],
+    classes: list[str],
+    values: np.ndarray,
+    top_n: int | None = 15,
+) -> pd.DataFrame:
+    """Build a per-feature SHAP table for one test instance and author.
+
+    Args:
+        X_test: Test feature DataFrame in the original feature space. Its index
+            should contain the same labels as ``instance_id``.
+        X_test_model_space: Test feature DataFrame in the model space. Its index
+            should contain the same labels as ``instance_id``.
+        instance_id: Index label identifying the row in ``X_test`` and
+            ``X_test_model_space``.
+        author: Author class for which SHAP values should be selected.
+        feature_cols: List of feature column names.
+        top_n: Maximum number of rows to return, ordered by descending absolute
+            SHAP value. If ``None`` or another falsy value is provided, all rows
+            are returned.
+
+    Returns:
+        A DataFrame containing feature names, cleaned word labels, model-space
+        feature values, original feature values, SHAP values, absolute SHAP
+        values, and effect labels for the selected instance and author.
+    """
+    row_pos = X_test.index.get_loc(instance_id)
+    mat = shap_matrix_for_author(author, classes, values)
+    df = pd.DataFrame(
+        {
+            "feature": feature_cols,
+            "word": [clean_feature_name(c) for c in feature_cols],
+            "feature_value_model_space": X_test_model_space.loc[instance_id, feature_cols].values,
+            "original_feature_value": X_test.loc[instance_id, feature_cols].values,
+            "shap_value": mat[row_pos, :],
+        }
+    )
+    df["abs_shap_value"] = df["shap_value"].abs()
+    df["effect"] = np.where(df["shap_value"] >= 0, "a favor", "en contra")
+    df = df.sort_values("abs_shap_value", ascending=False)
+    return df.head(top_n) if top_n else df
+
+
+def local_explanation(
+    instance_id,
+    confidence_df: pd.DataFrame,
+    proba_df: pd.DataFrame,
+    X_test: pd.DataFrame,
+    X_test_model_space: pd.DataFrame,
+    classes,
+    values,
+    base_values,
+    figs_dir: Path,
+    feature_cols: list[str],
+    top_n: int = 25,
+):
+    """Generate and display a local SHAP explanation for a single instance.
+
+    This function prints a textual summary for the selected instance, displays a
+    table of the most relevant feature contributions, and generates two plots:
+    a horizontal bar chart of local SHAP values and a SHAP waterfall plot. Both
+    figures are saved to ``FIGS_DIR`` and shown interactively.
+
+    Args:
+        instance_id: Index label of the instance to explain.
+        confidence_df: DataFrame containing prediction metadata for each instance.
+            It is expected to include at least the columns ``pred_author``,
+            ``work``, ``true_author``, ``proba_second``, and ``proba_pred``.
+        proba_df: DataFrame of class probabilities indexed by instance, with
+            author/class names as columns.
+        X_test: Original test DataFrame indexed by instance.
+        X_test_model_space: Test DataFrame in model feature space, indexed by
+            instance and containing the columns listed in ``feature_cols``.
+        classes: Class labels used by the SHAP helper functions.
+        values: SHAP values structure consumed by ``shap_matrix_for_author``.
+        base_values: Base values structure consumed by
+            ``base_value_for_author``.
+        top_n: Maximum number of top features to include in the displayed table
+            and waterfall plot.
+    """
+    author = confidence_df.loc[instance_id, "pred_author"]
+
+    row_pos = X_test.index.get_loc(instance_id)
+    work = confidence_df.loc[instance_id, "work"]
+    true_author = confidence_df.loc[instance_id, "true_author"]
+    pred_author = confidence_df.loc[instance_id, "pred_author"]
+    proba_author = proba_df.loc[instance_id, author]
+    proba_second = confidence_df.loc[instance_id, "proba_second"]
+
+    print(
+        f"Explicación local de `{work}`\n"
+        f"- Autor real: `{true_author}`\n"
+        f"- Autor predicho: `{pred_author}`\n"
+        f"- Clase explicada: `{author}`\n"
+        f"- Probabilidad de la predicción: `{confidence_df.loc[instance_id, 'proba_pred']:.6f}`\n"
+        f"- Probabilidad de la clase explicada: `{proba_author:.6f}`\n"
+        f"- Probabilidad de la segunda clase más probable: `{proba_second:.6f}`\n"
+        f"- Margen de confianza: `{proba_author - proba_second:.6f}`\n"
+        f"- Es correcta la predicción: {'Sí' if true_author == pred_author else 'No'}"
+    )
+
+    df = shap_row_table(
+        X_test,
+        X_test_model_space,
+        instance_id,
+        author,
+        feature_cols,
+        classes,
+        values,
+        top_n,
+    )
+    display(df)
+
+    plot_local_shap_bar(df, author, work, instance_id, figs_dir)
+
+    # plot_df = df.sort_values("shap_value")
+    # plt.figure(figsize=(8, max(4, 0.35 * len(plot_df))))
+    # plt.barh(plot_df["word"], plot_df["shap_value"])
+    # plt.axvline(0, linestyle="--", linewidth=1)
+    # plt.xlabel("Valor SHAP")
+    # plt.ylabel("Palabra funcional")
+    # plt.title(f"Contribuciones locales para {author}\n{work}")
+    # plt.tight_layout()
+    # plt.savefig(
+    #     FIGS_DIR / f"mfw_lr_shap_local_bar_{instance_id}_{author}.png",
+    #     dpi=200,
+    #     bbox_inches="tight",
+    # )
+    # plt.show()
+
+    exp = shap.Explanation(
+        values=shap_matrix_for_author(author, classes, values)[row_pos, :],
+        base_values=base_value_for_author(author, classes, base_values),
+        data=X_test_model_space.loc[instance_id, feature_cols].values,
+        feature_names=[clean_feature_name(c) for c in feature_cols],
+    )
+    # shap.plots.waterfall(exp, max_display=top_n, show=False)
+    # plt.title(f"Waterfall SHAP: {author} | {work}")
+    # plt.tight_layout()
+    # plt.savefig(
+    #     FIGS_DIR / f"mfw_lr_shap_waterfall_{instance_id}_{author}.png",
+    #     dpi=200,
+    #     bbox_inches="tight",
+    # )
+    # plt.show()
+
+    plot_shap_waterfall(exp, top_n, author, work, instance_id, figs_dir)
+
+    positive_words = df[df["shap_value"] > 0].head(5)["word"].tolist()
+    negative_words = df[df["shap_value"] < 0].head(5)["word"].tolist()
+
+    print(
+        "Lectura local:"
+        f"\n- Señales a favor de `{author}`: "
+        f"{', '.join(positive_words) if positive_words else 'ninguna entre el top mostrado'}. "
+        f"\n- Señales en contra: "
+        f"{', '.join(negative_words) if negative_words else 'ninguna entre el top mostrado'}."
+    )

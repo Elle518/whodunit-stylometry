@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import math
 from collections import Counter, defaultdict
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +12,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
+import shap
 from numpy.typing import NDArray
 from scipy.cluster.hierarchy import dendrogram, linkage
 from sklearn.decomposition import PCA
@@ -17,8 +20,6 @@ from sklearn.manifold import TSNE
 from sklearn.preprocessing import RobustScaler, StandardScaler
 
 from whodunit_stylometry.constants import AUTHORS_ABREV_MAP
-
-sns.set_theme(style="whitegrid")
 
 
 def plot_word_length_distributions(author_name: str, distributions: list[dict[int, float]], block_size: int):
@@ -866,52 +867,6 @@ def add_projection(df: pd.DataFrame, coords: np.ndarray, prefix: str) -> pd.Data
     return out
 
 
-# def plot_projection(
-#     df: pd.DataFrame,
-#     x: str,
-#     y: str,
-#     title: str,
-#     hover_cols: list[str] | None = None,
-#     size_col: str = "token_count",
-# ) -> go.Figure:
-#     """Plot a two-dimensional projection as an interactive scatter plot.
-
-#     Creates a Plotly scatter plot from `df`, using `x` and `y` as coordinate
-#     columns. Points are colored by the `author` column. If `size_col` exists in
-#     `df`, it is used to scale marker sizes; otherwise, marker sizes are not
-#     scaled. The figure is displayed with `fig.show()` and returned.
-
-#     Args:
-#         df: DataFrame containing the projection coordinates and metadata.
-#         x: Name of the column to use for the x-axis.
-#         y: Name of the column to use for the y-axis.
-#         title: Plot title.
-#         hover_cols: Column names to display in the hover tooltip. If `None`,
-#             defaults to `["author", "work", "n_chunks", "token_count"]`.
-#         size_col: Column name used to scale marker sizes when present in `df`.
-
-#     Returns:
-#         The Plotly figure object created and displayed by the function.
-#     """
-#     hover_cols = hover_cols or ["author", "work", "n_chunks", "token_count"]
-
-#     fig = px.scatter(
-#         df,
-#         x=x,
-#         y=y,
-#         color="author",
-#         size=size_col if size_col in df.columns else None,
-#         hover_data=hover_cols,
-#         title=title,
-#         height=720,
-#     )
-#     fig.update_traces(marker=dict(opacity=0.82, line=dict(width=0.5)))
-#     fig.update_layout(legend_title_text="Autor")
-#     fig.show()
-
-#     return fig
-
-
 def plot_projection(
     df: pd.DataFrame,
     x: str,
@@ -970,11 +925,10 @@ def plot_projection(
 def plot_local_contributions(
     local_df: pd.DataFrame,
     work: str,
-    output_path: str | Path,
+    save_path: Path | None = None,
     top_n: int = 25,
     figsize: tuple[float, float] = (9, 6),
-    dpi: int = 200,
-) -> None:
+):
     """Plot and save the strongest local linear feature contributions.
 
     This function selects the top `top_n` rows from `local_df`, sorts them by
@@ -985,13 +939,9 @@ def plot_local_contributions(
         local_df: DataFrame containing local feature contributions. It must
             include the columns `feature` and `contribution`.
         work: Label or title element identifying the predicted work or instance.
-        output_path: File path where the figure will be saved.
+        save_path: File path where the figure will be saved.
         top_n: Number of rows from `local_df` to include in the plot.
         figsize: Figure size passed to Matplotlib.
-        dpi: Resolution used when saving the figure.
-
-    Returns:
-        None. The function saves the figure to `output_path` and displays it.
     """
     plot_local = local_df.head(top_n).sort_values("contribution")
 
@@ -1002,5 +952,271 @@ def plot_local_contributions(
     plt.xlabel("Contribución lineal en el espacio del modelo")
     plt.ylabel("Palabra funcional")
     plt.tight_layout()
-    plt.savefig(output_path, dpi=dpi, bbox_inches="tight")
+    if save_path:
+        plt.savefig(save_path, dpi=200, bbox_inches="tight")
     plt.show()
+
+
+def plot_global_bar_for_author(df: pd.DataFrame, author: str, save_path: Path | None = None):
+    """Plots and saves a horizontal bar chart of global SHAP importance for an author.
+
+    The chart shows the top functional words ranked by mean absolute SHAP value for
+    the given author. The plot is saved as a PNG file in ``FIGS_DIR`` and then
+    displayed.
+
+    Args:
+        df: DataFrame containing SHAP values.
+        author: Author/class name used to select SHAP values and name the output file.
+        save_path: Optional path where the generated figure will be saved. If ``None``, the figure is only displayed.
+    """
+    df = df.sort_values("mean_abs_shap")
+    plt.figure(figsize=(8, max(4, 0.35 * len(df))))
+    plt.barh(df["word"], df["mean_abs_shap"])
+    plt.xlabel("mean(|SHAP|)")
+    plt.ylabel("Palabra funcional")
+    plt.title(f"Importancia global SHAP para la clase: {author}")
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=200, bbox_inches="tight")
+    plt.show()
+
+
+def plot_beeswarm_for_author(
+    author: str, exp: shap.Explanation, save_path: Path | None = None, max_display: int = 25
+) -> None:
+    """Plot and save a SHAP beeswarm chart for a given author.
+
+    This function builds a ``shap.Explanation`` object for the specified author
+    using the SHAP matrix, base values, and test data in model feature space.
+    It then generates a beeswarm plot, saves it as a PNG file in ``FIGS_DIR``,
+    and displays the figure.
+
+    Args:
+        author: Author/class name used to retrieve SHAP values and label the plot.
+        exp: SHAP Explanation object containing the SHAP values and base values for the author.
+        save_path: Optional path where the generated figure will be saved. If ``None``, the figure is only displayed.
+        max_display: Maximum number of features to display in the beeswarm plot. Defaults to 25.
+    """
+    shap.plots.beeswarm(exp, max_display=max_display, show=False)
+    plt.title(f"SHAP beeswarm para la clase: {author}")
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=200, bbox_inches="tight")
+    plt.show()
+
+
+def plot_local_shap_bar(
+    df: pd.DataFrame,
+    author: str,
+    work: str,
+    instance_id,
+    figs_dir: Path,
+) -> None:
+    """Plot and save a horizontal bar chart of local SHAP values.
+
+    The input DataFrame is sorted by ``shap_value`` and plotted as a horizontal
+    bar chart using the ``word`` column as labels. The resulting figure is saved
+    to ``figs_dir`` and displayed.
+
+    Args:
+        df: DataFrame containing at least the columns ``word`` and
+            ``shap_value``.
+        author: Name of the explained author/class, used in the plot title and
+            output filename.
+        work: Name of the work or instance label shown in the plot title.
+        instance_id: Identifier of the explained instance, used in the output
+            filename.
+        figs_dir: Directory where the figure will be saved.
+    """
+    plot_df = df.sort_values("shap_value")
+    plt.figure(figsize=(8, max(4, 0.35 * len(plot_df))))
+    plt.barh(plot_df["word"], plot_df["shap_value"])
+    plt.axvline(0, linestyle="--", linewidth=1)
+    plt.xlabel("Valor SHAP")
+    plt.ylabel("Palabra funcional")
+    plt.title(f"Contribuciones locales para {author}\n{work}")
+    plt.tight_layout()
+    plt.savefig(
+        figs_dir / f"mfw_lr_shap_local_bar_{instance_id}_{author}.png",
+        dpi=200,
+        bbox_inches="tight",
+    )
+    plt.show()
+
+
+def plot_shap_waterfall(
+    exp: shap.Explanation,
+    top_n: int,
+    author: str,
+    work: str,
+    instance_id,
+    figs_dir: Path,
+) -> None:
+    """Plot and save a SHAP waterfall chart for a single instance.
+
+    This function renders a SHAP waterfall plot from a precomputed
+    ``shap.Explanation`` object, adds a title, saves the figure as a PNG file,
+    and displays it.
+
+    Args:
+        exp: SHAP explanation object for the instance to visualize.
+        top_n: Maximum number of features to display in the waterfall plot.
+        author: Name of the explained author/class, used in the title and
+            output filename.
+        work: Name of the work or instance label shown in the plot title.
+        instance_id: Identifier of the explained instance, used in the output
+            filename.
+        figs_dir: Directory where the figure will be saved.
+        filename_prefix: Prefix used to build the output filename.
+    """
+    shap.plots.waterfall(exp, max_display=top_n, show=False)
+    plt.title(f"Waterfall SHAP: {author} | {work}")
+    plt.tight_layout()
+    plt.savefig(
+        figs_dir / f"mfw_lr_shap_waterfall_{instance_id}_{author}.png",
+        dpi=200,
+        bbox_inches="tight",
+    )
+    plt.show()
+
+
+def plot_shap_decision(
+    base_value,
+    mat,
+    X_test_model_space: pd.DataFrame,
+    feature_cols: Sequence[str],
+    row_pos: int,
+    selected_author: str,
+    instance_id,
+    figs_dir: Path,
+):
+    """Plot and save a SHAP decision plot for a selected author and instance.
+
+    This function renders a SHAP decision plot using the provided SHAP base
+    value, SHAP values matrix, and feature data. It highlights the row
+    identified by ``row_pos``, saves the resulting figure as a PNG file in
+    ``figs_dir``, and displays it.
+
+    Args:
+        base_value: Base SHAP value used by ``shap.decision_plot()``.
+        mat: SHAP values passed to ``shap.decision_plot()``.
+        X_test_model_space: DataFrame containing the model-space feature values.
+        feature_cols: Ordered feature names to select from
+            ``X_test_model_space``.
+        row_pos: Row position to highlight in the decision plot.
+        selected_author: Name of the explained author/class, used in the title
+            and output filename.
+        instance_id: Identifier of the explained instance, used in the output
+            filename.
+        figs_dir: Directory where the figure will be saved.
+    """
+    shap.decision_plot(
+        base_value,
+        mat,
+        X_test_model_space[feature_cols],
+        feature_names=[feature.replace("fw_", "") for feature in feature_cols],
+        highlight=row_pos,
+        show=False,
+    )
+    plt.title(f"Decision plot SHAP para la clase: {selected_author}")
+    plt.tight_layout()
+    plt.savefig(
+        figs_dir / f"mfw_lr_shap_decision_{selected_author}_{instance_id}.png",
+        dpi=200,
+        bbox_inches="tight",
+    )
+    plt.show()
+
+
+def plot_shap_force(
+    base_value,
+    mat,
+    row_pos: int,
+    X_test_model_space: pd.DataFrame,
+    instance_id,
+    feature_cols: Sequence[str],
+):
+    """Create a SHAP force plot for a single instance.
+
+    This function initializes the SHAP JavaScript visualization support and
+    creates a force plot for one row of SHAP values and its corresponding
+    feature values.
+
+    Args:
+        base_value: Base SHAP value used by ``shap.force_plot()``.
+        mat: Matrix of SHAP values. The row at ``row_pos`` is used for the
+            force plot.
+        row_pos: Integer position of the instance in ``mat``.
+        X_test_model_space: DataFrame containing model-space feature values,
+            indexed by instance.
+        instance_id: Index label used to select the instance from
+            ``X_test_model_space``.
+        feature_cols: Ordered feature names to select from
+            ``X_test_model_space``.
+        clean_feature_name_fn: Function used to transform raw feature names into
+            display labels.
+
+    Returns:
+        The visualization object returned by ``shap.force_plot()``.
+
+    Raises:
+        KeyError: If ``instance_id`` is not present in ``X_test_model_space`` or
+            if one or more values in ``feature_cols`` are missing.
+        IndexError: If ``row_pos`` is out of bounds for ``mat``.
+        ValueError: If the selected SHAP values and feature values are not
+            compatible with ``shap.force_plot()``.
+
+    Side Effects:
+        Initializes SHAP JavaScript support with ``shap.initjs()``.
+    """
+    shap.initjs()
+    return shap.force_plot(
+        base_value,
+        mat[row_pos, :],
+        X_test_model_space.loc[instance_id, feature_cols],
+        feature_names=[feature.replace("fw_", "") for feature in feature_cols],
+    )
+
+
+def plot_dependence_for_top_features(
+    author: str,
+    mat: Any,
+    X_test_model_space: pd.DataFrame,
+    top_table: pd.DataFrame,
+    feature_cols: Sequence[str],
+    figs_dir: Path,
+):
+    """Create and save SHAP dependence plots for the top-ranked features.
+
+    For each feature listed in the ``feature`` column of ``top_table``, this
+    function creates a SHAP dependence plot using the provided SHAP values and
+    test data. Each plot is saved as a PNG file in ``figs_dir`` and then shown.
+
+    Args:
+        author: Author or class label used in the plot title and output filename.
+        mat: SHAP values or SHAP interaction values accepted by
+            ``shap.dependence_plot``.
+        X_test_model_space: Test feature data in model space.
+        top_table: Table containing a ``feature`` column with feature names to
+            plot.
+        feature_cols: Column names from ``X_test_model_space`` to include in the
+            dependence plot data.
+        figs_dir: Directory where generated plot files are saved.
+    """
+    top_features = top_table["feature"].tolist()
+    for feature in top_features:
+        shap.dependence_plot(
+            feature,
+            mat,
+            X_test_model_space[feature_cols],
+            feature_names=feature_cols,
+            show=False,
+        )
+        plt.title(f"Dependence plot: {feature.replace('fw_', '')} | clase {author}")
+        plt.tight_layout()
+        plt.savefig(
+            figs_dir / f"mfw_lr_shap_dependence_{author}_{feature}.png",
+            dpi=200,
+            bbox_inches="tight",
+        )
+        plt.show()
