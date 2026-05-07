@@ -276,6 +276,7 @@ def classify_test_works_by_average_curve(
                 {
                     "row_id": idx,
                     "title": row.get(title_col, idx),
+                    "genre": row.get("genre", None),
                     "true_author": row.get(true_author_col, None),
                     "pred_author": None,
                     "min_distance": np.nan,
@@ -310,6 +311,7 @@ def classify_test_works_by_average_curve(
         result = {
             "row_id": idx,
             "title": row.get(title_col, idx),
+            "genre": row.get("genre", None),
             "true_author": row.get(true_author_col, None),
             "pred_author": pred_author,
             "min_distance": min_distance,

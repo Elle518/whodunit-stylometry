@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import streamlit as st
 from scipy.spatial.distance import jensenshannon
 
 from whodunit_stylometry.constants import STOPWORDS
@@ -24,6 +25,7 @@ from whodunit_stylometry.utils.stats_utils import (
     burrows_delta,
     compute_average_curve,
     compute_feature_stats,
+    distance_matrix,
     get_pairwise_burrows_contributions,
     get_pairwise_contributions,
     kilgariff_chi2,
@@ -159,6 +161,127 @@ def top_tokens_by_author(df: pd.DataFrame, top_n: int = 20, use_function_words: 
                 }
             )
     return pd.DataFrame(rows)
+
+
+def compute_mendenhall_author_profiles(
+    df: pd.DataFrame,
+    config: ClassicalAnalysisConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, dict[int, float]]]:
+    """Compute Mendenhall block curves, stability stats and average curves."""
+
+    rows = []
+    stats_rows = []
+    average_curves = {}
+
+    for author, tokens in tokens_by_author(df).items():
+        distributions = word_length_distributions_random_blocks(
+            tokens,
+            block_size=config.block_size,
+            n_blocks=config.n_blocks,
+            seed=config.seed,
+        )
+        average_curves[author] = compute_average_curve(distributions)
+
+        aligned, lengths = align_distributions(distributions, max_len=config.max_word_len)
+        distances = distance_matrix(aligned)
+        upper_distances = distances[np.triu_indices_from(distances, k=1)]
+
+        stats_rows.append(
+            {
+                "author": author,
+                "mean_distance": float(np.mean(upper_distances)),
+                "std_distance": float(np.std(upper_distances)),
+                # "n_blocks": config.n_blocks,
+                # "block_size": config.block_size,
+            }
+        )
+
+        for block_id, aligned_distribution in enumerate(aligned, start=1):
+            for length, relative_frequency in zip(lengths, aligned_distribution, strict=True):
+                rows.append(
+                    {
+                        "author": author,
+                        "block": block_id,
+                        "word_length": length,
+                        "relative_frequency": relative_frequency,
+                    }
+                )
+
+    block_curves_df = pd.DataFrame(rows)
+    stats_df = pd.DataFrame(stats_rows).sort_values("mean_distance")
+    average_curves_df = mendenhall_average_curves_to_frame(average_curves, max_word_len=config.max_word_len)
+
+    return block_curves_df, stats_df, average_curves_df, average_curves
+
+
+def mendenhall_average_curves_to_frame(
+    average_curves: dict[str, dict[int, float]],
+    max_word_len: int = 20,
+) -> pd.DataFrame:
+    """Convert average Mendenhall curves to long-form tabular data."""
+
+    aligned, lengths = align_distributions(list(average_curves.values()), max_len=max_word_len)
+    rows = []
+    for author, curve in zip(average_curves.keys(), aligned, strict=True):
+        for length, relative_frequency in zip(lengths, curve, strict=True):
+            rows.append(
+                {
+                    "author": author,
+                    "word_length": length,
+                    "relative_frequency": relative_frequency,
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def compare_mendenhall_average_curves(
+    average_curves: dict[str, dict[int, float]],
+    max_word_len: int = 20,
+) -> pd.DataFrame:
+    """Compute pairwise Jensen-Shannon distances between average curves."""
+
+    authors = list(average_curves.keys())
+    aligned, _ = align_distributions(list(average_curves.values()), max_len=max_word_len)
+    distances = distance_matrix(aligned)
+    return pd.DataFrame(distances, columns=authors, index=authors)
+
+
+def classify_text_with_mendenhall(
+    text: str,
+    average_curves: dict[str, dict[int, float]],
+    config: ClassicalAnalysisConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Attribute one text using Mendenhall average curves."""
+    tokenizer = CustomTokenizer()
+    test_tokens = tokenize_text(text, tokenizer=tokenizer, lowercase=config.lowercase)
+    distributions = word_length_distributions_random_blocks(
+        test_tokens,
+        block_size=5000,
+        n_blocks=20,
+        seed=1,
+    )
+    test_curve = compute_average_curve(distributions)
+    aligned_test, lengths = align_distributions([test_curve], max_len=config.max_word_len)
+    test_vector = aligned_test[0]
+
+    rows = []
+    for author, author_curve in average_curves.items():
+        aligned, _ = align_distributions([test_curve, author_curve], max_len=config.max_word_len)
+        distance = jensenshannon(aligned[0], aligned[1])
+        rows.append({"author": author, "distance": distance})
+
+    distances_df = pd.DataFrame(rows).sort_values("distance").reset_index(drop=True)
+    distances_df["rank"] = distances_df.index + 1
+
+    curve_df = pd.DataFrame(
+        {
+            "author": "Obra seleccionada",
+            "word_length": lengths,
+            "relative_frequency": test_vector,
+        }
+    )
+
+    return distances_df, curve_df
 
 
 def leave_one_work_out_classification(
