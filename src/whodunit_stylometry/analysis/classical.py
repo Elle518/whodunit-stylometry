@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.spatial.distance import jensenshannon
 
 from whodunit_stylometry.constants import STOPWORDS
 from whodunit_stylometry.utils.data_utils import discover_corpus
@@ -18,12 +19,15 @@ from whodunit_stylometry.utils.nlp_utils import (
     normalize_text_for_tokenization,
 )
 from whodunit_stylometry.utils.stats_utils import (
+    align_distributions,
     build_global_vocab,
     burrows_delta,
+    compute_average_curve,
     compute_feature_stats,
     get_pairwise_burrows_contributions,
     get_pairwise_contributions,
     kilgariff_chi2,
+    word_length_distributions_random_blocks,
 )
 
 
@@ -35,6 +39,10 @@ class ClassicalAnalysisConfig:
     min_freq: int = 1
     use_function_words: bool = True
     lowercase: bool = True
+    block_size: int = 100_000
+    n_blocks: int = 50
+    max_word_len: int = 20
+    seed: int = 0
 
 
 def load_corpus(corpus_dir: str | Path) -> pd.DataFrame:
@@ -160,36 +168,54 @@ def leave_one_work_out_classification(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Classify each work against author profiles built without that work."""
 
-    if method not in {"kilgariff", "burrows"}:
-        raise ValueError("method must be 'kilgariff' or 'burrows'")
+    if method not in {"mendenhall", "kilgariff", "burrows"}:
+        raise ValueError("method must be 'mendenhall', 'kilgariff' or 'burrows'")
 
-    feature_df = prepare_feature_tokens(df, use_function_words=config.use_function_words)
+    feature_df = (
+        df.copy()
+        if method == "mendenhall"
+        else prepare_feature_tokens(df, use_function_words=config.use_function_words)
+    )
     rows = []
     contribution_rows = []
 
     for test_idx, test_row in feature_df.iterrows():
         train_df = feature_df.drop(index=test_idx)
+        token_col = "tokens" if method == "mendenhall" else "feature_tokens"
         corpora = {
-            author: [token for tokens in sub["feature_tokens"] for token in tokens]
+            author: [token for tokens in sub[token_col] for token in tokens]
             for author, sub in train_df.groupby("author")
         }
         corpora = {author: tokens for author, tokens in corpora.items() if tokens}
-        test_tokens = test_row["feature_tokens"]
+        test_tokens = test_row[token_col]
 
         if len(corpora) < 2 or not test_tokens:
             rows.append(_skipped_row(test_row, method, "No hay suficientes tokens para comparar."))
             continue
 
-        vocab = build_global_vocab(corpora, vocab_size=config.vocab_size, min_freq=config.min_freq)
-        if not vocab:
-            rows.append(_skipped_row(test_row, method, "El vocabulario global ha quedado vacío."))
-            continue
-
         try:
-            if method == "kilgariff":
+            if method == "mendenhall":
+                distances, contributions = _mendenhall_distances(
+                    corpora,
+                    test_tokens,
+                    block_size=config.block_size,
+                    n_blocks=config.n_blocks,
+                    max_word_len=config.max_word_len,
+                    seed=config.seed,
+                )
+                distance_label = "js_distance"
+            elif method == "kilgariff":
+                vocab = build_global_vocab(corpora, vocab_size=config.vocab_size, min_freq=config.min_freq)
+                if not vocab:
+                    rows.append(_skipped_row(test_row, method, "El vocabulario global ha quedado vacío."))
+                    continue
                 distances, contributions = _kilgariff_distances(corpora, test_tokens, vocab)
                 distance_label = "chi2"
             else:
+                vocab = build_global_vocab(corpora, vocab_size=config.vocab_size, min_freq=config.min_freq)
+                if not vocab:
+                    rows.append(_skipped_row(test_row, method, "El vocabulario global ha quedado vacío."))
+                    continue
                 distances, contributions = _burrows_distances(corpora, test_tokens, vocab)
                 distance_label = "delta"
         except ValueError as exc:
@@ -266,6 +292,50 @@ def classify_external_works(
     return results, contributions
 
 
+def _mendenhall_distances(
+    corpora: dict[str, list[str]],
+    test_tokens: list[str],
+    block_size: int,
+    n_blocks: int,
+    max_word_len: int,
+    seed: int,
+) -> tuple[dict[str, float], dict[str, list[tuple]]]:
+    test_curve = compute_average_curve(
+        word_length_distributions_random_blocks(
+            tokens=test_tokens,
+            block_size=block_size,
+            n_blocks=n_blocks,
+            normalize=True,
+            seed=seed,
+        )
+    )
+
+    distances = {}
+    contributions = {}
+    for author_idx, (author, author_tokens) in enumerate(corpora.items()):
+        author_curve = compute_average_curve(
+            word_length_distributions_random_blocks(
+                tokens=author_tokens,
+                block_size=block_size,
+                n_blocks=n_blocks,
+                normalize=True,
+                seed=seed + author_idx + 1,
+            )
+        )
+        aligned, lengths = align_distributions([test_curve, author_curve], max_len=max_word_len)
+        test_vector, author_vector = aligned
+        distances[author] = jensenshannon(test_vector, author_vector)
+        contributions[author] = sorted(
+            (
+                (length, abs(test_freq - author_freq), author_freq, test_freq)
+                for length, test_freq, author_freq in zip(lengths, test_vector, author_vector, strict=True)
+            ),
+            key=lambda row: row[1],
+            reverse=True,
+        )
+    return distances, contributions
+
+
 def _kilgariff_distances(
     corpora: dict[str, list[str]],
     test_tokens: list[str],
@@ -339,6 +409,20 @@ def _format_contribution(
     contribution: tuple,
     distance_label: str,
 ) -> dict[str, object]:
+    if method == "mendenhall":
+        length, diff, ref_freq, test_freq = contribution
+        return {
+            "method": method,
+            "author": test_row["author"],
+            "work": test_row["work"],
+            "candidate_author": candidate_author,
+            "rank": rank,
+            "word_length": length,
+            distance_label: diff,
+            "ref_frequency": ref_freq,
+            "test_frequency": test_freq,
+        }
+
     if method == "kilgariff":
         token, chi, obs_ref, exp_ref, obs_test, exp_test = contribution
         return {
