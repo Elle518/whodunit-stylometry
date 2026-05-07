@@ -88,3 +88,11 @@ Cuando queramos añadir nuevas dependencias al entorno virtual, es importante se
 > git commit -m "Add <nueva-dependencia>"
 > git push
 ```
+
+## App interactiva
+
+La interfaz de Streamlit permite ejecutar diferentes métodos de análisis estilométrico sobre un corpus organizado como `corpus/autor/*.txt`.
+
+```bash
+> uv run streamlit run app.py
+```
