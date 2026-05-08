@@ -100,8 +100,6 @@ def corpus_summary(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
             n_works=("work", "count"),
             total_tokens=("token_count", "sum"),
             mean_tokens_per_work=("token_count", "mean"),
-            total_types=("tokens", lambda rows: len({token for row in rows for token in row})),
-            mean_ttr=("ttr", "mean"),
         )
         .sort_values("total_tokens", ascending=False)
     )

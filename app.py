@@ -371,6 +371,7 @@ if selected_method == "kilgariff":
             labels={"relative_frequency": "Frecuencia relativa", "token": "Token"},
             title=selected_author,
         )
+        top_fig.update_layout(height=max(400, 25 * len(author_top_words)))
         st.plotly_chart(top_fig, width="stretch")
         st.dataframe(top_words, width="stretch", hide_index=True)
 
@@ -391,13 +392,35 @@ if selected_method == "kilgariff":
 
             heatmap_limit = min(50, vocab_df.shape[0])
             heatmap_tokens = vocab_df.head(heatmap_limit)["token"]
+
             heatmap_df = vocab_frequencies_df[vocab_frequencies_df["token"].isin(heatmap_tokens)]
+
+            heatmap_matrix = heatmap_df.pivot(index="author", columns="token", values="relative_frequency").fillna(0)
+
             heatmap_fig = px.imshow(
-                heatmap_df.pivot(index="author", columns="token", values="relative_frequency").fillna(0),
+                heatmap_matrix,
                 aspect="auto",
-                labels={"x": "Token", "y": "Autor", "color": "Frecuencia relativa"},
+                color_continuous_scale="Purples",
+                labels={
+                    "x": "Token",
+                    "y": "Autor",
+                    "color": "Frecuencia relativa",
+                },
                 title=f"Frecuencias relativas de los {heatmap_limit} términos más frecuentes",
             )
+
+            heatmap_fig.update_xaxes(
+                tickangle=45,
+                tickmode="array",
+                tickvals=list(heatmap_matrix.columns),
+                ticktext=list(heatmap_matrix.columns),
+            )
+
+            heatmap_fig.update_layout(
+                height=max(400, 35 * len(heatmap_matrix.index)),
+                width=max(800, 18 * len(heatmap_matrix.columns)),
+            )
+
             st.plotly_chart(heatmap_fig, width="stretch")
 
     with attribution_tab:
@@ -446,15 +469,13 @@ if selected_method == "kilgariff":
                 predicted_distance = kilgariff_distances_df.iloc[0]["chi2"]
                 second_margin = kilgariff_distances_df.iloc[0]["margin_to_second"]
 
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("Autor más similar", predicted_author)
                 with col2:
                     st.metric("Chi-cuadrado", f"{predicted_distance:.3f}")
                 with col3:
                     st.metric("Margen al segundo", f"{second_margin:.3f}")
-                with col4:
-                    st.metric("Tokens usados", kilgariff_stats["feature_token_count"])
 
                 ranking_fig = px.bar(
                     kilgariff_distances_df.sort_values("chi2", ascending=False),
@@ -467,12 +488,12 @@ if selected_method == "kilgariff":
                 st.plotly_chart(ranking_fig, width="stretch")
 
                 st.subheader("Ranking de autores")
+                ranking_cols = ["rank", "author", "chi2", "margin_to_best"]
                 st.dataframe(
-                    kilgariff_distances_df.style.format(
+                    kilgariff_distances_df[ranking_cols].style.format(
                         {
                             "chi2": "{:.3f}",
                             "margin_to_best": "{:.3f}",
-                            "margin_to_second": "{:.3f}",
                         }
                     ),
                     width="stretch",
@@ -502,6 +523,11 @@ if selected_method == "kilgariff":
             filtered = kilgariff_contributions_df[
                 kilgariff_contributions_df["candidate_author"] == selected_candidate
             ].head(contribution_limit)
+            contribution_cols = ["rank", "token", "chi2", "obs_ref", "exp_ref", "obs_test", "exp_test"]
+            selected_work_title = st.session_state.kilgariff_attribution_filename or "obra externa"
+
+            st.write(f"**Obra seleccionada:** {selected_work_title}")
+            st.write(f"**Autor candidato:** {selected_candidate}")
 
             contribution_fig = px.bar(
                 filtered.sort_values("chi2"),
@@ -511,9 +537,12 @@ if selected_method == "kilgariff":
                 labels={"chi2": "Contribución al chi-cuadrado", "token": "Token"},
                 title=f"Contribuciones principales frente a {selected_candidate}",
             )
+
+            contribution_fig.update_layout(height=max(400, 25 * len(filtered)))
+
             st.plotly_chart(contribution_fig, width="stretch")
             st.dataframe(
-                filtered.style.format(
+                filtered[contribution_cols].style.format(
                     {
                         "chi2": "{:.3f}",
                         "exp_ref": "{:.2f}",
