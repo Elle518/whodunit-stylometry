@@ -235,6 +235,11 @@ if selected_method == "mendenhall":
         st.plotly_chart(block_fig, width="stretch")
 
         st.subheader("Estabilidad interna por autor")
+        st.caption(
+            "**Tip:** `mean_distance` resume cuánto varían entre sí los bloques de un mismo autor. "
+            "Valores más bajos indican una distribución de longitudes de palabra más estable dentro del corpus. "
+            "`std_distance` indica si esa variación es regular o si algunos bloques se alejan mucho más que otros."
+        )
         st.dataframe(
             mendenhall_stats_df.style.format({"mean_distance": "{:.5f}", "std_distance": "{:.5f}"}),
             width="stretch",
@@ -243,6 +248,11 @@ if selected_method == "mendenhall":
 
     with average_tab:
         st.subheader("Curvas características medias")
+        st.caption(
+            "**Tip:** cada línea resume la frecuencia media de palabras de distintas longitudes en el corpus de un autor. "
+            "Curvas más parecidas sugieren perfiles de composición similares, aunque este rasgo por sí solo no siempre "
+            "discrimina autores con claridad."
+        )
         average_fig = px.line(
             average_curves_df,
             x="word_length",
@@ -259,6 +269,10 @@ if selected_method == "mendenhall":
         st.plotly_chart(average_fig, width="stretch")
 
         st.subheader("Distancia Jensen-Shannon entre curvas medias")
+        st.caption(
+            "**Tip:** los valores más bajos indican autores con curvas medias más parecidas. "
+            "La diagonal vale cero porque compara cada autor consigo mismo."
+        )
         comparison_df = compare_mendenhall_average_curves(average_curves, max_word_len=max_word_len)
         st.dataframe(comparison_df.style.format("{:.5f}"), width="stretch")
 
@@ -327,6 +341,11 @@ if selected_method == "mendenhall":
                 )
                 st.plotly_chart(attribution_fig, width="stretch")
                 st.subheader("Ranking de autores")
+                st.caption(
+                    "**Tip:** la obra se atribuye al autor cuya curva media tiene menor distancia con la curva de la obra "
+                    "seleccionada. Conviene mirar también la separación respecto al segundo autor ya que si las distancias "
+                    "son muy parecidas, la atribución es menos clara."
+                )
                 st.dataframe(
                     distances_df[["rank", "author", "distance"]].style.format({"distance": "{:.5f}"}),
                     width="stretch",
@@ -362,6 +381,10 @@ if selected_method == "kilgariff":
         lexical_uses_function_words = use_function_words
         top_words = top_tokens_by_author(corpus_df, top_n=top_n, use_function_words=lexical_uses_function_words)
         st.subheader("Palabras más frecuentes por autor")
+        st.caption(
+            "**Tip:** las palabras funcionales suelen ser útiles en estilometría porque dependen menos del tema de la obra "
+            "y más de hábitos de escritura relativamente estables."
+        )
 
         selected_author = st.selectbox("Autor", sorted(top_words["author"].unique()), key="kilgariff_top_author")
         author_top_words = top_words[top_words["author"] == selected_author]
@@ -379,6 +402,10 @@ if selected_method == "kilgariff":
 
     with vocab_tab:
         st.subheader("Vocabulario común de comparación")
+        st.caption(
+            "**Tip:** todas las comparaciones usan este mismo vocabulario. Esto hace que las distancias entre autores sean "
+            "comparables, porque siempre se calculan sobre los mismos rasgos léxicos."
+        )
         if vocab_df.empty:
             st.warning("El vocabulario global ha quedado vacío con la configuración actual.")
         else:
@@ -424,6 +451,11 @@ if selected_method == "kilgariff":
             )
 
             st.plotly_chart(heatmap_fig, width="stretch")
+
+            st.caption(
+                "**Tip:** el color muestra la frecuencia relativa de cada término en cada autor. Diferencias marcadas "
+                "pueden indicar palabras especialmente características o poco habituales en un perfil."
+            )
 
     with attribution_tab:
         st.subheader("Atribuir una obra externa")
@@ -490,6 +522,11 @@ if selected_method == "kilgariff":
                 st.plotly_chart(ranking_fig, width="stretch")
 
                 st.subheader("Ranking de autores")
+                st.caption(
+                    "**Tip:** en Kilgariff, valores más bajos de chi-cuadrado indican mayor similitud entre la obra "
+                    "seleccionada y el corpus del autor. El margen respecto al segundo candidato ayuda a valorar la "
+                    "claridad de la atribución."
+                )
                 ranking_cols = ["rank", "author", "chi2", "margin_to_best"]
                 st.dataframe(
                     kilgariff_distances_df[ranking_cols].style.format(
@@ -507,6 +544,11 @@ if selected_method == "kilgariff":
             st.info("Sube una obra en la pestaña de atribución para ver las contribuciones por palabra.")
         else:
             st.subheader("Palabras que más explican la distancia")
+            st.caption(
+                "**Tip:** las palabras con mayor contribución son las que más aumentan la distancia entre la obra y el "
+                "autor candidato. `obs_ref` y `obs_test` son frecuencias observadas. `exp_ref` y `exp_test` son las esperadas "
+                "si ambos textos siguieran una distribución similar."
+            )
             candidate_authors = kilgariff_distances_df["author"].tolist()
             selected_candidate = st.selectbox(
                 "Autor candidato",
@@ -587,6 +629,10 @@ if selected_method == "burrows":
 
         top_words = top_tokens_by_author(corpus_df, top_n=top_n, use_function_words=use_function_words)
         st.subheader("Palabras más frecuentes por autor")
+        st.caption(
+            "**Tip:** Burrows suele trabajar con palabras frecuentes, especialmente funcionales, porque ayudan a capturar "
+            "patrones de estilo menos dependientes del contenido temático."
+        )
 
         selected_author = st.selectbox("Autor", sorted(top_words["author"].unique()), key="burrows_top_author")
         author_top_words = top_words[top_words["author"] == selected_author]
@@ -604,6 +650,10 @@ if selected_method == "burrows":
 
     with vocab_tab:
         st.subheader("Vocabulario común y puntuaciones z")
+        st.caption(
+            "**Tip:** Burrows normaliza las frecuencias mediante puntuaciones z. Un z-score positivo indica que un autor "
+            "usa ese término por encima de la media del corpus y, uno negativo, por debajo."
+        )
         if vocab_df.empty:
             st.warning("El vocabulario global ha quedado vacío con la configuración actual.")
         else:
@@ -657,6 +707,11 @@ if selected_method == "burrows":
             )
 
             st.plotly_chart(heatmap_fig, width="stretch")
+
+            st.caption(
+                "**Tip:** los colores muestran desviaciones respecto al comportamiento medio del corpus. Los tonos "
+                "extremos señalan términos especialmente sobreutilizados o infrautilizados por cada autor."
+            )
 
     with attribution_tab:
         st.subheader("Atribuir una obra externa")
@@ -723,6 +778,11 @@ if selected_method == "burrows":
                 st.plotly_chart(ranking_fig, width="stretch")
 
                 st.subheader("Ranking de autores")
+                st.caption(
+                    "**Tip:** en Delta de Burrows, lo más importante es el orden relativo del ranking de modo que el autor con menor "
+                    "Delta es el más similar. Las distancias absolutas son menos interpretables que la separación entre "
+                    "candidatos."
+                )
                 ranking_cols = ["rank", "author", "delta", "margin_to_best"]
                 st.dataframe(
                     burrows_distances_df[ranking_cols].style.format(
@@ -740,6 +800,11 @@ if selected_method == "burrows":
             st.info("Sube una obra en la pestaña de atribución para ver las contribuciones por palabra.")
         else:
             st.subheader("Palabras que más explican la distancia")
+            st.caption(
+                "**Tip:** delta muestra la diferencia absoluta entre los z-scores del autor candidato y la obra "
+                "seleccionada para cada palabra. Valores altos indican los términos que más separan la obra de ese perfil "
+                "de autor."
+            )
             candidate_authors = burrows_distances_df["author"].tolist()
             selected_candidate = st.selectbox(
                 "Autor candidato",
