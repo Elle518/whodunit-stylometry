@@ -114,14 +114,6 @@ def tokens_by_author(df: pd.DataFrame) -> dict[str, list[str]]:
     return {author: [token for tokens in sub["tokens"] for token in tokens] for author, sub in df.groupby("author")}
 
 
-def tokens_by_work(df: pd.DataFrame) -> dict[str, list[str]]:
-    """Return a dictionary with one token sequence per work."""
-
-    return {
-        f"{row.author} / {row.work}": row.tokens for row in df[["author", "work", "tokens"]].itertuples(index=False)
-    }
-
-
 def filter_feature_tokens(tokens: list[str], use_function_words: bool) -> list[str]:
     """Optionally keep only function words for classical distance methods."""
 
@@ -274,8 +266,6 @@ def compute_mendenhall_author_profiles(
                 "author": author,
                 "mean_distance": float(np.mean(upper_distances)),
                 "std_distance": float(np.std(upper_distances)),
-                # "n_blocks": config.n_blocks,
-                # "block_size": config.block_size,
             }
         )
 
@@ -485,181 +475,6 @@ def classify_text_with_burrows(
     }
 
     return pd.DataFrame(distance_rows), pd.DataFrame(contribution_rows), stats
-
-
-def leave_one_work_out_classification(
-    df: pd.DataFrame,
-    method: str,
-    config: ClassicalAnalysisConfig,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Classify each work against author profiles built without that work."""
-
-    if method not in {"mendenhall", "kilgariff", "burrows"}:
-        raise ValueError("method must be 'mendenhall', 'kilgariff' or 'burrows'")
-
-    feature_df = (
-        df.copy()
-        if method == "mendenhall"
-        else prepare_feature_tokens(df, use_function_words=config.use_function_words)
-    )
-    rows = []
-    contribution_rows = []
-
-    for test_idx, test_row in feature_df.iterrows():
-        train_df = feature_df.drop(index=test_idx)
-        token_col = "tokens" if method == "mendenhall" else "feature_tokens"
-        corpora = {
-            author: [token for tokens in sub[token_col] for token in tokens]
-            for author, sub in train_df.groupby("author")
-        }
-        corpora = {author: tokens for author, tokens in corpora.items() if tokens}
-        test_tokens = test_row[token_col]
-
-        if len(corpora) < 2 or not test_tokens:
-            rows.append(_skipped_row(test_row, method, "No hay suficientes tokens para comparar."))
-            continue
-
-        try:
-            if method == "mendenhall":
-                distances, contributions = _mendenhall_distances(
-                    corpora,
-                    test_tokens,
-                    block_size=config.block_size,
-                    n_blocks=config.n_blocks,
-                    max_word_len=config.max_word_len,
-                    seed=config.seed,
-                )
-                distance_label = "js_distance"
-            elif method == "kilgariff":
-                vocab = build_global_vocab(corpora, vocab_size=config.vocab_size, min_freq=config.min_freq)
-                if not vocab:
-                    rows.append(_skipped_row(test_row, method, "El vocabulario global ha quedado vacío."))
-                    continue
-                distances, contributions = _kilgariff_distances(corpora, test_tokens, vocab)
-                distance_label = "chi2"
-            else:
-                vocab = build_global_vocab(corpora, vocab_size=config.vocab_size, min_freq=config.min_freq)
-                if not vocab:
-                    rows.append(_skipped_row(test_row, method, "El vocabulario global ha quedado vacío."))
-                    continue
-                distances, contributions = _burrows_distances(corpora, test_tokens, vocab)
-                distance_label = "delta"
-        except ValueError as exc:
-            rows.append(_skipped_row(test_row, method, str(exc)))
-            continue
-
-        ranking = sorted(distances.items(), key=lambda item: item[1])
-        pred_author, min_distance = ranking[0]
-        second_distance = ranking[1][1] if len(ranking) > 1 else np.nan
-
-        result_row = {
-            "method": method,
-            "author": test_row["author"],
-            "work": test_row["work"],
-            "pred_author": pred_author,
-            "correct": pred_author == test_row["author"],
-            "min_distance": min_distance,
-            "second_distance": second_distance,
-            "margin_to_second": second_distance - min_distance if pd.notna(second_distance) else np.nan,
-            "status": "ok",
-        }
-        result_row.update({f"dist_{author}": value for author, value in distances.items()})
-        rows.append(result_row)
-
-        best_contributions = contributions[pred_author][:10]
-        for rank, contribution in enumerate(best_contributions, start=1):
-            contribution_rows.append(
-                _format_contribution(method, test_row, pred_author, rank, contribution, distance_label)
-            )
-
-    return pd.DataFrame(rows), pd.DataFrame(contribution_rows)
-
-
-def classify_external_works(
-    reference_df: pd.DataFrame,
-    test_df: pd.DataFrame,
-    method: str,
-    config: ClassicalAnalysisConfig,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Classify works from a separate test corpus against the reference corpus."""
-
-    if method not in {"kilgariff", "burrows"}:
-        raise ValueError("method must be 'kilgariff' or 'burrows'")
-
-    reference_df = prepare_feature_tokens(reference_df, use_function_words=config.use_function_words)
-    test_df = prepare_feature_tokens(test_df, use_function_words=config.use_function_words)
-    corpora = {
-        author: [token for tokens in sub["feature_tokens"] for token in tokens]
-        for author, sub in reference_df.groupby("author")
-    }
-    corpora = {author: tokens for author, tokens in corpora.items() if tokens}
-    test_works = {
-        f"{row.author} / {row.work}": row.feature_tokens
-        for row in test_df[["author", "work", "feature_tokens"]].itertuples(index=False)
-    }
-
-    if method == "kilgariff":
-        raw_results = _results_to_tables(
-            get_pairwise_contributions(corpora, test_works, config.vocab_size, config.min_freq),
-            method=method,
-            distance_key="chi2",
-        )
-    else:
-        raw_results = _results_to_tables(
-            get_pairwise_burrows_contributions(corpora, test_works, config.vocab_size, config.min_freq),
-            method=method,
-            distance_key="delta",
-        )
-
-    results, contributions = raw_results
-    truth = test_df.assign(work_key=test_df["author"] + " / " + test_df["work"])[["work_key", "author", "work"]]
-    results = results.merge(truth, left_on="work", right_on="work_key", how="left").drop(columns=["work_key"])
-    results["correct"] = results["pred_author"] == results["author"]
-    return results, contributions
-
-
-def _mendenhall_distances(
-    corpora: dict[str, list[str]],
-    test_tokens: list[str],
-    block_size: int,
-    n_blocks: int,
-    max_word_len: int,
-    seed: int,
-) -> tuple[dict[str, float], dict[str, list[tuple]]]:
-    test_curve = compute_average_curve(
-        word_length_distributions_random_blocks(
-            tokens=test_tokens,
-            block_size=block_size,
-            n_blocks=n_blocks,
-            normalize=True,
-            seed=seed,
-        )
-    )
-
-    distances = {}
-    contributions = {}
-    for author_idx, (author, author_tokens) in enumerate(corpora.items()):
-        author_curve = compute_average_curve(
-            word_length_distributions_random_blocks(
-                tokens=author_tokens,
-                block_size=block_size,
-                n_blocks=n_blocks,
-                normalize=True,
-                seed=seed + author_idx + 1,
-            )
-        )
-        aligned, lengths = align_distributions([test_curve, author_curve], max_len=max_word_len)
-        test_vector, author_vector = aligned
-        distances[author] = jensenshannon(test_vector, author_vector)
-        contributions[author] = sorted(
-            (
-                (length, abs(test_freq - author_freq), author_freq, test_freq)
-                for length, test_freq, author_freq in zip(lengths, test_vector, author_vector, strict=True)
-            ),
-            key=lambda row: row[1],
-            reverse=True,
-        )
-    return distances, contributions
 
 
 def _kilgariff_distances(
