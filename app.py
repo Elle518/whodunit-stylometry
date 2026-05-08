@@ -9,6 +9,8 @@ import streamlit as st
 from whodunit_stylometry.analysis.classical import (
     ClassicalAnalysisConfig,
     add_tokens,
+    burrows_reference_tables,
+    classify_text_with_burrows,
     classify_text_with_kilgariff,
     classify_text_with_mendenhall,
     compare_mendenhall_average_curves,
@@ -547,6 +549,239 @@ if selected_method == "kilgariff":
                         "chi2": "{:.3f}",
                         "exp_ref": "{:.2f}",
                         "exp_test": "{:.2f}",
+                    }
+                ),
+                width="stretch",
+                hide_index=True,
+            )
+
+    st.stop()
+
+if selected_method == "burrows":
+    corpus_tab, vocab_tab, attribution_tab, contributions_tab = st.tabs(
+        ["Corpus", "Vocabulario global", "Atribución de obra", "Contribuciones"]
+    )
+
+    try:
+        with st.spinner("Preparando perfiles normalizados de Burrows..."):
+            vocab_df, zscores_df = burrows_reference_tables(corpus_df, config)
+    except ValueError as exc:
+        st.error(str(exc))
+        st.stop()
+
+    with corpus_tab:
+        left, right = st.columns([0.55, 0.45])
+        with left:
+            st.subheader("Resumen por autor")
+            st.dataframe(author_summary, width="stretch", hide_index=True)
+        with right:
+            fig = px.bar(
+                author_summary.sort_values("total_tokens"),
+                x="total_tokens",
+                y="author",
+                orientation="h",
+                labels={"total_tokens": "Tokens", "author": "Autor"},
+                title="Tamaño del corpus por autor",
+            )
+            st.plotly_chart(fig, width="stretch")
+
+        top_words = top_tokens_by_author(corpus_df, top_n=top_n, use_function_words=use_function_words)
+        st.subheader("Palabras más frecuentes por autor")
+
+        selected_author = st.selectbox("Autor", sorted(top_words["author"].unique()), key="burrows_top_author")
+        author_top_words = top_words[top_words["author"] == selected_author]
+        top_fig = px.bar(
+            author_top_words.sort_values("relative_frequency"),
+            x="relative_frequency",
+            y="token",
+            orientation="h",
+            labels={"relative_frequency": "Frecuencia relativa", "token": "Token"},
+            title=selected_author,
+        )
+        top_fig.update_layout(height=max(400, 25 * len(author_top_words)))
+        st.plotly_chart(top_fig, width="stretch")
+        st.dataframe(top_words, width="stretch", hide_index=True)
+
+    with vocab_tab:
+        st.subheader("Vocabulario común y puntuaciones z")
+        if vocab_df.empty:
+            st.warning("El vocabulario global ha quedado vacío con la configuración actual.")
+        else:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Términos seleccionados", vocab_df.shape[0])
+            with col2:
+                st.metric("Frecuencia mínima", min_freq)
+            with col3:
+                st.metric("Solo palabras funcionales", "Sí" if use_function_words else "No")
+
+            st.dataframe(
+                vocab_df.style.format(
+                    {
+                        "mean_frequency": "{:.6f}",
+                        "std_frequency": "{:.6f}",
+                    }
+                ),
+                width="stretch",
+                hide_index=True,
+            )
+
+            heatmap_limit = min(50, vocab_df.shape[0])
+            heatmap_tokens = vocab_df.head(heatmap_limit)["token"]
+            heatmap_df = zscores_df[zscores_df["token"].isin(heatmap_tokens)]
+            heatmap_matrix = heatmap_df.pivot(index="author", columns="token", values="z_score")
+
+            heatmap_fig = px.imshow(
+                heatmap_matrix,
+                aspect="auto",
+                color_continuous_scale="RdBu_r",
+                color_continuous_midpoint=0,
+                labels={
+                    "x": "Token",
+                    "y": "Autor",
+                    "color": "Z-score",
+                },
+                title=f"Puntuaciones z de los {heatmap_limit} términos más frecuentes",
+            )
+
+            heatmap_fig.update_xaxes(
+                tickangle=45,
+                tickmode="array",
+                tickvals=list(heatmap_matrix.columns),
+                ticktext=list(heatmap_matrix.columns),
+            )
+
+            heatmap_fig.update_layout(
+                height=max(400, 35 * len(heatmap_matrix.index)),
+                width=max(800, 18 * len(heatmap_matrix.columns)),
+            )
+
+            st.plotly_chart(heatmap_fig, width="stretch")
+
+    with attribution_tab:
+        st.subheader("Atribuir una obra externa")
+
+        uploaded_file = st.file_uploader(
+            "Selecciona una obra en .txt",
+            type=["txt"],
+            key="burrows_attribution_uploaded_txt",
+        )
+
+        if "burrows_attribution_text" not in st.session_state:
+            st.session_state.burrows_attribution_text = None
+        if "burrows_attribution_filename" not in st.session_state:
+            st.session_state.burrows_attribution_filename = None
+
+        if uploaded_file is not None:
+            st.session_state.burrows_attribution_text = uploaded_file.getvalue().decode(
+                "utf-8",
+                errors="replace",
+            )
+            st.session_state.burrows_attribution_filename = uploaded_file.name
+
+        if st.session_state.burrows_attribution_text is None:
+            st.info("Sube un archivo .txt para compararlo con los perfiles normalizados del corpus.")
+            burrows_distances_df = pd.DataFrame()
+            burrows_contributions_df = pd.DataFrame()
+        else:
+            text = st.session_state.burrows_attribution_text
+            uploaded_filename = st.session_state.burrows_attribution_filename or "obra externa"
+
+            st.success(f"Archivo cargado: {uploaded_filename}")
+
+            try:
+                burrows_distances_df, burrows_contributions_df, burrows_stats = classify_text_with_burrows(
+                    text,
+                    corpus_df,
+                    config,
+                )
+            except ValueError as exc:
+                st.error(str(exc))
+                burrows_distances_df = pd.DataFrame()
+                burrows_contributions_df = pd.DataFrame()
+            else:
+                predicted_author = burrows_distances_df.iloc[0]["author"]
+                predicted_distance = burrows_distances_df.iloc[0]["delta"]
+                second_margin = burrows_distances_df.iloc[0]["margin_to_second"]
+
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Autor más similar", predicted_author)
+                with col2:
+                    st.metric("Delta", f"{predicted_distance:.3f}")
+                with col3:
+                    st.metric("Margen al segundo", f"{second_margin:.3f}")
+
+                ranking_fig = px.bar(
+                    burrows_distances_df.sort_values("delta", ascending=False),
+                    x="delta",
+                    y="author",
+                    orientation="h",
+                    labels={"delta": "Delta", "author": "Autor"},
+                    title=f"Ranking de similitud para {uploaded_filename}",
+                )
+                st.plotly_chart(ranking_fig, width="stretch")
+
+                st.subheader("Ranking de autores")
+                ranking_cols = ["rank", "author", "delta", "margin_to_best"]
+                st.dataframe(
+                    burrows_distances_df[ranking_cols].style.format(
+                        {
+                            "delta": "{:.3f}",
+                            "margin_to_best": "{:.3f}",
+                        }
+                    ),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+    with contributions_tab:
+        if "burrows_contributions_df" not in locals() or burrows_contributions_df.empty:
+            st.info("Sube una obra en la pestaña de atribución para ver las contribuciones por palabra.")
+        else:
+            st.subheader("Palabras que más explican la distancia")
+            candidate_authors = burrows_distances_df["author"].tolist()
+            selected_candidate = st.selectbox(
+                "Autor candidato",
+                candidate_authors,
+                key="burrows_contribution_author",
+            )
+            contribution_limit = st.slider(
+                "Número de palabras",
+                min_value=5,
+                max_value=50,
+                value=20,
+                step=5,
+                key="burrows_contribution_limit",
+            )
+
+            filtered = burrows_contributions_df[
+                burrows_contributions_df["candidate_author"] == selected_candidate
+            ].head(contribution_limit)
+            contribution_cols = ["rank", "token", "delta", "z_ref", "z_test"]
+            selected_work_title = st.session_state.burrows_attribution_filename or "obra externa"
+
+            st.write(f"**Obra seleccionada:** {selected_work_title}")
+            st.write(f"**Autor candidato:** {selected_candidate}")
+
+            contribution_fig = px.bar(
+                filtered.sort_values("delta"),
+                x="delta",
+                y="token",
+                orientation="h",
+                labels={"delta": "Diferencia absoluta de z-scores", "token": "Token"},
+                title=f"Contribuciones principales frente a {selected_candidate}",
+            )
+
+            contribution_fig.update_layout(height=max(400, 25 * len(filtered)))
+
+            st.plotly_chart(contribution_fig, width="stretch")
+            st.dataframe(
+                filtered[contribution_cols].style.format(
+                    {
+                        "delta": "{:.3f}",
+                        "z_ref": "{:.3f}",
+                        "z_test": "{:.3f}",
                     }
                 ),
                 width="stretch",

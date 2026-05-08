@@ -29,6 +29,7 @@ from whodunit_stylometry.utils.stats_utils import (
     get_pairwise_contributions,
     kilgariff_chi2,
     word_length_distributions_random_blocks,
+    z_scores,
 )
 
 
@@ -196,6 +197,53 @@ def kilgariff_reference_tables(
             )
 
     return pd.DataFrame(vocab_rows), pd.DataFrame(frequency_rows)
+
+
+def burrows_reference_tables(
+    df: pd.DataFrame,
+    config: ClassicalAnalysisConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Build Burrows vocabulary and author z-score tables for display."""
+
+    feature_df = prepare_feature_tokens(df, use_function_words=config.use_function_words)
+    corpora = {
+        author: [token for tokens in sub["feature_tokens"] for token in tokens]
+        for author, sub in feature_df.groupby("author")
+    }
+    corpora = {author: tokens for author, tokens in corpora.items() if tokens}
+    vocab = build_global_vocab(corpora, vocab_size=config.vocab_size, min_freq=config.min_freq)
+
+    if not vocab:
+        return pd.DataFrame(), pd.DataFrame()
+
+    means, stds, author_freqs = compute_feature_stats(corpora, vocab)
+    global_counts = Counter(token for tokens in corpora.values() for token in tokens)
+
+    vocab_rows = [
+        {
+            "rank": rank,
+            "token": token,
+            "global_count": global_counts[token],
+            "mean_frequency": means[token],
+            "std_frequency": stds[token],
+        }
+        for rank, token in enumerate(vocab, start=1)
+    ]
+
+    zscore_rows = []
+    for author, freqs in author_freqs.items():
+        author_zscores = z_scores(freqs, means, stds, vocab)
+        for token in vocab:
+            zscore_rows.append(
+                {
+                    "author": author,
+                    "token": token,
+                    "relative_frequency": freqs[token],
+                    "z_score": author_zscores.get(token, np.nan),
+                }
+            )
+
+    return pd.DataFrame(vocab_rows), pd.DataFrame(zscore_rows)
 
 
 def compute_mendenhall_author_profiles(
@@ -369,6 +417,66 @@ def classify_text_with_kilgariff(
     for author, author_contributions in contributions.items():
         for rank, contribution in enumerate(author_contributions, start=1):
             contribution_rows.append(_format_contribution("kilgariff", test_row, author, rank, contribution, "chi2"))
+
+    stats = {
+        "token_count": len(test_tokens),
+        "feature_token_count": len(test_feature_tokens),
+        "vocab_size": len(vocab),
+    }
+
+    return pd.DataFrame(distance_rows), pd.DataFrame(contribution_rows), stats
+
+
+def classify_text_with_burrows(
+    text: str,
+    reference_df: pd.DataFrame,
+    config: ClassicalAnalysisConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
+    """Attribute one text using Burrows's Delta distance."""
+
+    tokenizer = CustomTokenizer()
+    test_tokens = tokenize_text(text, tokenizer=tokenizer, lowercase=config.lowercase)
+    test_feature_tokens = filter_feature_tokens(test_tokens, use_function_words=config.use_function_words)
+
+    reference_df = prepare_feature_tokens(reference_df, use_function_words=config.use_function_words)
+    corpora = {
+        author: [token for tokens in sub["feature_tokens"] for token in tokens]
+        for author, sub in reference_df.groupby("author")
+    }
+    corpora = {author: tokens for author, tokens in corpora.items() if tokens}
+
+    if len(corpora) < 2:
+        raise ValueError("Se necesitan al menos dos autores con tokens suficientes para comparar.")
+    if not test_feature_tokens:
+        raise ValueError("La obra seleccionada no contiene tokens suficientes con la configuración actual.")
+
+    vocab = build_global_vocab(corpora, vocab_size=config.vocab_size, min_freq=config.min_freq)
+    if not vocab:
+        raise ValueError("El vocabulario global ha quedado vacío con la configuración actual.")
+
+    distances, contributions = _burrows_distances(corpora, test_feature_tokens, vocab)
+    ranking = sorted(distances.items(), key=lambda item: item[1])
+    second_distance = ranking[1][1] if len(ranking) > 1 else np.nan
+
+    distance_rows = []
+    for rank, (author, delta) in enumerate(ranking, start=1):
+        distance_rows.append(
+            {
+                "rank": rank,
+                "author": author,
+                "delta": delta,
+                "margin_to_best": delta - ranking[0][1],
+                "margin_to_second": (
+                    second_distance - ranking[0][1] if rank == 1 and pd.notna(second_distance) else np.nan
+                ),
+            }
+        )
+
+    contribution_rows = []
+    test_row = {"author": None, "work": "Obra seleccionada"}
+    for author, author_contributions in contributions.items():
+        for rank, contribution in enumerate(author_contributions, start=1):
+            contribution_rows.append(_format_contribution("burrows", test_row, author, rank, contribution, "delta"))
 
     stats = {
         "token_count": len(test_tokens),
