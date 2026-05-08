@@ -37,6 +37,8 @@ METHOD_NAMES = {
     "burrows": "Distancia de Burrows",
 }
 
+SIDEBAR_ICON_PATH = Path("logo.png")
+
 
 st.set_page_config(
     page_title="Whodunit Stylometry",
@@ -84,11 +86,15 @@ def metric_card(label: str, value) -> None:
     st.metric(label=label, value=value)
 
 
-st.title("Whodunit Stylometry")
+st.title("Whodunit Stylometry 🕵")
 
 with st.sidebar:
+    _, logo_col, _ = st.columns([1, 3, 1])
+    with logo_col:
+        st.image(SIDEBAR_ICON_PATH, width=120)
+
     st.header("Corpus")
-    default_path = str(Path("corpus/hand_cleaned"))
+    default_path = str(Path("/Users/my_user/corpus"))
     corpus_path = st.text_input(
         "Ruta al corpus",
         value=default_path,
@@ -148,6 +154,10 @@ with st.sidebar:
 
 
 if not st.session_state.analysis_has_run:
+    st.write(
+        "Esta aplicación permite explorar un corpus literario mediante técnicas de estilometría "
+        "para comparar autores, analizar patrones de escritura y apoyar tareas de atribución de autoría."
+    )
     st.info("Selecciona una ruta de corpus y pulsa Ejecutar análisis.")
     st.stop()
 
