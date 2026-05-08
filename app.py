@@ -9,10 +9,12 @@ import streamlit as st
 from whodunit_stylometry.analysis.classical import (
     ClassicalAnalysisConfig,
     add_tokens,
+    classify_text_with_kilgariff,
     classify_text_with_mendenhall,
     compare_mendenhall_average_curves,
     compute_mendenhall_author_profiles,
     corpus_summary,
+    kilgariff_reference_tables,
     leave_one_work_out_classification,
     load_corpus,
     mendenhall_average_curves_to_frame,
@@ -211,7 +213,6 @@ if selected_method == "mendenhall":
 
     with blocks_tab:
         st.subheader("Curvas características por bloques")
-        block_curves_df.to_csv("block_curves.csv", index=False)
         block_fig = px.line(
             block_curves_df,
             x="word_length",
@@ -229,12 +230,12 @@ if selected_method == "mendenhall":
         )
         block_fig.update_traces(opacity=0.35, line_width=1)
         block_fig.update_layout(showlegend=False, height=900)
-        st.plotly_chart(block_fig, use_container_width=True)
+        st.plotly_chart(block_fig, width="stretch")
 
         st.subheader("Estabilidad interna por autor")
         st.dataframe(
             mendenhall_stats_df.style.format({"mean_distance": "{:.5f}", "std_distance": "{:.5f}"}),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -253,11 +254,11 @@ if selected_method == "mendenhall":
             },
             title="Curvas características medias por autor",
         )
-        st.plotly_chart(average_fig, use_container_width=True)
+        st.plotly_chart(average_fig, width="stretch")
 
         st.subheader("Distancia Jensen-Shannon entre curvas medias")
         comparison_df = compare_mendenhall_average_curves(average_curves, max_word_len=max_word_len)
-        st.dataframe(comparison_df.style.format("{:.5f}"), use_container_width=True)
+        st.dataframe(comparison_df.style.format("{:.5f}"), width="stretch")
 
     with attribution_tab:
         st.subheader("Atribuir una obra externa")
@@ -322,13 +323,206 @@ if selected_method == "mendenhall":
                     },
                     title=f"Comparación de {uploaded_filename} con las curvas medias",
                 )
-                st.plotly_chart(attribution_fig, use_container_width=True)
+                st.plotly_chart(attribution_fig, width="stretch")
                 st.subheader("Ranking de autores")
                 st.dataframe(
                     distances_df[["rank", "author", "distance"]].style.format({"distance": "{:.5f}"}),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                 )
+
+    st.stop()
+
+if selected_method == "kilgariff":
+    corpus_tab, vocab_tab, attribution_tab, contributions_tab = st.tabs(
+        ["Corpus", "Vocabulario global", "Atribución de obra", "Contribuciones"]
+    )
+
+    with st.spinner("Preparando perfiles léxicos de Kilgariff..."):
+        vocab_df, vocab_frequencies_df = kilgariff_reference_tables(corpus_df, config)
+
+    with corpus_tab:
+        left, right = st.columns([0.55, 0.45])
+        with left:
+            st.subheader("Resumen por autor")
+            st.dataframe(author_summary, width="stretch", hide_index=True)
+        with right:
+            fig = px.bar(
+                author_summary.sort_values("total_tokens"),
+                x="total_tokens",
+                y="author",
+                orientation="h",
+                labels={"total_tokens": "Tokens", "author": "Autor"},
+                title="Tamaño del corpus por autor",
+            )
+            st.plotly_chart(fig, width="stretch")
+
+        lexical_uses_function_words = use_function_words
+        top_words = top_tokens_by_author(corpus_df, top_n=top_n, use_function_words=lexical_uses_function_words)
+        st.subheader("Palabras más frecuentes por autor")
+
+        selected_author = st.selectbox("Autor", sorted(top_words["author"].unique()), key="kilgariff_top_author")
+        author_top_words = top_words[top_words["author"] == selected_author]
+        top_fig = px.bar(
+            author_top_words.sort_values("relative_frequency"),
+            x="relative_frequency",
+            y="token",
+            orientation="h",
+            labels={"relative_frequency": "Frecuencia relativa", "token": "Token"},
+            title=selected_author,
+        )
+        st.plotly_chart(top_fig, width="stretch")
+        st.dataframe(top_words, width="stretch", hide_index=True)
+
+    with vocab_tab:
+        st.subheader("Vocabulario común de comparación")
+        if vocab_df.empty:
+            st.warning("El vocabulario global ha quedado vacío con la configuración actual.")
+        else:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Términos seleccionados", vocab_df.shape[0])
+            with col2:
+                st.metric("Frecuencia mínima", min_freq)
+            with col3:
+                st.metric("Solo palabras funcionales", "Sí" if use_function_words else "No")
+
+            st.dataframe(vocab_df, width="stretch", hide_index=True)
+
+            heatmap_limit = min(50, vocab_df.shape[0])
+            heatmap_tokens = vocab_df.head(heatmap_limit)["token"]
+            heatmap_df = vocab_frequencies_df[vocab_frequencies_df["token"].isin(heatmap_tokens)]
+            heatmap_fig = px.imshow(
+                heatmap_df.pivot(index="author", columns="token", values="relative_frequency").fillna(0),
+                aspect="auto",
+                labels={"x": "Token", "y": "Autor", "color": "Frecuencia relativa"},
+                title=f"Frecuencias relativas de los {heatmap_limit} términos más frecuentes",
+            )
+            st.plotly_chart(heatmap_fig, width="stretch")
+
+    with attribution_tab:
+        st.subheader("Atribuir una obra externa")
+
+        uploaded_file = st.file_uploader(
+            "Selecciona una obra en .txt",
+            type=["txt"],
+            key="kilgariff_attribution_uploaded_txt",
+        )
+
+        if "kilgariff_attribution_text" not in st.session_state:
+            st.session_state.kilgariff_attribution_text = None
+        if "kilgariff_attribution_filename" not in st.session_state:
+            st.session_state.kilgariff_attribution_filename = None
+
+        if uploaded_file is not None:
+            st.session_state.kilgariff_attribution_text = uploaded_file.getvalue().decode(
+                "utf-8",
+                errors="replace",
+            )
+            st.session_state.kilgariff_attribution_filename = uploaded_file.name
+
+        if st.session_state.kilgariff_attribution_text is None:
+            st.info("Sube un archivo .txt para compararlo con los perfiles léxicos del corpus.")
+            kilgariff_distances_df = pd.DataFrame()
+            kilgariff_contributions_df = pd.DataFrame()
+        else:
+            text = st.session_state.kilgariff_attribution_text
+            uploaded_filename = st.session_state.kilgariff_attribution_filename or "obra externa"
+
+            st.success(f"Archivo cargado: {uploaded_filename}")
+
+            try:
+                kilgariff_distances_df, kilgariff_contributions_df, kilgariff_stats = classify_text_with_kilgariff(
+                    text,
+                    corpus_df,
+                    config,
+                )
+            except ValueError as exc:
+                st.error(str(exc))
+                kilgariff_distances_df = pd.DataFrame()
+                kilgariff_contributions_df = pd.DataFrame()
+            else:
+                predicted_author = kilgariff_distances_df.iloc[0]["author"]
+                predicted_distance = kilgariff_distances_df.iloc[0]["chi2"]
+                second_margin = kilgariff_distances_df.iloc[0]["margin_to_second"]
+
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Autor más similar", predicted_author)
+                with col2:
+                    st.metric("Chi-cuadrado", f"{predicted_distance:.3f}")
+                with col3:
+                    st.metric("Margen al segundo", f"{second_margin:.3f}")
+                with col4:
+                    st.metric("Tokens usados", kilgariff_stats["feature_token_count"])
+
+                ranking_fig = px.bar(
+                    kilgariff_distances_df.sort_values("chi2", ascending=False),
+                    x="chi2",
+                    y="author",
+                    orientation="h",
+                    labels={"chi2": "Chi-cuadrado", "author": "Autor"},
+                    title=f"Ranking de similitud para {uploaded_filename}",
+                )
+                st.plotly_chart(ranking_fig, width="stretch")
+
+                st.subheader("Ranking de autores")
+                st.dataframe(
+                    kilgariff_distances_df.style.format(
+                        {
+                            "chi2": "{:.3f}",
+                            "margin_to_best": "{:.3f}",
+                            "margin_to_second": "{:.3f}",
+                        }
+                    ),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+    with contributions_tab:
+        if "kilgariff_contributions_df" not in locals() or kilgariff_contributions_df.empty:
+            st.info("Sube una obra en la pestaña de atribución para ver las contribuciones por palabra.")
+        else:
+            st.subheader("Palabras que más explican la distancia")
+            candidate_authors = kilgariff_distances_df["author"].tolist()
+            selected_candidate = st.selectbox(
+                "Autor candidato",
+                candidate_authors,
+                key="kilgariff_contribution_author",
+            )
+            contribution_limit = st.slider(
+                "Número de palabras",
+                min_value=5,
+                max_value=50,
+                value=20,
+                step=5,
+                key="kilgariff_contribution_limit",
+            )
+
+            filtered = kilgariff_contributions_df[
+                kilgariff_contributions_df["candidate_author"] == selected_candidate
+            ].head(contribution_limit)
+
+            contribution_fig = px.bar(
+                filtered.sort_values("chi2"),
+                x="chi2",
+                y="token",
+                orientation="h",
+                labels={"chi2": "Contribución al chi-cuadrado", "token": "Token"},
+                title=f"Contribuciones principales frente a {selected_candidate}",
+            )
+            st.plotly_chart(contribution_fig, width="stretch")
+            st.dataframe(
+                filtered.style.format(
+                    {
+                        "chi2": "{:.3f}",
+                        "exp_ref": "{:.2f}",
+                        "exp_test": "{:.2f}",
+                    }
+                ),
+                width="stretch",
+                hide_index=True,
+            )
 
     st.stop()
 
@@ -340,7 +534,7 @@ with overview_tab:
     left, right = st.columns([0.55, 0.45])
     with left:
         st.subheader("Resumen por autor")
-        st.dataframe(author_summary, use_container_width=True, hide_index=True)
+        st.dataframe(author_summary, width="stretch", hide_index=True)
     with right:
         fig = px.bar(
             author_summary.sort_values("total_tokens"),
@@ -350,10 +544,10 @@ with overview_tab:
             labels={"total_tokens": "Tokens", "author": "Autor"},
             title="Tamaño del corpus por autor",
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     st.subheader("Obras detectadas")
-    st.dataframe(work_summary, use_container_width=True, hide_index=True)
+    st.dataframe(work_summary, width="stretch", hide_index=True)
 
 with lexical_tab:
     lexical_uses_function_words = selected_method in {"kilgariff", "burrows"} and use_function_words
@@ -370,8 +564,8 @@ with lexical_tab:
         labels={"relative_frequency": "Frecuencia relativa", "token": "Token"},
         title=selected_author,
     )
-    st.plotly_chart(fig, use_container_width=True)
-    st.dataframe(top_words, use_container_width=True, hide_index=True)
+    st.plotly_chart(fig, width="stretch")
+    st.dataframe(top_words, width="stretch", hide_index=True)
 
 with attribution_tab:
     with st.spinner(f"Calculando atribución con {selected_method_label}..."):
@@ -391,7 +585,7 @@ with attribution_tab:
     ok_results = results_df[results_df["status"] == "ok"].copy()
     if ok_results.empty:
         st.warning("No se han podido calcular resultados de atribución con esta configuración.")
-        st.dataframe(results_df, use_container_width=True, hide_index=True)
+        st.dataframe(results_df, width="stretch", hide_index=True)
     else:
         accuracy = round(ok_results["correct"].mean() * 100, 2)
         mean_margin = ok_results["margin_to_second"].mean()
@@ -420,7 +614,7 @@ with attribution_tab:
                 range_y=[0, 100],
                 title="Exactitud por método",
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         st.subheader("Clasificación por obra")
         visible_cols = [
@@ -452,4 +646,4 @@ with details_tab:
         filtered = contributions_df[
             (contributions_df["method"] == selected_detail_method) & (contributions_df["work"] == selected_work)
         ]
-        st.dataframe(filtered, use_container_width=True, hide_index=True)
+        st.dataframe(filtered, width="stretch", hide_index=True)

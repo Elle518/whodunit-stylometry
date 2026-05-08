@@ -8,7 +8,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import streamlit as st
 from scipy.spatial.distance import jensenshannon
 
 from whodunit_stylometry.constants import STOPWORDS
@@ -163,6 +162,44 @@ def top_tokens_by_author(df: pd.DataFrame, top_n: int = 20, use_function_words: 
     return pd.DataFrame(rows)
 
 
+def kilgariff_reference_tables(
+    df: pd.DataFrame,
+    config: ClassicalAnalysisConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Build Kilgariff vocabulary and author-frequency tables for display."""
+
+    feature_df = prepare_feature_tokens(df, use_function_words=config.use_function_words)
+    corpora = {
+        author: [token for tokens in sub["feature_tokens"] for token in tokens]
+        for author, sub in feature_df.groupby("author")
+    }
+    corpora = {author: tokens for author, tokens in corpora.items() if tokens}
+    vocab = build_global_vocab(corpora, vocab_size=config.vocab_size, min_freq=config.min_freq)
+
+    global_counts = Counter(token for tokens in corpora.values() for token in tokens)
+    vocab_rows = [
+        {"rank": rank, "token": token, "global_count": global_counts[token]}
+        for rank, token in enumerate(vocab, start=1)
+    ]
+
+    frequency_rows = []
+    for author, tokens in corpora.items():
+        counts = Counter(tokens)
+        total = sum(counts.values())
+        for token in vocab:
+            count = counts[token]
+            frequency_rows.append(
+                {
+                    "author": author,
+                    "token": token,
+                    "count": count,
+                    "relative_frequency": count / total if total else np.nan,
+                }
+            )
+
+    return pd.DataFrame(vocab_rows), pd.DataFrame(frequency_rows)
+
+
 def compute_mendenhall_author_profiles(
     df: pd.DataFrame,
     config: ClassicalAnalysisConfig,
@@ -282,6 +319,66 @@ def classify_text_with_mendenhall(
     )
 
     return distances_df, curve_df
+
+
+def classify_text_with_kilgariff(
+    text: str,
+    reference_df: pd.DataFrame,
+    config: ClassicalAnalysisConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
+    """Attribute one text using Kilgariff's chi-square distance."""
+
+    tokenizer = CustomTokenizer()
+    test_tokens = tokenize_text(text, tokenizer=tokenizer, lowercase=config.lowercase)
+    test_feature_tokens = filter_feature_tokens(test_tokens, use_function_words=config.use_function_words)
+
+    reference_df = prepare_feature_tokens(reference_df, use_function_words=config.use_function_words)
+    corpora = {
+        author: [token for tokens in sub["feature_tokens"] for token in tokens]
+        for author, sub in reference_df.groupby("author")
+    }
+    corpora = {author: tokens for author, tokens in corpora.items() if tokens}
+
+    if len(corpora) < 2:
+        raise ValueError("Se necesitan al menos dos autores con tokens suficientes para comparar.")
+    if not test_feature_tokens:
+        raise ValueError("La obra seleccionada no contiene tokens suficientes con la configuración actual.")
+
+    vocab = build_global_vocab(corpora, vocab_size=config.vocab_size, min_freq=config.min_freq)
+    if not vocab:
+        raise ValueError("El vocabulario global ha quedado vacío con la configuración actual.")
+
+    distances, contributions = _kilgariff_distances(corpora, test_feature_tokens, vocab)
+    ranking = sorted(distances.items(), key=lambda item: item[1])
+    second_distance = ranking[1][1] if len(ranking) > 1 else np.nan
+
+    distance_rows = []
+    for rank, (author, chi2) in enumerate(ranking, start=1):
+        distance_rows.append(
+            {
+                "rank": rank,
+                "author": author,
+                "chi2": chi2,
+                "margin_to_best": chi2 - ranking[0][1],
+                "margin_to_second": (
+                    second_distance - ranking[0][1] if rank == 1 and pd.notna(second_distance) else np.nan
+                ),
+            }
+        )
+
+    contribution_rows = []
+    test_row = {"author": None, "work": "Obra seleccionada"}
+    for author, author_contributions in contributions.items():
+        for rank, contribution in enumerate(author_contributions, start=1):
+            contribution_rows.append(_format_contribution("kilgariff", test_row, author, rank, contribution, "chi2"))
+
+    stats = {
+        "token_count": len(test_tokens),
+        "feature_token_count": len(test_feature_tokens),
+        "vocab_size": len(vocab),
+    }
+
+    return pd.DataFrame(distance_rows), pd.DataFrame(contribution_rows), stats
 
 
 def leave_one_work_out_classification(
