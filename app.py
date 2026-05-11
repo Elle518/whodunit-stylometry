@@ -21,6 +21,12 @@ from whodunit_stylometry.analysis.classical import (
     mendenhall_average_curves_to_frame,
     top_tokens_by_author,
 )
+from whodunit_stylometry.analysis.embeddings import (
+    EMBEDDING_MODELS,
+    EmbeddingsConfig,
+    estimate_embedding_chunks,
+    run_openai_embeddings_experiment,
+)
 from whodunit_stylometry.analysis.supervised import (
     FEATURE_SETS,
     MODEL_NAMES,
@@ -45,6 +51,7 @@ ANALYSIS_TYPES = {
     "Métodos clásicos": "classical",
     "Métodos supervisados": "supervised",
     "Métodos no supervisados": "unsupervised",
+    "Embeddings de OpenAI": "embeddings",
 }
 
 CLASSICAL_METHODS = {
@@ -154,6 +161,29 @@ def hierarchical_experiment_cache_key(
     )
 
 
+def embeddings_experiment_cache_key(
+    df: pd.DataFrame,
+    lowercase: bool,
+    config: EmbeddingsConfig,
+) -> tuple:
+    return (
+        corpus_cache_fingerprint(df),
+        lowercase,
+        config.model,
+        config.dimensions,
+        config.chunk_tokens,
+        config.chunk_overlap,
+        config.min_chunk_tokens,
+        config.batch_size,
+        config.max_retries,
+        config.random_state,
+        config.umap_neighbors,
+        config.umap_min_dist,
+        config.network_top_k,
+        config.nearest_neighbors_k,
+    )
+
+
 st.title("Whodunit Stylometry 🕵")
 
 with st.sidebar:
@@ -182,6 +212,31 @@ with st.sidebar:
     if st.button("Ejecutar análisis", type="primary", width="stretch"):
         st.session_state.analysis_has_run = True
 
+
+if selected_analysis == "embeddings":
+    with st.sidebar:
+        st.subheader("Embeddings de OpenAI")
+        embedding_model = st.selectbox("Modelo", list(EMBEDDING_MODELS.keys()), index=0)
+        dimension_options = ["Nativa", "512", "1024", "1536"]
+        if embedding_model == "text-embedding-3-large":
+            dimension_options.append("3072")
+        embedding_dimensions_label = st.selectbox("Dimensiones", dimension_options, index=0)
+        embedding_dimensions = None if embedding_dimensions_label == "Nativa" else int(embedding_dimensions_label)
+
+        st.caption("Segmentación")
+        embedding_chunk_tokens = st.slider("CHUNK_TOKENS", min_value=200, max_value=2000, value=1200, step=100)
+        embedding_chunk_overlap = st.slider("CHUNK_OVERLAP", min_value=0, max_value=500, value=150, step=25)
+        embedding_min_chunk_tokens = st.slider("MIN_CHUNK_TOKENS", min_value=20, max_value=500, value=120, step=20)
+
+        st.caption("API y visualización")
+        embedding_batch_size = st.slider("BATCH_SIZE", min_value=1, max_value=128, value=64, step=1)
+        embedding_max_retries = st.number_input("MAX_RETRIES", min_value=1, max_value=10, value=6, step=1)
+        embedding_random_state = st.number_input("Semilla", min_value=0, max_value=10_000, value=42, step=1)
+        embedding_umap_neighbors = st.slider("UMAP n_neighbors", min_value=2, max_value=50, value=10, step=1)
+        embedding_umap_min_dist = st.slider("UMAP min_dist", min_value=0.0, max_value=0.99, value=0.08, step=0.01)
+        embedding_network_top_k = st.slider("Top-k red", min_value=1, max_value=10, value=3, step=1)
+        embedding_nn_k = st.slider("Vecinos por obra", min_value=1, max_value=15, value=6, step=1)
+        openai_api_key = st.text_input("OpenAI API key", type="password")
 
 if selected_analysis == "unsupervised":
     with st.sidebar:
@@ -381,6 +436,266 @@ with summary_cols[2]:
     metric_card("Tokens", f"{int(author_summary['total_tokens'].sum()):,}")
 with summary_cols[3]:
     metric_card("Media tokens/obra", f"{work_summary['token_count'].mean():,.0f}")
+
+if selected_analysis == "embeddings":
+    embedding_config = EmbeddingsConfig(
+        model=embedding_model,
+        dimensions=embedding_dimensions,
+        chunk_tokens=int(embedding_chunk_tokens),
+        chunk_overlap=int(embedding_chunk_overlap),
+        min_chunk_tokens=int(embedding_min_chunk_tokens),
+        batch_size=int(embedding_batch_size),
+        max_retries=int(embedding_max_retries),
+        random_state=int(embedding_random_state),
+        umap_neighbors=int(embedding_umap_neighbors),
+        umap_min_dist=float(embedding_umap_min_dist),
+        network_top_k=int(embedding_network_top_k),
+        nearest_neighbors_k=int(embedding_nn_k),
+    )
+
+    api_tab, chunks_tab, projections_tab, similarity_tab, neighbors_tab, cohesion_tab, network_tab = st.tabs(
+        ["API", "Fragmentos", "Proyección", "Similitud", "Vecinos", "Cohesión", "Red"]
+    )
+
+    embedding_cache_key = embeddings_experiment_cache_key(corpus_df, lowercase, embedding_config)
+    embedding_cache = st.session_state.setdefault("openai_embeddings_cache", {})
+    embedding_result = embedding_cache.get(embedding_cache_key)
+
+    with api_tab:
+        st.subheader("Generación de embeddings")
+        st.caption(
+            "La API key se usa solo para crear el cliente en memoria durante esta ejecución. "
+            "No se guarda en archivos ni en la caché de resultados."
+        )
+
+        if embedding_config.chunk_overlap >= embedding_config.chunk_tokens:
+            st.warning(
+                "CHUNK_OVERLAP debería ser menor que CHUNK_TOKENS para evitar fragmentos excesivamente solapados."
+            )
+            st.stop()
+
+        try:
+            estimated_chunks_df = estimate_embedding_chunks(corpus_df, embedding_config)
+        except Exception as exc:
+            st.error(f"No se han podido estimar los fragmentos: {exc}")
+            st.stop()
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Modelo", embedding_config.model)
+        with col2:
+            st.metric("Dimensiones", embedding_config.dimensions or "Nativa")
+        with col3:
+            st.metric("Fragmentos estimados", estimated_chunks_df.shape[0])
+        with col4:
+            estimated_tokens = int(estimated_chunks_df["token_count"].sum()) if not estimated_chunks_df.empty else 0
+            st.metric("Tokens en fragmentos", f"{estimated_tokens:,}")
+
+        if estimated_chunks_df.empty:
+            st.warning("No se han generado fragmentos con la configuración actual.")
+        else:
+            chunk_summary = (
+                estimated_chunks_df.groupby("author", as_index=False)
+                .agg(obras=("work", "nunique"), fragmentos=("chunk_id", "count"), tokens=("token_count", "sum"))
+                .sort_values("fragmentos", ascending=False)
+            )
+            st.dataframe(chunk_summary, width="stretch", hide_index=True)
+
+        generate_embeddings = st.button("Generar embeddings", type="primary", width="stretch")
+        if generate_embeddings:
+            if not openai_api_key:
+                st.error("Introduce una API key de OpenAI para generar los embeddings.")
+            elif estimated_chunks_df.empty:
+                st.error("No se han generado fragmentos. Ajusta los parámetros de segmentación.")
+            else:
+                try:
+                    with st.spinner("Generando embeddings con OpenAI y calculando métricas..."):
+                        embedding_result = run_openai_embeddings_experiment(
+                            corpus_df,
+                            embedding_config,
+                            api_key=openai_api_key,
+                        )
+                    embedding_cache[embedding_cache_key] = embedding_result
+                    st.success("Embeddings generados correctamente.")
+                except Exception as exc:
+                    st.error(str(exc))
+
+        if embedding_result is None:
+            st.info("Genera embeddings para activar las pestañas de visualización, similitud y cohesión.")
+        else:
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Dimensión final", embedding_result["embedding_dimension"])
+            with col2:
+                st.metric("Embeddings de fragmentos", embedding_result["n_api_inputs"])
+            with col3:
+                st.metric("Obras agregadas", embedding_result["work_embeddings"].shape[0])
+            with col4:
+                st.metric("Autores agregados", embedding_result["author_embeddings"].shape[0])
+
+    if embedding_result is None:
+        with chunks_tab:
+            st.info("Genera embeddings en la pestaña API para ver los fragmentos finales.")
+        with projections_tab:
+            st.info("Genera embeddings en la pestaña API para ver las proyecciones.")
+        with similarity_tab:
+            st.info("Genera embeddings en la pestaña API para ver las similitudes.")
+        with neighbors_tab:
+            st.info("Genera embeddings en la pestaña API para ver los vecinos más cercanos.")
+        with cohesion_tab:
+            st.info("Genera embeddings en la pestaña API para ver métricas de cohesión.")
+        with network_tab:
+            st.info("Genera embeddings en la pestaña API para ver la red de similitud.")
+        st.stop()
+
+    with chunks_tab:
+        st.subheader("Fragmentos generados")
+        st.dataframe(embedding_result["chunks_df"], width="stretch", hide_index=True)
+
+    with projections_tab:
+        st.subheader("Proyección de obras completas")
+        work_projection_df = embedding_result["work_projection_df"].copy()
+        projection_mode = st.radio("Proyección", ["UMAP 2D", "PCA 2D", "UMAP 3D", "PCA 3D"], horizontal=True)
+        if projection_mode == "UMAP 2D":
+            projection_fig = px.scatter(
+                work_projection_df,
+                x="umap_1",
+                y="umap_2",
+                color="author",
+                hover_data=["work", "n_chunks", "token_count"],
+                title="UMAP de obras completas en 2D",
+                height=720,
+            )
+        elif projection_mode == "PCA 2D":
+            projection_fig = px.scatter(
+                work_projection_df,
+                x="pca_1",
+                y="pca_2",
+                color="author",
+                hover_data=["work", "n_chunks", "token_count"],
+                title="PCA de obras completas en 2D",
+                height=720,
+            )
+        elif projection_mode == "UMAP 3D" and "umap_3" in work_projection_df.columns:
+            projection_fig = px.scatter_3d(
+                work_projection_df,
+                x="umap_1",
+                y="umap_2",
+                z="umap_3",
+                color="author",
+                hover_data=["work", "n_chunks", "token_count"],
+                title="UMAP de obras completas en 3D",
+                height=720,
+            )
+        elif projection_mode == "PCA 3D" and "pca_3" in work_projection_df.columns:
+            projection_fig = px.scatter_3d(
+                work_projection_df,
+                x="pca_1",
+                y="pca_2",
+                z="pca_3",
+                color="author",
+                hover_data=["work", "n_chunks", "token_count"],
+                title="PCA de obras completas en 3D",
+                height=720,
+            )
+        else:
+            st.info("Esta proyección 3D requiere al menos tres obras y tres dimensiones.")
+            projection_fig = None
+
+        if projection_fig is not None:
+            st.plotly_chart(projection_fig, width="stretch")
+        st.caption(
+            "Varianza explicada PCA: "
+            + ", ".join(f"PC{i + 1}={value:.3f}" for i, value in enumerate(embedding_result["pca_variance"]))
+        )
+
+        st.subheader("UMAP de fragmentos")
+        chunk_projection_df = embedding_result["chunks_projection_df"]
+        chunk_fig = px.scatter(
+            chunk_projection_df,
+            x="umap_1",
+            y="umap_2",
+            color="author",
+            hover_data=["work", "chunk_index", "token_count"],
+            title="UMAP de fragmentos en 2D",
+            height=720,
+        )
+        chunk_fig.update_traces(marker={"size": 6, "opacity": 0.55})
+        st.plotly_chart(chunk_fig, width="stretch")
+
+    with similarity_tab:
+        st.subheader("Similitud coseno")
+        author_sim_fig = px.imshow(
+            embedding_result["author_similarity_df"],
+            text_auto=".2f",
+            aspect="auto",
+            color_continuous_scale="Viridis",
+            title="Similitud coseno media entre autores",
+        )
+        author_sim_fig.update_layout(height=620)
+        st.plotly_chart(author_sim_fig, width="stretch")
+
+        work_sim_fig = px.imshow(
+            embedding_result["work_similarity_df"],
+            aspect="auto",
+            color_continuous_scale="Viridis",
+            title="Similitud coseno entre obras, ordenada por autor",
+        )
+        work_sim_fig.update_layout(height=760)
+        work_sim_fig.update_xaxes(showticklabels=False)
+        work_sim_fig.update_yaxes(showticklabels=False)
+        st.plotly_chart(work_sim_fig, width="stretch")
+
+    with neighbors_tab:
+        st.subheader("Vecinos más cercanos por obra")
+        neighbor_summary_df = embedding_result["neighbor_summary_df"]
+        neighbor_fig = px.bar(
+            neighbor_summary_df,
+            x="neighbor_rank",
+            y="pct_same_author",
+            labels={"neighbor_rank": "Rango del vecino", "pct_same_author": "% mismo autor"},
+            title="Porcentaje de vecinos del mismo autor por rango",
+            height=520,
+        )
+        neighbor_fig.update_yaxes(range=[0, 100])
+        st.plotly_chart(neighbor_fig, width="stretch")
+        st.dataframe(
+            embedding_result["nearest_neighbors_df"].style.format({"cosine_similarity": "{:.3f}"}),
+            width="stretch",
+            hide_index=True,
+        )
+
+    with cohesion_tab:
+        st.subheader("Cohesión por autor")
+        st.metric("Silhouette por autor", f"{embedding_result['silhouette']:.3f}")
+        pairs_df = embedding_result["pairs_df"].copy()
+        pairs_df["same_author"] = pairs_df["same_author"].map({True: "Mismo autor", False: "Distinto autor"})
+        distance_fig = px.box(
+            pairs_df,
+            x="same_author",
+            y="cosine_distance",
+            points="all",
+            labels={"same_author": "", "cosine_distance": "Distancia coseno"},
+            title="Distancias coseno intraautor vs interautor",
+            height=560,
+        )
+        st.plotly_chart(distance_fig, width="stretch")
+        st.dataframe(
+            embedding_result["author_metrics_df"].style.format(
+                {
+                    "mean_intra_author_distance": "{:.3f}",
+                    "mean_inter_author_distance": "{:.3f}",
+                    "separation_margin": "{:.3f}",
+                }
+            ),
+            width="stretch",
+            hide_index=True,
+        )
+
+    with network_tab:
+        st.subheader("Red de similitud entre obras")
+        st.plotly_chart(embedding_result["network_fig"], width="stretch")
+
+    st.stop()
 
 if selected_analysis == "unsupervised":
     unsup_display_names = {value: key for key, value in UNSUPERVISED_MODEL_NAMES.items()}
