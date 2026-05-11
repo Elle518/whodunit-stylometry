@@ -7,6 +7,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
+from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.manifold import TSNE
 from sklearn.metrics import (
@@ -35,6 +37,13 @@ UNSUPERVISED_MODEL_NAMES = {
     "Gaussian Mixture": "gmm",
 }
 
+HIERARCHICAL_METHOD_NAMES = {
+    "Ward": "ward",
+    "Complete": "complete",
+    "Average": "average",
+    "Single": "single",
+}
+
 
 @dataclass(frozen=True)
 class UnsupervisedConfig:
@@ -44,6 +53,17 @@ class UnsupervisedConfig:
     top_n_mfw: int = 50
     seed: int = 42
     selected_models: tuple[str, ...] = ("kmeans", "agglomerative", "gmm")
+    n_clusters: int | None = None
+
+
+@dataclass(frozen=True)
+class HierarchicalConfig:
+    """Configuration for hierarchical clustering experiments."""
+
+    feature_set: str = "mfw"
+    top_n_mfw: int = 50
+    selected_methods: tuple[str, ...] = ("ward", "complete", "average", "single")
+    dendrogram_method: str = "ward"
     n_clusters: int | None = None
 
 
@@ -171,6 +191,148 @@ def run_unsupervised_mfw_robustness(
         "best_mean_NMI": float(best_choice["mean_NMI"]),
         "best_mean_silhouette": float(best_choice["mean_silhouette"]),
     }
+
+
+def run_hierarchical_experiment(df: pd.DataFrame, config: HierarchicalConfig) -> dict[str, Any]:
+    """Evaluate hierarchical clustering linkage methods and prepare a dendrogram."""
+
+    if not config.selected_methods:
+        raise ValueError("Select at least one hierarchical clustering method.")
+
+    dataset = prepare_unsupervised_dataset(
+        df,
+        UnsupervisedConfig(feature_set=config.feature_set, top_n_mfw=config.top_n_mfw),
+    )
+    data = dataset["data"]
+    feature_cols = dataset["feature_cols"]
+    X = data[feature_cols].copy()
+    y = data["author_norm"].copy()
+    n_clusters = int(config.n_clusters or y.nunique())
+
+    scaler = RobustScaler()
+    X_scaled = scaler.fit_transform(X)
+    label_encoder = LabelEncoder()
+    y_encoded = label_encoder.fit_transform(y)
+
+    rows: list[dict[str, Any]] = []
+    assignments: dict[str, pd.DataFrame] = {}
+    linkages: dict[str, np.ndarray] = {}
+    methods_to_run = tuple(dict.fromkeys((*config.selected_methods, config.dendrogram_method)))
+    for method in methods_to_run:
+        Z = _hierarchical_linkage(X_scaled, method)
+        linkages[method] = Z
+        clusters = fcluster(Z, t=n_clusters, criterion="maxclust")
+        rows.append(
+            {
+                "method": method,
+                "metric": "euclidean",
+                "n_clusters": n_clusters,
+                "silhouette": _safe_silhouette(X_scaled, clusters),
+                "ARI": adjusted_rand_score(y_encoded, clusters),
+                "NMI": normalized_mutual_info_score(y_encoded, clusters),
+                "homogeneity": homogeneity_score(y_encoded, clusters),
+                "completeness": completeness_score(y_encoded, clusters),
+                "v_measure": v_measure_score(y_encoded, clusters),
+            }
+        )
+        assignments[method] = pd.DataFrame(
+            {
+                "file_name": data["file_name"].values,
+                "work": data["work"].values,
+                "author_norm": y.values,
+                "cluster": clusters,
+            }
+        )
+
+    results_df = (
+        pd.DataFrame(rows)
+        .query("method in @config.selected_methods")
+        .sort_values(["ARI", "NMI", "silhouette"], ascending=False)
+        .reset_index(drop=True)
+    )
+    best_method = str(results_df.iloc[0]["method"])
+    best_eval = evaluate_cluster_errors(assignments[best_method], label_col="author_norm", file_col="file_name")
+
+    return {
+        **dataset,
+        "results": results_df,
+        "assignments": assignments,
+        "linkages": linkages,
+        "X_scaled": X_scaled,
+        "label_encoder": label_encoder,
+        "best_method": best_method,
+        "best_eval": best_eval,
+        "best_cluster_author_table": cluster_author_table(assignments[best_method], label_col="author_norm"),
+        "errors_by_author": errors_by_true_author(best_eval, label_col="author_norm").reset_index(),
+        "confusion_pairs": confusion_pairs(best_eval, label_col="author_norm"),
+        "dendrogram_method": config.dendrogram_method,
+        "n_clusters": n_clusters,
+    }
+
+
+def build_dendrogram_figure(
+    linkage_matrix: np.ndarray,
+    assignments_df: pd.DataFrame,
+    method_label: str,
+) -> go.Figure:
+    """Build a Plotly dendrogram from a SciPy linkage matrix."""
+
+    leaf_labels = [f"{row.author_norm} | {row.work}" for row in assignments_df.itertuples(index=False)]
+    dendro = dendrogram(linkage_matrix, labels=leaf_labels, orientation="left", no_plot=True)
+
+    fig = go.Figure()
+    for xs, ys, color in zip(dendro["icoord"], dendro["dcoord"], dendro["color_list"], strict=False):
+        line_color = _plotly_dendrogram_color(color)
+        fig.add_trace(
+            go.Scatter(
+                x=ys,
+                y=xs,
+                mode="lines",
+                line={"color": line_color, "width": 1.5},
+                hoverinfo="skip",
+                showlegend=False,
+            )
+        )
+
+    leaf_x = [5 + 10 * i for i in range(len(dendro["ivl"]))]
+    leaf_meta = assignments_df.iloc[dendro["leaves"]].copy()
+    leaf_meta["label"] = dendro["ivl"]
+    leaf_meta["y"] = leaf_x
+    leaf_meta["cluster"] = leaf_meta["cluster"].astype(str)
+    author_colors = _author_color_map(leaf_meta["author_norm"])
+    for author, author_df in leaf_meta.groupby("author_norm", sort=True):
+        fig.add_trace(
+            go.Scatter(
+                x=[0] * len(author_df),
+                y=author_df["y"],
+                mode="markers",
+                marker={"size": 9, "color": author_colors[str(author)]},
+                customdata=author_df[["author_norm", "work", "file_name", "cluster"]],
+                hovertemplate=(
+                    "Autor: %{customdata[0]}<br>"
+                    "Obra: %{customdata[1]}<br>"
+                    "Archivo: %{customdata[2]}<br>"
+                    "Cluster: %{customdata[3]}<extra></extra>"
+                ),
+                name=str(author),
+                showlegend=True,
+            )
+        )
+
+    fig.update_layout(
+        title=f"Dendrograma jerárquico ({method_label})",
+        height=max(760, 18 * len(dendro["ivl"])),
+        xaxis={"title": "Distancia"},
+        yaxis={
+            "tickmode": "array",
+            "tickvals": leaf_x,
+            "ticktext": dendro["ivl"],
+            "automargin": True,
+        },
+        margin={"l": 320, "r": 30, "t": 70, "b": 50},
+        legend={"title": "Autor"},
+    )
+    return fig
 
 
 def build_cluster_projection(
@@ -327,6 +489,49 @@ def _run_selected_clustering(
         "y_true": y.values,
         "label_encoder": label_encoder,
     }
+
+
+def _hierarchical_linkage(X_scaled: np.ndarray, method: str) -> np.ndarray:
+    if method == "ward":
+        return linkage(X_scaled, method=method)
+    return linkage(X_scaled, method=method, metric="euclidean")
+
+
+def _plotly_dendrogram_color(color: str) -> str:
+    scipy_color_map = {
+        "C0": "#1f77b4",
+        "C1": "#ff7f0e",
+        "C2": "#2ca02c",
+        "C3": "#d62728",
+        "C4": "#9467bd",
+        "C5": "#8c564b",
+        "C6": "#e377c2",
+        "C7": "#7f7f7f",
+        "C8": "#bcbd22",
+        "C9": "#17becf",
+    }
+    return scipy_color_map.get(color, color)
+
+
+def _author_color_map(authors: pd.Series) -> dict[str, str]:
+    palette = [
+        "#1f77b4",
+        "#d62728",
+        "#2ca02c",
+        "#9467bd",
+        "#ff7f0e",
+        "#17becf",
+        "#e377c2",
+        "#8c564b",
+        "#bcbd22",
+        "#7f7f7f",
+        "#003f5c",
+        "#ffa600",
+        "#665191",
+        "#a05195",
+        "#f95d6a",
+    ]
+    return {str(author): palette[i % len(palette)] for i, author in enumerate(sorted(authors.astype(str).unique()))}
 
 
 def _safe_silhouette(X_scaled: np.ndarray, clusters: np.ndarray) -> float:

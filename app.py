@@ -30,9 +30,13 @@ from whodunit_stylometry.analysis.supervised import (
     run_supervised_experiment,
 )
 from whodunit_stylometry.analysis.unsupervised import (
+    HIERARCHICAL_METHOD_NAMES,
     UNSUPERVISED_MODEL_NAMES,
+    HierarchicalConfig,
     UnsupervisedConfig,
     build_cluster_projection,
+    build_dendrogram_figure,
+    run_hierarchical_experiment,
     run_unsupervised_experiment,
     run_unsupervised_mfw_robustness,
 )
@@ -57,6 +61,7 @@ ML_WORKFLOWS = {
 UNSUPERVISED_WORKFLOWS = {
     "Experimento de clustering": "experiment",
     "Robustez MFW": "robustness",
+    "Clustering jerárquico": "hierarchical",
 }
 
 METHOD_NAMES = {
@@ -133,6 +138,22 @@ def unsupervised_experiment_cache_key(
     )
 
 
+def hierarchical_experiment_cache_key(
+    df: pd.DataFrame,
+    lowercase: bool,
+    config: HierarchicalConfig,
+) -> tuple:
+    return (
+        corpus_cache_fingerprint(df),
+        lowercase,
+        config.feature_set,
+        config.top_n_mfw,
+        tuple(config.selected_methods),
+        config.dendrogram_method,
+        config.n_clusters,
+    )
+
+
 st.title("Whodunit Stylometry 🕵")
 
 with st.sidebar:
@@ -177,6 +198,10 @@ if selected_analysis == "unsupervised":
         unsup_n_clusters = None
         unsup_top_n_values = [10, 25, 50]
         unsup_seeds = [0, 42, 123]
+        hier_method_labels = list(HIERARCHICAL_METHOD_NAMES.keys())
+        hier_method_names = tuple(HIERARCHICAL_METHOD_NAMES[label] for label in hier_method_labels)
+        hier_dendrogram_method_label = "Ward"
+        hier_dendrogram_method = HIERARCHICAL_METHOD_NAMES[hier_dendrogram_method_label]
 
         if selected_unsup_workflow == "experiment":
             unsup_feature_label = st.selectbox("Conjunto de rasgos", list(FEATURE_SETS.keys()), index=1)
@@ -193,7 +218,7 @@ if selected_analysis == "unsupervised":
             use_author_count = st.toggle("Usar un cluster por autor", value=True)
             if not use_author_count:
                 unsup_n_clusters = st.number_input("Número de clusters", min_value=2, max_value=50, value=6, step=1)
-        else:
+        elif selected_unsup_workflow == "robustness":
             robustness_preset = st.selectbox("Preset", ["Rápido", "Completo"])
             if robustness_preset == "Rápido":
                 unsup_top_n_values = [10, 25, 50]
@@ -211,6 +236,26 @@ if selected_analysis == "unsupervised":
                 default=list(UNSUPERVISED_MODEL_NAMES.keys()),
             )
             unsup_model_names = tuple(UNSUPERVISED_MODEL_NAMES[label] for label in unsup_model_labels)
+        else:
+            unsup_feature_label = st.selectbox("Conjunto de rasgos", list(FEATURE_SETS.keys()), index=1)
+            unsup_feature_set = FEATURE_SETS[unsup_feature_label]
+            if unsup_feature_set in {"mfw", "combined"}:
+                unsup_top_n_mfw = st.slider("TOP_N_MFW", min_value=5, max_value=200, value=50, step=5)
+            hier_method_labels = st.multiselect(
+                "Métodos de enlace",
+                list(HIERARCHICAL_METHOD_NAMES.keys()),
+                default=list(HIERARCHICAL_METHOD_NAMES.keys()),
+            )
+            hier_method_names = tuple(HIERARCHICAL_METHOD_NAMES[label] for label in hier_method_labels)
+            hier_dendrogram_method_label = st.selectbox(
+                "Método del dendrograma",
+                list(HIERARCHICAL_METHOD_NAMES.keys()),
+                index=0,
+            )
+            hier_dendrogram_method = HIERARCHICAL_METHOD_NAMES[hier_dendrogram_method_label]
+            use_author_count = st.toggle("Usar un cluster por autor", value=True)
+            if not use_author_count:
+                unsup_n_clusters = st.number_input("Número de clusters", min_value=2, max_value=50, value=6, step=1)
 
 if selected_analysis == "supervised":
     with st.sidebar:
@@ -510,6 +555,168 @@ if selected_analysis == "unsupervised":
             projection_fig.update_layout(height=700)
             projection_fig.update_yaxes(scaleanchor="x", scaleratio=1)
             st.plotly_chart(projection_fig, width="stretch")
+
+        st.stop()
+
+    if selected_unsup_workflow == "hierarchical":
+        if not hier_method_names:
+            st.warning("Selecciona al menos un método de enlace.")
+            st.stop()
+
+        hier_display_names = {value: key for key, value in HIERARCHICAL_METHOD_NAMES.items()}
+        hier_config = HierarchicalConfig(
+            feature_set=unsup_feature_set,
+            top_n_mfw=int(unsup_top_n_mfw),
+            selected_methods=hier_method_names,
+            dendrogram_method=hier_dendrogram_method,
+            n_clusters=int(unsup_n_clusters) if unsup_n_clusters is not None else None,
+        )
+
+        data_tab, features_tab, methods_tab, dendrogram_tab, clusters_tab, contingency_tab, evaluation_tab = st.tabs(
+            ["Datos", "Rasgos", "Métodos", "Dendrograma", "Clusters", "Contingencia", "Evaluación"]
+        )
+
+        hier_cache_key = hierarchical_experiment_cache_key(corpus_df, lowercase, hier_config)
+        hier_cache = st.session_state.setdefault("hierarchical_experiment_cache", {})
+        if hier_cache_key in hier_cache:
+            hier_result = hier_cache[hier_cache_key]
+        else:
+            with st.spinner("Ejecutando clustering jerárquico..."):
+                hier_result = run_hierarchical_experiment(corpus_df, hier_config)
+            hier_cache[hier_cache_key] = hier_result
+
+        best_hier_method_label = hier_display_names.get(hier_result["best_method"], hier_result["best_method"])
+        dendrogram_method_label = hier_display_names.get(
+            hier_result["dendrogram_method"],
+            hier_result["dendrogram_method"],
+        )
+        best_assignments_df = hier_result["assignments"][hier_result["best_method"]]
+        dendrogram_assignments_df = hier_result["assignments"][hier_result["dendrogram_method"]]
+
+        with data_tab:
+            st.subheader("Corpus usado para clustering jerárquico")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Autores", hier_result["data"]["author_norm"].nunique())
+            with col2:
+                st.metric("Obras", hier_result["data"].shape[0])
+            with col3:
+                st.metric("Clusters", hier_result["n_clusters"])
+            with col4:
+                st.metric("Mejor método", best_hier_method_label)
+
+            works_by_author = (
+                hier_result["data"].groupby("author_norm", as_index=False).size().rename(columns={"size": "obras"})
+            )
+            works_fig = px.bar(
+                works_by_author,
+                x="author_norm",
+                y="obras",
+                labels={"author_norm": "Autor", "obras": "Obras"},
+                title="Obras por autor",
+            )
+            st.plotly_chart(works_fig, width="stretch")
+
+        with features_tab:
+            st.subheader("Rasgos utilizados")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Conjunto", unsup_feature_label)
+            with col2:
+                st.metric("Número de rasgos", len(hier_result["feature_cols"]))
+            with col3:
+                st.metric("TOP_N_MFW", len(hier_result["mfw_vocab"]) if hier_result["mfw_vocab"] else "No aplica")
+
+            feature_matrix_df = hier_result["data"].copy()
+            metadata_cols = [col for col in ["author_norm", "work", "file_name"] if col in feature_matrix_df.columns]
+            feature_matrix_df = feature_matrix_df[metadata_cols + hier_result["feature_cols"]]
+            st.dataframe(feature_matrix_df, width="stretch", hide_index=True)
+
+        with methods_tab:
+            st.subheader("Comparativa de métodos de enlace")
+            st.caption(
+                "**Tip:** el clustering jerárquico fusiona obras por distancia entre rasgos. Las etiquetas de autor "
+                "solo se usan después para evaluar la correspondencia de los grupos."
+            )
+            methods_df = hier_result["results"].copy()
+            methods_df["method"] = methods_df["method"].map(hier_display_names)
+            st.dataframe(
+                methods_df.style.format(
+                    {
+                        "silhouette": "{:.3f}",
+                        "ARI": "{:.3f}",
+                        "NMI": "{:.3f}",
+                        "homogeneity": "{:.3f}",
+                        "completeness": "{:.3f}",
+                        "v_measure": "{:.3f}",
+                    }
+                ),
+                width="stretch",
+                hide_index=True,
+            )
+            methods_fig = px.bar(
+                methods_df.sort_values("ARI"),
+                x="ARI",
+                y="method",
+                orientation="h",
+                labels={"ARI": "ARI", "method": "Método"},
+                title="Correspondencia entre clusters jerárquicos y autores",
+            )
+            st.plotly_chart(methods_fig, width="stretch")
+
+        with dendrogram_tab:
+            dendrogram_fig = build_dendrogram_figure(
+                hier_result["linkages"][hier_result["dendrogram_method"]],
+                dendrogram_assignments_df,
+                dendrogram_method_label,
+            )
+            st.plotly_chart(dendrogram_fig, width="stretch")
+
+        with clusters_tab:
+            st.subheader(f"Asignaciones del mejor método: {best_hier_method_label}")
+            assignments_df = best_assignments_df.copy()
+            assignments_df["cluster"] = assignments_df["cluster"].astype(str)
+            st.dataframe(assignments_df, width="stretch", hide_index=True)
+
+        with contingency_tab:
+            st.subheader("Tabla cluster vs autor real")
+            st.dataframe(hier_result["best_cluster_author_table"], width="stretch")
+
+        with evaluation_tab:
+            st.subheader("Evaluación tras mapear clusters a autores")
+            best_eval = hier_result["best_eval"]
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Accuracy tras mapping", f"{best_eval['accuracy_after_mapping']:.3f}")
+            with col2:
+                st.metric("Errores", best_eval["errors_df"].shape[0])
+
+            cm_df = best_eval["confusion_matrix"]
+            cm_fig = px.imshow(
+                cm_df,
+                text_auto=True,
+                aspect="auto",
+                color_continuous_scale="Blues",
+                labels={"x": "Autor predicho", "y": "Autor real", "color": "Obras"},
+                title="Matriz de confusión tras mapping cluster-autor",
+            )
+            cm_fig.update_coloraxes(showscale=False)
+            st.plotly_chart(cm_fig, width="stretch")
+
+            st.subheader("Errores")
+            st.dataframe(best_eval["errors_df"], width="stretch", hide_index=True)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Errores por autor")
+                st.dataframe(
+                    hier_result["errors_by_author"].style.format({"error_rate": "{:.3f}"}),
+                    width="stretch",
+                    hide_index=True,
+                )
+            with col2:
+                st.subheader("Pares de confusión")
+                st.dataframe(hier_result["confusion_pairs"], width="stretch", hide_index=True)
 
         st.stop()
 
