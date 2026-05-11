@@ -234,47 +234,55 @@ def run_mfw_robustness(
     rows = []
     for seed in seeds:
         for top_n in top_n_values:
-            config = SupervisedConfig(
-                feature_set="mfw",
-                top_n_mfw=top_n,
-                seed=seed,
-                n_test_per_author=n_test_per_author,
-                selected_models=selected_models,
-            )
-            result = run_supervised_experiment(df, config)
-            rows.append(
-                {
-                    "seed": seed,
-                    "top_n_mfw": top_n,
-                    "best_model_name": result["best_model_name"],
-                    "test_f1_macro": result["test_f1_macro"],
-                    "test_accuracy": result["test_accuracy"],
-                    "n_features": len(result["feature_cols"]),
-                }
-            )
+            for model_name in selected_models:
+                config = SupervisedConfig(
+                    feature_set="mfw",
+                    top_n_mfw=top_n,
+                    seed=seed,
+                    n_test_per_author=n_test_per_author,
+                    selected_models=(model_name,),
+                )
+                result = run_supervised_experiment(df, config)
+                rows.append(
+                    {
+                        "seed": seed,
+                        "top_n_mfw": top_n,
+                        "model_name": model_name,
+                        "test_f1_macro": result["test_f1_macro"],
+                        "test_accuracy": result["test_accuracy"],
+                        "n_features": len(result["feature_cols"]),
+                    }
+                )
 
     sweep_df = pd.DataFrame(rows)
     summary_df = (
-        sweep_df.groupby("top_n_mfw", as_index=False)
+        sweep_df.groupby(["top_n_mfw", "model_name"], as_index=False)
         .agg(
             mean_test_f1_macro=("test_f1_macro", "mean"),
             std_test_f1_macro=("test_f1_macro", "std"),
             min_test_f1_macro=("test_f1_macro", "min"),
             max_test_f1_macro=("test_f1_macro", "max"),
-            mode_best_model_name=("best_model_name", _mode_or_first),
             n_runs=("test_f1_macro", "count"),
         )
-        .sort_values("top_n_mfw")
+        .sort_values(["top_n_mfw", "model_name"])
     )
     best_mean = summary_df["mean_test_f1_macro"].max()
     threshold = best_mean - tolerance
-    candidates = summary_df[summary_df["mean_test_f1_macro"] >= threshold].sort_values("top_n_mfw")
+    candidates = summary_df[summary_df["mean_test_f1_macro"] >= threshold].sort_values(
+        ["top_n_mfw", "mean_test_f1_macro"],
+        ascending=[True, False],
+    )
     selected_top_n = (
         int(candidates.iloc[0]["top_n_mfw"]) if not candidates.empty else int(summary_df.iloc[-1]["top_n_mfw"])
     )
+    selected_model_name = (
+        str(candidates.iloc[0]["model_name"]) if not candidates.empty else str(summary_df.iloc[-1]["model_name"])
+    )
     final_decision_df = summary_df.copy()
     final_decision_df["keeps_performance"] = final_decision_df["mean_test_f1_macro"] >= threshold
-    final_decision_df["selected"] = final_decision_df["top_n_mfw"] == selected_top_n
+    final_decision_df["selected"] = (final_decision_df["top_n_mfw"] == selected_top_n) & (
+        final_decision_df["model_name"] == selected_model_name
+    )
 
     return {
         "sweep_df": sweep_df,
@@ -283,6 +291,7 @@ def run_mfw_robustness(
         "best_mean_score": best_mean,
         "threshold_score": threshold,
         "selected_top_n_mfw": selected_top_n,
+        "selected_model_name": selected_model_name,
     }
 
 

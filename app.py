@@ -546,7 +546,7 @@ if selected_analysis == "supervised":
                     {"parámetro": "TOP_N_MFW", "valor": ", ".join(map(str, ml_top_n_values))},
                     {"parámetro": "Semillas", "valor": ", ".join(map(str, ml_seeds))},
                     {"parámetro": "Modelos", "valor": ", ".join(ml_model_labels)},
-                    {"parámetro": "Tolerancia", "valor": ml_tolerance},
+                    {"parámetro": "Tolerancia", "valor": f"{ml_tolerance:.3f}"},
                 ]
             )
             st.dataframe(config_df, width="stretch", hide_index=True)
@@ -554,7 +554,7 @@ if selected_analysis == "supervised":
         with summary_tab:
             st.subheader("Rendimiento agregado")
             summary_df = robustness["summary_df"].copy()
-            summary_df["mode_best_model_name"] = summary_df["mode_best_model_name"].map(model_display_names)
+            summary_df["model_name"] = summary_df["model_name"].map(model_display_names)
             st.dataframe(
                 summary_df.style.format(
                     {
@@ -571,9 +571,14 @@ if selected_analysis == "supervised":
                 summary_df,
                 x="top_n_mfw",
                 y="mean_test_f1_macro",
+                color="model_name",
                 markers=True,
                 error_y="std_test_f1_macro",
-                labels={"top_n_mfw": "TOP_N_MFW", "mean_test_f1_macro": "F1-macro medio"},
+                labels={
+                    "top_n_mfw": "TOP_N_MFW",
+                    "mean_test_f1_macro": "F1-macro medio",
+                    "model_name": "Modelo",
+                },
                 title="Robustez del rendimiento según número de MFW",
             )
             robustness_fig.add_hline(
@@ -590,22 +595,27 @@ if selected_analysis == "supervised":
 
         with decision_tab:
             st.subheader("Selección del menor TOP_N_MFW suficiente")
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Mejor media observada", f"{robustness['best_mean_score']:.3f}")
             with col2:
                 st.metric("Umbral", f"{robustness['threshold_score']:.3f}")
             with col3:
                 st.metric("TOP_N_MFW seleccionado", robustness["selected_top_n_mfw"])
+            with col4:
+                st.metric(
+                    "Modelo seleccionado",
+                    model_display_names.get(robustness["selected_model_name"], robustness["selected_model_name"]),
+                )
 
             decision_df = robustness["final_decision_df"].copy()
-            decision_df["mode_best_model_name"] = decision_df["mode_best_model_name"].map(model_display_names)
+            decision_df["model_name"] = decision_df["model_name"].map(model_display_names)
             st.dataframe(decision_df, width="stretch", hide_index=True)
 
         with detail_tab:
             st.subheader("Todas las ejecuciones")
             detail_df = robustness["sweep_df"].copy()
-            detail_df["best_model_name"] = detail_df["best_model_name"].map(model_display_names)
+            detail_df["model_name"] = detail_df["model_name"].map(model_display_names)
             st.dataframe(detail_df, width="stretch", hide_index=True)
 
         st.stop()
