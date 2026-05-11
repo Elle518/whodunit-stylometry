@@ -28,7 +28,6 @@ from whodunit_stylometry.analysis.supervised import (
     classify_text_with_supervised_model,
     run_mfw_robustness,
     run_supervised_experiment,
-    train_final_model,
 )
 
 ANALYSIS_TYPES = {
@@ -46,7 +45,6 @@ CLASSICAL_METHODS = {
 ML_WORKFLOWS = {
     "Experimento supervisado": "experiment",
     "Robustez MFW": "robustness",
-    "Atribuir obra con modelo entrenado": "attribution",
 }
 
 METHOD_NAMES = {
@@ -80,6 +78,31 @@ def metric_card(label: str, value) -> None:
 
 def parse_int_list(value: str) -> list[int]:
     return [int(part.strip()) for part in value.split(",") if part.strip()]
+
+
+def corpus_cache_fingerprint(df: pd.DataFrame) -> tuple[tuple[int, int], int]:
+    fingerprint_cols = [col for col in ["author", "work", "filename", "text"] if col in df.columns]
+    fingerprint_df = df[fingerprint_cols].astype(str) if fingerprint_cols else df.astype(str)
+    fingerprint_hash = pd.util.hash_pandas_object(fingerprint_df, index=False).sum()
+    return df.shape, int(fingerprint_hash)
+
+
+def supervised_experiment_cache_key(
+    df: pd.DataFrame,
+    lowercase: bool,
+    config: SupervisedConfig,
+) -> tuple:
+    return (
+        corpus_cache_fingerprint(df),
+        lowercase,
+        config.feature_set,
+        config.top_n_mfw,
+        config.seed,
+        config.n_test_per_author,
+        config.keep_correlated_features,
+        config.correlation_threshold,
+        tuple(config.selected_models),
+    )
 
 
 st.title("Whodunit Stylometry 🕵")
@@ -269,12 +292,18 @@ if selected_analysis == "supervised":
             st.warning("Selecciona al menos un modelo para ejecutar el experimento.")
             st.stop()
 
-        data_tab, features_tab, models_tab, evaluation_tab, predictions_tab = st.tabs(
-            ["Datos", "Rasgos", "Modelos", "Evaluación", "Predicciones"]
+        data_tab, features_tab, models_tab, evaluation_tab, predictions_tab, attribution_tab = st.tabs(
+            ["Datos", "Rasgos", "Modelos", "Evaluación", "Predicciones", "Atribuir obra"]
         )
 
-        with st.spinner("Entrenando y evaluando modelos supervisados..."):
-            ml_result = run_supervised_experiment(corpus_df, ml_config)
+        experiment_cache_key = supervised_experiment_cache_key(corpus_df, lowercase, ml_config)
+        experiment_cache = st.session_state.setdefault("supervised_experiment_cache", {})
+        if experiment_cache_key in experiment_cache:
+            ml_result = experiment_cache[experiment_cache_key]
+        else:
+            with st.spinner("Entrenando y evaluando modelos supervisados..."):
+                ml_result = run_supervised_experiment(corpus_df, ml_config)
+            experiment_cache[experiment_cache_key] = ml_result
 
         with data_tab:
             st.subheader("Partición de entrenamiento y test")
@@ -392,12 +421,102 @@ if selected_analysis == "supervised":
                 labels={"x": "Autor predicho", "y": "Autor real", "color": "Obras"},
                 title="Matriz de confusión en test",
             )
+            cm_fig.update_coloraxes(showscale=False)
             st.plotly_chart(cm_fig, width="stretch")
 
         with predictions_tab:
             st.subheader("Predicciones por obra")
             pred_df = ml_result["pred_df"].copy()
             st.dataframe(pred_df, width="stretch", hide_index=True)
+
+        with attribution_tab:
+            st.subheader("Atribuir una nueva obra")
+            uploaded_file = st.file_uploader(
+                "Selecciona una obra en .txt",
+                type=["txt"],
+                key="experiment_attribution_uploaded_txt",
+            )
+
+            if "experiment_attribution_text" not in st.session_state:
+                st.session_state.experiment_attribution_text = None
+            if "experiment_attribution_filename" not in st.session_state:
+                st.session_state.experiment_attribution_filename = None
+
+            if uploaded_file is not None:
+                st.session_state.experiment_attribution_text = uploaded_file.getvalue().decode(
+                    "utf-8",
+                    errors="replace",
+                )
+                st.session_state.experiment_attribution_filename = uploaded_file.name
+
+            if st.session_state.experiment_attribution_text is None:
+                st.info("Sube un archivo .txt para atribuirlo con el mejor modelo de este experimento.")
+            else:
+                experiment_model_bundle = {
+                    "pipeline": ml_result["best_pipeline"],
+                    "feature_cols": ml_result["feature_cols"],
+                    "mfw_vocab": ml_result["mfw_vocab"],
+                }
+                attribution_ranking_df, attribution_explanation_df = classify_text_with_supervised_model(
+                    st.session_state.experiment_attribution_text,
+                    experiment_model_bundle,
+                    ml_config,
+                    lowercase=lowercase,
+                )
+                score_col = "probability" if "probability" in attribution_ranking_df.columns else "score"
+                predicted_row = attribution_ranking_df.iloc[0]
+                uploaded_filename = st.session_state.experiment_attribution_filename or "obra externa"
+
+                st.success(f"Archivo cargado: {uploaded_filename}")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    best_model_label = model_display_names.get(
+                        ml_result["best_model_name"],
+                        ml_result["best_model_name"],
+                    )
+                    st.metric("Modelo", best_model_label)
+                with col2:
+                    st.metric("Autor predicho", predicted_row["author"])
+                with col3:
+                    st.metric("Score", f"{predicted_row[score_col]:.3f}")
+
+                ranking_fig = px.bar(
+                    attribution_ranking_df.sort_values(score_col),
+                    x=score_col,
+                    y="author",
+                    orientation="h",
+                    labels={score_col: "Probabilidad" if score_col == "probability" else "Score", "author": "Autor"},
+                    title="Ranking de atribución",
+                )
+                st.plotly_chart(ranking_fig, width="stretch")
+                st.dataframe(
+                    attribution_ranking_df.style.format({score_col: "{:.3f}"}),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+                if attribution_explanation_df.empty:
+                    st.info("La explicabilidad local está disponible para modelos lineales con coeficientes.")
+                else:
+                    st.subheader("Rasgos que más empujan la predicción")
+                    top_explanation = attribution_explanation_df.head(25)
+                    explanation_fig = px.bar(
+                        top_explanation.sort_values("contribution"),
+                        x="contribution",
+                        y="feature",
+                        orientation="h",
+                        labels={"contribution": "Contribución", "feature": "Rasgo"},
+                        title="Contribuciones locales principales",
+                    )
+                    explanation_fig.update_layout(height=max(400, 25 * len(top_explanation)))
+                    st.plotly_chart(explanation_fig, width="stretch")
+                    st.dataframe(
+                        top_explanation[["feature", "value", "contribution"]].style.format(
+                            {"value": "{:.6f}", "contribution": "{:.3f}"}
+                        ),
+                        width="stretch",
+                        hide_index=True,
+                    )
 
         st.stop()
 
@@ -488,116 +607,6 @@ if selected_analysis == "supervised":
             detail_df = robustness["sweep_df"].copy()
             detail_df["best_model_name"] = detail_df["best_model_name"].map(model_display_names)
             st.dataframe(detail_df, width="stretch", hide_index=True)
-
-        st.stop()
-
-    if selected_ml_workflow == "attribution":
-        model_tab, attribution_tab, ranking_tab, explanation_tab = st.tabs(
-            ["Modelo", "Atribución", "Ranking", "Explicabilidad"]
-        )
-        attribution_config = SupervisedConfig(
-            feature_set=ml_feature_set,
-            top_n_mfw=int(ml_top_n_mfw),
-            seed=int(ml_seed),
-        )
-        with st.spinner("Entrenando modelo final sobre el corpus de referencia..."):
-            model_bundle = train_final_model(corpus_df, attribution_config, ml_model_name)
-
-        with model_tab:
-            st.subheader("Modelo entrenado")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Modelo", ml_model_label)
-            with col2:
-                st.metric("Rasgos", ml_feature_label)
-            with col3:
-                st.metric("Número de rasgos", len(model_bundle["feature_cols"]))
-            st.dataframe(pd.DataFrame({"feature": model_bundle["feature_cols"]}), width="stretch", hide_index=True)
-
-        with attribution_tab:
-            st.subheader("Atribuir una obra externa")
-            uploaded_file = st.file_uploader(
-                "Selecciona una obra en .txt",
-                type=["txt"],
-                key="supervised_attribution_uploaded_txt",
-            )
-
-            if "supervised_attribution_text" not in st.session_state:
-                st.session_state.supervised_attribution_text = None
-            if "supervised_attribution_filename" not in st.session_state:
-                st.session_state.supervised_attribution_filename = None
-
-            if uploaded_file is not None:
-                st.session_state.supervised_attribution_text = uploaded_file.getvalue().decode(
-                    "utf-8",
-                    errors="replace",
-                )
-                st.session_state.supervised_attribution_filename = uploaded_file.name
-
-            if st.session_state.supervised_attribution_text is None:
-                st.info("Sube un archivo .txt para atribuirlo con el modelo supervisado entrenado.")
-                supervised_ranking_df = pd.DataFrame()
-                supervised_explanation_df = pd.DataFrame()
-            else:
-                uploaded_filename = st.session_state.supervised_attribution_filename or "obra externa"
-                supervised_ranking_df, supervised_explanation_df = classify_text_with_supervised_model(
-                    st.session_state.supervised_attribution_text,
-                    model_bundle,
-                    attribution_config,
-                    lowercase=lowercase,
-                )
-                score_col = "probability" if "probability" in supervised_ranking_df.columns else "score"
-                predicted_row = supervised_ranking_df.iloc[0]
-                st.success(f"Archivo cargado: {uploaded_filename}")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Autor predicho", predicted_row["author"])
-                with col2:
-                    st.metric("Score", f"{predicted_row[score_col]:.3f}")
-
-        with ranking_tab:
-            if "supervised_ranking_df" not in locals() or supervised_ranking_df.empty:
-                st.info("Sube una obra en la pestaña de atribución para ver el ranking.")
-            else:
-                st.subheader("Ranking de autores")
-                score_col = "probability" if "probability" in supervised_ranking_df.columns else "score"
-                ranking_fig = px.bar(
-                    supervised_ranking_df.sort_values(score_col),
-                    x=score_col,
-                    y="author",
-                    orientation="h",
-                    labels={score_col: "Probabilidad" if score_col == "probability" else "Score", "author": "Autor"},
-                    title="Ranking del modelo supervisado",
-                )
-                st.plotly_chart(ranking_fig, width="stretch")
-                st.dataframe(
-                    supervised_ranking_df.style.format({score_col: "{:.3f}"}),
-                    width="stretch",
-                    hide_index=True,
-                )
-
-        with explanation_tab:
-            if "supervised_explanation_df" not in locals() or supervised_explanation_df.empty:
-                st.info("La explicabilidad local está disponible para modelos lineales con coeficientes.")
-            else:
-                st.subheader("Rasgos que más empujan la predicción")
-                top_explanation = supervised_explanation_df.head(25)
-                explanation_fig = px.bar(
-                    top_explanation.sort_values("contribution"),
-                    x="contribution",
-                    y="feature",
-                    orientation="h",
-                    labels={"contribution": "Contribución", "feature": "Rasgo"},
-                    title="Contribuciones locales principales",
-                )
-                st.plotly_chart(explanation_fig, width="stretch")
-                st.dataframe(
-                    top_explanation[["feature", "value", "contribution"]].style.format(
-                        {"value": "{:.6f}", "contribution": "{:.3f}"}
-                    ),
-                    width="stretch",
-                    hide_index=True,
-                )
 
         st.stop()
 

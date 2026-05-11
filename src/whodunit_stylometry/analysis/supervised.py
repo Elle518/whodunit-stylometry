@@ -364,6 +364,8 @@ def classify_text_with_supervised_model(
     elif hasattr(clf, "decision_function"):
         scores = clf.decision_function(transformed)
         scores = np.ravel(scores)
+        if len(classes) == 2 and len(scores) == 1:
+            scores = np.array([-scores[0], scores[0]])
         score_label = "score"
     else:
         scores = np.zeros(len(classes))
