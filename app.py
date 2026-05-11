@@ -554,7 +554,7 @@ if selected_analysis == "embeddings":
     with projections_tab:
         st.subheader("Proyección de obras completas")
         work_projection_df = embedding_result["work_projection_df"].copy()
-        projection_mode = st.radio("Proyección", ["UMAP 2D", "PCA 2D", "UMAP 3D", "PCA 3D"], horizontal=True)
+        projection_mode = st.radio("Proyección", ["UMAP 2D", "UMAP 3D"], horizontal=True)
         if projection_mode == "UMAP 2D":
             projection_fig = px.scatter(
                 work_projection_df,
@@ -563,16 +563,6 @@ if selected_analysis == "embeddings":
                 color="author",
                 hover_data=["work", "n_chunks", "token_count"],
                 title="UMAP de obras completas en 2D",
-                height=720,
-            )
-        elif projection_mode == "PCA 2D":
-            projection_fig = px.scatter(
-                work_projection_df,
-                x="pca_1",
-                y="pca_2",
-                color="author",
-                hover_data=["work", "n_chunks", "token_count"],
-                title="PCA de obras completas en 2D",
                 height=720,
             )
         elif projection_mode == "UMAP 3D" and "umap_3" in work_projection_df.columns:
@@ -584,17 +574,6 @@ if selected_analysis == "embeddings":
                 color="author",
                 hover_data=["work", "n_chunks", "token_count"],
                 title="UMAP de obras completas en 3D",
-                height=720,
-            )
-        elif projection_mode == "PCA 3D" and "pca_3" in work_projection_df.columns:
-            projection_fig = px.scatter_3d(
-                work_projection_df,
-                x="pca_1",
-                y="pca_2",
-                z="pca_3",
-                color="author",
-                hover_data=["work", "n_chunks", "token_count"],
-                title="PCA de obras completas en 3D",
                 height=720,
             )
         else:
@@ -610,17 +589,33 @@ if selected_analysis == "embeddings":
 
         st.subheader("UMAP de fragmentos")
         chunk_projection_df = embedding_result["chunks_projection_df"]
-        chunk_fig = px.scatter(
-            chunk_projection_df,
-            x="umap_1",
-            y="umap_2",
-            color="author",
-            hover_data=["work", "chunk_index", "token_count"],
-            title="UMAP de fragmentos en 2D",
-            height=720,
-        )
-        chunk_fig.update_traces(marker={"size": 6, "opacity": 0.55})
-        st.plotly_chart(chunk_fig, width="stretch")
+        if projection_mode == "UMAP 2D":
+            chunk_fig = px.scatter(
+                chunk_projection_df,
+                x="umap_1",
+                y="umap_2",
+                color="author",
+                hover_data=["work", "chunk_index", "token_count"],
+                title="UMAP de fragmentos en 2D",
+                height=720,
+            )
+            chunk_fig.update_traces(marker={"size": 6, "opacity": 0.55})
+            st.plotly_chart(chunk_fig, width="stretch")
+        elif "umap_3" in chunk_projection_df.columns:
+            chunk_fig = px.scatter_3d(
+                chunk_projection_df,
+                x="umap_1",
+                y="umap_2",
+                z="umap_3",
+                color="author",
+                hover_data=["work", "chunk_index", "token_count"],
+                title="UMAP de fragmentos en 3D",
+                height=720,
+            )
+            chunk_fig.update_traces(marker={"size": 4, "opacity": 0.45})
+            st.plotly_chart(chunk_fig, width="stretch")
+        else:
+            st.info("La proyección 3D de fragmentos requiere al menos tres fragmentos y tres dimensiones.")
 
     with similarity_tab:
         st.subheader("Similitud coseno")
