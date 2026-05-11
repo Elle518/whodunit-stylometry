@@ -21,10 +21,19 @@ from whodunit_stylometry.analysis.classical import (
     mendenhall_average_curves_to_frame,
     top_tokens_by_author,
 )
+from whodunit_stylometry.analysis.supervised import (
+    FEATURE_SETS,
+    MODEL_NAMES,
+    SupervisedConfig,
+    classify_text_with_supervised_model,
+    run_mfw_robustness,
+    run_supervised_experiment,
+    train_final_model,
+)
 
 ANALYSIS_TYPES = {
     "Métodos clásicos": "classical",
-    "Métodos de machine learning": "ml",
+    "Métodos supervisados": "supervised",
     "Métodos no supervisados": "unsupervised",
 }
 
@@ -32,6 +41,12 @@ CLASSICAL_METHODS = {
     "Test de Mendenhall": "mendenhall",
     "Chi-cuadrado de Kilgariff": "kilgariff",
     "Distancia de Burrows": "burrows",
+}
+
+ML_WORKFLOWS = {
+    "Experimento supervisado": "experiment",
+    "Robustez MFW": "robustness",
+    "Atribuir obra con modelo entrenado": "attribution",
 }
 
 METHOD_NAMES = {
@@ -63,6 +78,10 @@ def metric_card(label: str, value) -> None:
     st.metric(label=label, value=value)
 
 
+def parse_int_list(value: str) -> list[int]:
+    return [int(part.strip()) for part in value.split(",") if part.strip()]
+
+
 st.title("Whodunit Stylometry 🕵")
 
 with st.sidebar:
@@ -71,7 +90,7 @@ with st.sidebar:
         st.image(SIDEBAR_ICON_PATH, width=120)
 
     st.header("Corpus")
-    default_path = str(Path("/Users/my_user/corpus"))
+    default_path = str(Path("/Users/elle/Desktop/WDI/corpus"))
     corpus_path = st.text_input(
         "Ruta al corpus",
         value=default_path,
@@ -92,43 +111,107 @@ with st.sidebar:
         st.session_state.analysis_has_run = True
 
 
-if selected_analysis != "classical":
+if selected_analysis == "unsupervised":
     show_placeholder(selected_analysis_label)
     st.stop()
 
-with st.sidebar:
-    st.subheader("Métodos clásicos")
-    selected_method_label = st.selectbox(
-        "Método",
-        options=list(CLASSICAL_METHODS.keys()),
-    )
-    selected_method = CLASSICAL_METHODS[selected_method_label]
+if selected_analysis == "supervised":
+    with st.sidebar:
+        st.subheader("Machine learning supervisado")
+        selected_ml_workflow_label = st.selectbox("Flujo", list(ML_WORKFLOWS.keys()))
+        selected_ml_workflow = ML_WORKFLOWS[selected_ml_workflow_label]
 
-    use_function_words = True
-    vocab_size = 500
-    min_freq = 1
-    block_size = 100_000
-    n_blocks = 50
-    max_word_len = 20
-    seed = 1
+        ml_feature_label = "MFW"
+        ml_feature_set = FEATURE_SETS[ml_feature_label]
+        ml_model_labels = ["Regresión logística", "Linear SVC"]
+        ml_model_names = tuple(MODEL_NAMES[label] for label in ml_model_labels)
+        ml_model_label = "Regresión logística"
+        ml_model_name = MODEL_NAMES[ml_model_label]
+        ml_top_n_mfw = 50
+        ml_seed = 42
+        ml_n_test_per_author = 2
+        ml_keep_correlated = False
+        ml_corr_threshold = 0.85
+        ml_tolerance = 0.01
+        ml_top_n_values = [5, 10, 15, 25, 50, 75, 100]
+        ml_seeds = [0, 1, 2, 42, 123]
 
-    if selected_method == "mendenhall":
-        st.caption("Parámetros de curvas características")
-        block_size = st.number_input("BLOCK_SIZE", min_value=100, max_value=1_000_000, value=100_000, step=5_000)
-        n_blocks = st.number_input("N_BLOCKS", min_value=1, max_value=500, value=50, step=1)
-        max_word_len = st.slider("Longitud máxima de palabra", min_value=10, max_value=40, value=20, step=1)
-        seed = st.number_input("Semilla aleatoria", min_value=0, max_value=10_000, value=1, step=1)
-    elif selected_method in {"kilgariff", "burrows"}:
-        st.caption("Parámetros léxicos")
-        use_function_words = st.toggle("Usar solo palabras funcionales", value=True)
-        vocab_size = st.slider("Tamaño del vocabulario", min_value=50, max_value=1500, value=500, step=50)
-        min_freq = st.number_input("Frecuencia mínima", min_value=1, max_value=1000, value=1, step=1)
+        if selected_ml_workflow == "experiment":
+            ml_feature_label = st.selectbox("Conjunto de rasgos", list(FEATURE_SETS.keys()), index=1)
+            ml_feature_set = FEATURE_SETS[ml_feature_label]
+            ml_model_labels = st.multiselect(
+                "Modelos",
+                list(MODEL_NAMES.keys()),
+                default=list(MODEL_NAMES.keys()),
+            )
+            ml_model_names = tuple(MODEL_NAMES[label] for label in ml_model_labels)
+            ml_top_n_mfw = st.slider("TOP_N_MFW", min_value=5, max_value=200, value=50, step=5)
+            ml_seed = st.number_input("Semilla", min_value=0, max_value=10_000, value=42, step=1)
+            ml_n_test_per_author = st.number_input("Obras de test por autor", min_value=1, max_value=5, value=2, step=1)
+            if ml_feature_set in {"stylometric", "combined"}:
+                ml_keep_correlated = st.toggle("Mantener rasgos correlacionados", value=False)
+                ml_corr_threshold = st.slider("Umbral de correlación", 0.50, 0.99, 0.85, 0.01)
+        elif selected_ml_workflow == "robustness":
+            robustness_preset = st.selectbox("Preset", ["Rápido", "Completo"])
+            if robustness_preset == "Rápido":
+                ml_top_n_values = [10, 25, 50]
+                ml_seeds = [0, 42, 123]
+            else:
+                ml_top_n_values = [5, 10, 15, 25, 30, 40, 50, 75, 100, 125, 150]
+                ml_seeds = [0, 1, 2, 3, 4, 5, 10, 20, 42, 123, 150]
+            ml_top_n_values = parse_int_list(
+                st.text_input("Valores TOP_N_MFW", value=", ".join(map(str, ml_top_n_values)))
+            )
+            ml_seeds = parse_int_list(st.text_input("Semillas", value=", ".join(map(str, ml_seeds))))
+            ml_model_labels = st.multiselect(
+                "Modelos",
+                list(MODEL_NAMES.keys()),
+                default=["Regresión logística", "Linear SVC"],
+            )
+            ml_model_names = tuple(MODEL_NAMES[label] for label in ml_model_labels)
+            ml_n_test_per_author = st.number_input("Obras de test por autor", min_value=1, max_value=5, value=2, step=1)
+            ml_tolerance = st.slider("Tolerancia desde el mejor F1", 0.0, 0.10, 0.01, 0.005)
+        else:
+            ml_feature_label = st.selectbox("Conjunto de rasgos", list(FEATURE_SETS.keys()), index=1)
+            ml_feature_set = FEATURE_SETS[ml_feature_label]
+            ml_model_label = st.selectbox("Modelo final", list(MODEL_NAMES.keys()), index=0)
+            ml_model_name = MODEL_NAMES[ml_model_label]
+            ml_top_n_mfw = st.slider("TOP_N_MFW", min_value=5, max_value=200, value=50, step=5)
+            ml_seed = st.number_input("Semilla", min_value=0, max_value=10_000, value=42, step=1)
 
-    top_n = 20
-    if selected_method in {"kilgariff", "burrows"}:
-        st.subheader("Visualización")
-        top_n = st.slider("Top palabras por autor", min_value=5, max_value=50, value=20, step=5)
+elif selected_analysis == "classical":
+    with st.sidebar:
+        st.subheader("Métodos clásicos")
+        selected_method_label = st.selectbox(
+            "Método",
+            options=list(CLASSICAL_METHODS.keys()),
+        )
+        selected_method = CLASSICAL_METHODS[selected_method_label]
 
+        use_function_words = True
+        vocab_size = 500
+        min_freq = 1
+        block_size = 100_000
+        n_blocks = 50
+        max_word_len = 20
+        seed = 1
+
+        if selected_method == "mendenhall":
+            st.caption("Parámetros de curvas características")
+            block_size = st.number_input("BLOCK_SIZE", min_value=100, max_value=1_000_000, value=100_000, step=5_000)
+            n_blocks = st.number_input("N_BLOCKS", min_value=1, max_value=500, value=50, step=1)
+            max_word_len = st.slider("Longitud máxima de palabra", min_value=10, max_value=40, value=20, step=1)
+            seed = st.number_input("Semilla aleatoria", min_value=0, max_value=10_000, value=1, step=1)
+        elif selected_method in {"kilgariff", "burrows"}:
+            st.caption("Parámetros léxicos")
+            use_function_words = st.toggle("Usar solo palabras funcionales", value=True)
+            vocab_size = st.slider("Tamaño del vocabulario", min_value=50, max_value=1500, value=500, step=50)
+            min_freq = st.number_input("Frecuencia mínima", min_value=1, max_value=1000, value=1, step=1)
+
+        top_n = 20
+        if selected_method in {"kilgariff", "burrows"}:
+            st.subheader("Visualización")
+            top_n = st.slider("Top palabras por autor", min_value=5, max_value=50, value=20, step=5)
 
 if not st.session_state.analysis_has_run:
     st.write(
@@ -157,16 +240,366 @@ with summary_cols[2]:
 with summary_cols[3]:
     metric_card("Media tokens/obra", f"{work_summary['token_count'].mean():,.0f}")
 
-config = ClassicalAnalysisConfig(
-    vocab_size=vocab_size,
-    min_freq=min_freq,
-    use_function_words=use_function_words,
-    lowercase=lowercase,
-    block_size=block_size,
-    n_blocks=n_blocks,
-    max_word_len=max_word_len,
-    seed=seed,
-)
+if selected_analysis == "classical":
+    config = ClassicalAnalysisConfig(
+        vocab_size=vocab_size,
+        min_freq=min_freq,
+        use_function_words=use_function_words,
+        lowercase=lowercase,
+        block_size=block_size,
+        n_blocks=n_blocks,
+        max_word_len=max_word_len,
+        seed=seed,
+    )
+
+if selected_analysis == "supervised":
+    model_display_names = {value: key for key, value in MODEL_NAMES.items()}
+    ml_config = SupervisedConfig(
+        feature_set=ml_feature_set,
+        top_n_mfw=int(ml_top_n_mfw),
+        seed=int(ml_seed),
+        n_test_per_author=int(ml_n_test_per_author),
+        keep_correlated_features=ml_keep_correlated,
+        correlation_threshold=float(ml_corr_threshold),
+        selected_models=ml_model_names,
+    )
+
+    if selected_ml_workflow == "experiment":
+        if not ml_model_names:
+            st.warning("Selecciona al menos un modelo para ejecutar el experimento.")
+            st.stop()
+
+        data_tab, features_tab, models_tab, evaluation_tab, predictions_tab = st.tabs(
+            ["Datos", "Rasgos", "Modelos", "Evaluación", "Predicciones"]
+        )
+
+        with st.spinner("Entrenando y evaluando modelos supervisados..."):
+            ml_result = run_supervised_experiment(corpus_df, ml_config)
+
+        with data_tab:
+            st.subheader("Partición de entrenamiento y test")
+            split_summary = pd.DataFrame(
+                [
+                    {"split": "Entrenamiento", "obras": ml_result["train_df"].shape[0]},
+                    {"split": "Test", "obras": ml_result["test_df"].shape[0]},
+                ]
+            )
+            st.dataframe(split_summary, width="stretch", hide_index=True)
+
+            by_author = (
+                pd.concat(
+                    [
+                        ml_result["train_df"].assign(split="Entrenamiento"),
+                        ml_result["test_df"].assign(split="Test"),
+                    ]
+                )
+                .groupby(["split", "author"], as_index=False)
+                .size()
+                .rename(columns={"size": "obras"})
+            )
+            split_fig = px.bar(
+                by_author,
+                x="author",
+                y="obras",
+                color="split",
+                barmode="group",
+                labels={"author": "Autor", "obras": "Obras", "split": "Partición"},
+                title="Obras por autor en cada partición",
+            )
+            st.plotly_chart(split_fig, width="stretch")
+
+        with features_tab:
+            st.subheader("Rasgos utilizados")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Conjunto", ml_feature_label)
+            with col2:
+                st.metric("Número de rasgos", len(ml_result["feature_cols"]))
+            with col3:
+                st.metric("TOP_N_MFW", len(ml_result["mfw_vocab"]) if ml_result["mfw_vocab"] else "No aplica")
+
+            feature_matrix_df = pd.concat(
+                [
+                    ml_result["train_df"].assign(split="Entrenamiento"),
+                    ml_result["test_df"].assign(split="Test"),
+                ],
+                ignore_index=True,
+            )
+            metadata_cols = [col for col in ["split", "author", "work", "filename"] if col in feature_matrix_df.columns]
+            feature_matrix_df = feature_matrix_df[metadata_cols + ml_result["feature_cols"]]
+            st.dataframe(feature_matrix_df, width="stretch", hide_index=True)
+
+            if ml_feature_set in {"stylometric", "combined"} and ml_result["removed_features"]:
+                st.subheader("Rasgos eliminados por correlación")
+                st.caption(
+                    "**Tip:** al eliminar rasgos muy correlacionados se reduce redundancia entre variables y se evita que "
+                    "algunos modelos den peso repetido a señales casi equivalentes."
+                )
+                st.dataframe(
+                    pd.DataFrame({"removed_feature": ml_result["removed_features"]}),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+        with models_tab:
+            st.subheader("Validación cruzada")
+            st.caption(
+                "**Tip:** `cv_mean` resume el rendimiento medio en validación cruzada sobre entrenamiento; `cv_std` indica "
+                "cuánto varía ese rendimiento entre particiones."
+            )
+            cv_df = ml_result["cv_results"].copy()
+            cv_df["model"] = cv_df["model"].map(model_display_names)
+            st.dataframe(
+                cv_df.style.format({"cv_mean": "{:.3f}", "cv_std": "{:.3f}"}),
+                width="stretch",
+                hide_index=True,
+            )
+            cv_fig = px.bar(
+                cv_df.sort_values("cv_mean"),
+                x="cv_mean",
+                y="model",
+                error_x="cv_std",
+                orientation="h",
+                labels={"cv_mean": "F1-macro medio", "model": "Modelo"},
+                title="Rendimiento medio en validación cruzada",
+            )
+            st.plotly_chart(cv_fig, width="stretch")
+
+        with evaluation_tab:
+            st.subheader("Evaluación del mejor modelo")
+            best_model_label = model_display_names.get(ml_result["best_model_name"], ml_result["best_model_name"])
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Mejor modelo", best_model_label)
+            with col2:
+                st.metric("F1-macro test", f"{ml_result['test_f1_macro']:.3f}")
+            with col3:
+                st.metric("Accuracy test", f"{ml_result['test_accuracy']:.3f}")
+
+            report_df = pd.DataFrame(ml_result["classification_report"]).T.reset_index(names="label")
+            st.dataframe(report_df, width="stretch", hide_index=True)
+
+            cm_df = pd.DataFrame(
+                ml_result["confusion_matrix"],
+                index=ml_result["labels"],
+                columns=ml_result["labels"],
+            )
+            cm_fig = px.imshow(
+                cm_df,
+                text_auto=True,
+                aspect="auto",
+                color_continuous_scale="Blues",
+                labels={"x": "Autor predicho", "y": "Autor real", "color": "Obras"},
+                title="Matriz de confusión en test",
+            )
+            st.plotly_chart(cm_fig, width="stretch")
+
+        with predictions_tab:
+            st.subheader("Predicciones por obra")
+            pred_df = ml_result["pred_df"].copy()
+            st.dataframe(pred_df, width="stretch", hide_index=True)
+
+        st.stop()
+
+    if selected_ml_workflow == "robustness":
+        if not ml_top_n_values or not ml_seeds or not ml_model_names:
+            st.warning("Configura al menos un TOP_N_MFW, una semilla y un modelo.")
+            st.stop()
+
+        sweep_tab, summary_tab, decision_tab, detail_tab = st.tabs(
+            ["Barrido", "Resumen por TOP_N", "Decisión", "Detalle de ejecuciones"]
+        )
+
+        with st.spinner("Ejecutando barrido de robustez MFW..."):
+            robustness = run_mfw_robustness(
+                corpus_df,
+                top_n_values=ml_top_n_values,
+                seeds=ml_seeds,
+                n_test_per_author=int(ml_n_test_per_author),
+                tolerance=float(ml_tolerance),
+                selected_models=ml_model_names,
+            )
+
+        with sweep_tab:
+            st.subheader("Configuración del barrido")
+            config_df = pd.DataFrame(
+                [
+                    {"parámetro": "TOP_N_MFW", "valor": ", ".join(map(str, ml_top_n_values))},
+                    {"parámetro": "Semillas", "valor": ", ".join(map(str, ml_seeds))},
+                    {"parámetro": "Modelos", "valor": ", ".join(ml_model_labels)},
+                    {"parámetro": "Tolerancia", "valor": ml_tolerance},
+                ]
+            )
+            st.dataframe(config_df, width="stretch", hide_index=True)
+
+        with summary_tab:
+            st.subheader("Rendimiento agregado")
+            summary_df = robustness["summary_df"].copy()
+            summary_df["mode_best_model_name"] = summary_df["mode_best_model_name"].map(model_display_names)
+            st.dataframe(
+                summary_df.style.format(
+                    {
+                        "mean_test_f1_macro": "{:.3f}",
+                        "std_test_f1_macro": "{:.3f}",
+                        "min_test_f1_macro": "{:.3f}",
+                        "max_test_f1_macro": "{:.3f}",
+                    }
+                ),
+                width="stretch",
+                hide_index=True,
+            )
+            robustness_fig = px.line(
+                summary_df,
+                x="top_n_mfw",
+                y="mean_test_f1_macro",
+                markers=True,
+                error_y="std_test_f1_macro",
+                labels={"top_n_mfw": "TOP_N_MFW", "mean_test_f1_macro": "F1-macro medio"},
+                title="Robustez del rendimiento según número de MFW",
+            )
+            robustness_fig.add_hline(
+                y=robustness["threshold_score"],
+                line_dash="dash",
+                annotation_text="Umbral",
+            )
+            robustness_fig.add_vline(
+                x=robustness["selected_top_n_mfw"],
+                line_dash="dot",
+                annotation_text="TOP_N seleccionado",
+            )
+            st.plotly_chart(robustness_fig, width="stretch")
+
+        with decision_tab:
+            st.subheader("Selección del menor TOP_N_MFW suficiente")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Mejor media observada", f"{robustness['best_mean_score']:.3f}")
+            with col2:
+                st.metric("Umbral", f"{robustness['threshold_score']:.3f}")
+            with col3:
+                st.metric("TOP_N_MFW seleccionado", robustness["selected_top_n_mfw"])
+
+            decision_df = robustness["final_decision_df"].copy()
+            decision_df["mode_best_model_name"] = decision_df["mode_best_model_name"].map(model_display_names)
+            st.dataframe(decision_df, width="stretch", hide_index=True)
+
+        with detail_tab:
+            st.subheader("Todas las ejecuciones")
+            detail_df = robustness["sweep_df"].copy()
+            detail_df["best_model_name"] = detail_df["best_model_name"].map(model_display_names)
+            st.dataframe(detail_df, width="stretch", hide_index=True)
+
+        st.stop()
+
+    if selected_ml_workflow == "attribution":
+        model_tab, attribution_tab, ranking_tab, explanation_tab = st.tabs(
+            ["Modelo", "Atribución", "Ranking", "Explicabilidad"]
+        )
+        attribution_config = SupervisedConfig(
+            feature_set=ml_feature_set,
+            top_n_mfw=int(ml_top_n_mfw),
+            seed=int(ml_seed),
+        )
+        with st.spinner("Entrenando modelo final sobre el corpus de referencia..."):
+            model_bundle = train_final_model(corpus_df, attribution_config, ml_model_name)
+
+        with model_tab:
+            st.subheader("Modelo entrenado")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Modelo", ml_model_label)
+            with col2:
+                st.metric("Rasgos", ml_feature_label)
+            with col3:
+                st.metric("Número de rasgos", len(model_bundle["feature_cols"]))
+            st.dataframe(pd.DataFrame({"feature": model_bundle["feature_cols"]}), width="stretch", hide_index=True)
+
+        with attribution_tab:
+            st.subheader("Atribuir una obra externa")
+            uploaded_file = st.file_uploader(
+                "Selecciona una obra en .txt",
+                type=["txt"],
+                key="supervised_attribution_uploaded_txt",
+            )
+
+            if "supervised_attribution_text" not in st.session_state:
+                st.session_state.supervised_attribution_text = None
+            if "supervised_attribution_filename" not in st.session_state:
+                st.session_state.supervised_attribution_filename = None
+
+            if uploaded_file is not None:
+                st.session_state.supervised_attribution_text = uploaded_file.getvalue().decode(
+                    "utf-8",
+                    errors="replace",
+                )
+                st.session_state.supervised_attribution_filename = uploaded_file.name
+
+            if st.session_state.supervised_attribution_text is None:
+                st.info("Sube un archivo .txt para atribuirlo con el modelo supervisado entrenado.")
+                supervised_ranking_df = pd.DataFrame()
+                supervised_explanation_df = pd.DataFrame()
+            else:
+                uploaded_filename = st.session_state.supervised_attribution_filename or "obra externa"
+                supervised_ranking_df, supervised_explanation_df = classify_text_with_supervised_model(
+                    st.session_state.supervised_attribution_text,
+                    model_bundle,
+                    attribution_config,
+                    lowercase=lowercase,
+                )
+                score_col = "probability" if "probability" in supervised_ranking_df.columns else "score"
+                predicted_row = supervised_ranking_df.iloc[0]
+                st.success(f"Archivo cargado: {uploaded_filename}")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Autor predicho", predicted_row["author"])
+                with col2:
+                    st.metric("Score", f"{predicted_row[score_col]:.3f}")
+
+        with ranking_tab:
+            if "supervised_ranking_df" not in locals() or supervised_ranking_df.empty:
+                st.info("Sube una obra en la pestaña de atribución para ver el ranking.")
+            else:
+                st.subheader("Ranking de autores")
+                score_col = "probability" if "probability" in supervised_ranking_df.columns else "score"
+                ranking_fig = px.bar(
+                    supervised_ranking_df.sort_values(score_col),
+                    x=score_col,
+                    y="author",
+                    orientation="h",
+                    labels={score_col: "Probabilidad" if score_col == "probability" else "Score", "author": "Autor"},
+                    title="Ranking del modelo supervisado",
+                )
+                st.plotly_chart(ranking_fig, width="stretch")
+                st.dataframe(
+                    supervised_ranking_df.style.format({score_col: "{:.3f}"}),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+        with explanation_tab:
+            if "supervised_explanation_df" not in locals() or supervised_explanation_df.empty:
+                st.info("La explicabilidad local está disponible para modelos lineales con coeficientes.")
+            else:
+                st.subheader("Rasgos que más empujan la predicción")
+                top_explanation = supervised_explanation_df.head(25)
+                explanation_fig = px.bar(
+                    top_explanation.sort_values("contribution"),
+                    x="contribution",
+                    y="feature",
+                    orientation="h",
+                    labels={"contribution": "Contribución", "feature": "Rasgo"},
+                    title="Contribuciones locales principales",
+                )
+                st.plotly_chart(explanation_fig, width="stretch")
+                st.dataframe(
+                    top_explanation[["feature", "value", "contribution"]].style.format(
+                        {"value": "{:.6f}", "contribution": "{:.3f}"}
+                    ),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+        st.stop()
 
 if selected_method == "mendenhall":
     blocks_tab, average_tab, attribution_tab = st.tabs(
