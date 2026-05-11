@@ -471,10 +471,13 @@ def _build_mfw_vocab(df: pd.DataFrame, top_n: int) -> list[str]:
 
 
 def _add_mfw_features(df: pd.DataFrame, mfw_vocab: list[str]) -> pd.DataFrame:
-    out = df.copy()
-    for word in mfw_vocab:
-        out[f"fw_{word}"] = [Counter(tokens)[word] / len(tokens) if tokens else 0.0 for tokens in out["tokens"]]
-    return out
+    feature_rows = []
+    for tokens in df["tokens"]:
+        counts = Counter(tokens)
+        n_tokens = len(tokens)
+        feature_rows.append({f"fw_{word}": counts[word] / n_tokens if n_tokens else 0.0 for word in mfw_vocab})
+    mfw_df = pd.DataFrame(feature_rows, index=df.index)
+    return pd.concat([df.copy(), mfw_df], axis=1)
 
 
 def _mode_or_first(values: pd.Series) -> str:
