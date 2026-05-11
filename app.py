@@ -1,3 +1,5 @@
+"""Application for stylometric analysis of literary corpora, built with Streamlit."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,7 +10,6 @@ import streamlit as st
 
 from whodunit_stylometry.analysis.classical import (
     ClassicalAnalysisConfig,
-    add_tokens,
     burrows_reference_tables,
     classify_text_with_burrows,
     classify_text_with_kilgariff,
@@ -17,7 +18,6 @@ from whodunit_stylometry.analysis.classical import (
     compute_mendenhall_author_profiles,
     corpus_summary,
     kilgariff_reference_tables,
-    load_corpus,
     mendenhall_average_curves_to_frame,
     top_tokens_by_author,
 )
@@ -54,40 +54,22 @@ from whodunit_stylometry.analysis.unsupervised import (
     run_unsupervised_experiment,
     run_unsupervised_mfw_robustness,
 )
-
-ANALYSIS_TYPES = {
-    "Análisis exploratorio": "eda",
-    "Métodos clásicos": "classical",
-    "Métodos supervisados": "supervised",
-    "Métodos no supervisados": "unsupervised",
-    "Embeddings de OpenAI": "embeddings",
-}
-
-CLASSICAL_METHODS = {
-    "Test de Mendenhall": "mendenhall",
-    "Chi-cuadrado de Kilgariff": "kilgariff",
-    "Distancia de Burrows": "burrows",
-}
-
-ML_WORKFLOWS = {
-    "Experimento supervisado": "experiment",
-    "Robustez MFW": "robustness",
-}
-
-UNSUPERVISED_WORKFLOWS = {
-    "Experimento de clustering": "experiment",
-    "Robustez MFW": "robustness",
-    "Clustering jerárquico": "hierarchical",
-}
-
-METHOD_NAMES = {
-    "mendenhall": "Test de Mendenhall",
-    "kilgariff": "Chi-cuadrado de Kilgariff",
-    "burrows": "Distancia de Burrows",
-}
-
-SIDEBAR_ICON_PATH = Path("logo.png")
-
+from whodunit_stylometry.utils.st_utils import (
+    ANALYSIS_TYPES,
+    CLASSICAL_METHODS,
+    ML_WORKFLOWS,
+    SIDEBAR_ICON_PATH,
+    UNSUPERVISED_WORKFLOWS,
+    cached_load_and_tokenize,
+    corpus_cache_fingerprint,
+    eda_cache_key,
+    embeddings_experiment_cache_key,
+    hierarchical_experiment_cache_key,
+    metric_card,
+    parse_int_list,
+    supervised_experiment_cache_key,
+    unsupervised_experiment_cache_key,
+)
 
 st.set_page_config(
     page_title="Whodunit Stylometry",
@@ -95,112 +77,14 @@ st.set_page_config(
     layout="wide",
 )
 
-
-@st.cache_data(show_spinner=False)
-def cached_load_and_tokenize(corpus_path: str, lowercase: bool) -> pd.DataFrame:
-    return add_tokens(load_corpus(corpus_path), lowercase=lowercase)
-
-
-def metric_card(label: str, value) -> None:
-    st.metric(label=label, value=value)
-
-
-def parse_int_list(value: str) -> list[int]:
-    return [int(part.strip()) for part in value.split(",") if part.strip()]
-
-
-def corpus_cache_fingerprint(df: pd.DataFrame) -> tuple[tuple[int, int], int]:
-    fingerprint_cols = [col for col in ["author", "work", "filename", "text"] if col in df.columns]
-    fingerprint_df = df[fingerprint_cols].astype(str) if fingerprint_cols else df.astype(str)
-    fingerprint_hash = pd.util.hash_pandas_object(fingerprint_df, index=False).sum()
-    return df.shape, int(fingerprint_hash)
-
-
-def supervised_experiment_cache_key(
-    df: pd.DataFrame,
-    lowercase: bool,
-    config: SupervisedConfig,
-) -> tuple:
-    return (
-        corpus_cache_fingerprint(df),
-        lowercase,
-        config.feature_set,
-        config.top_n_mfw,
-        config.seed,
-        config.n_test_per_author,
-        config.keep_correlated_features,
-        config.correlation_threshold,
-        tuple(config.selected_models),
-    )
-
-
-def unsupervised_experiment_cache_key(
-    df: pd.DataFrame,
-    lowercase: bool,
-    config: UnsupervisedConfig,
-) -> tuple:
-    return (
-        corpus_cache_fingerprint(df),
-        lowercase,
-        config.feature_set,
-        config.top_n_mfw,
-        config.seed,
-        tuple(config.selected_models),
-        config.n_clusters,
-    )
-
-
-def hierarchical_experiment_cache_key(
-    df: pd.DataFrame,
-    lowercase: bool,
-    config: HierarchicalConfig,
-) -> tuple:
-    return (
-        corpus_cache_fingerprint(df),
-        lowercase,
-        config.feature_set,
-        config.top_n_mfw,
-        tuple(config.selected_methods),
-        config.dendrogram_method,
-        config.n_clusters,
-    )
-
-
-def embeddings_experiment_cache_key(
-    df: pd.DataFrame,
-    lowercase: bool,
-    config: EmbeddingsConfig,
-) -> tuple:
-    return (
-        corpus_cache_fingerprint(df),
-        lowercase,
-        config.model,
-        config.dimensions,
-        config.chunk_tokens,
-        config.chunk_overlap,
-        config.min_chunk_tokens,
-        config.batch_size,
-        config.max_retries,
-        config.random_state,
-        config.umap_neighbors,
-        config.umap_min_dist,
-        config.network_top_k,
-        config.nearest_neighbors_k,
-    )
-
-
-def eda_cache_key(df: pd.DataFrame, lowercase: bool, config: EDAConfig) -> tuple:
-    return (
-        corpus_cache_fingerprint(df),
-        lowercase,
-        config.top_n,
-        config.ngram_top_k,
-        config.zipf_max_rank,
-    )
-
-
+#############
+# APP TITLE #
+#############
 st.title("Whodunit Stylometry 🕵")
 
+#########################
+# SIDEBAR CONFIGURATION #
+#########################
 with st.sidebar:
     _, logo_col, _ = st.columns([1, 3, 1])
     with logo_col:
