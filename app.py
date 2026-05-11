@@ -21,6 +21,14 @@ from whodunit_stylometry.analysis.classical import (
     mendenhall_average_curves_to_frame,
     top_tokens_by_author,
 )
+from whodunit_stylometry.analysis.eda import (
+    LEXICAL_METRICS,
+    PUNCTUATION_METRICS,
+    QUALITY_METRICS,
+    STRUCTURAL_METRICS,
+    EDAConfig,
+    run_eda_analysis,
+)
 from whodunit_stylometry.analysis.embeddings import (
     EMBEDDING_MODELS,
     EmbeddingsConfig,
@@ -48,6 +56,7 @@ from whodunit_stylometry.analysis.unsupervised import (
 )
 
 ANALYSIS_TYPES = {
+    "Análisis exploratorio": "eda",
     "Métodos clásicos": "classical",
     "Métodos supervisados": "supervised",
     "Métodos no supervisados": "unsupervised",
@@ -90,10 +99,6 @@ st.set_page_config(
 @st.cache_data(show_spinner=False)
 def cached_load_and_tokenize(corpus_path: str, lowercase: bool) -> pd.DataFrame:
     return add_tokens(load_corpus(corpus_path), lowercase=lowercase)
-
-
-def show_placeholder(title: str) -> None:
-    st.info(f"{title} todavía no está implementado en la app. La interfaz ya queda preparada para añadirlo.")
 
 
 def metric_card(label: str, value) -> None:
@@ -184,6 +189,16 @@ def embeddings_experiment_cache_key(
     )
 
 
+def eda_cache_key(df: pd.DataFrame, lowercase: bool, config: EDAConfig) -> tuple:
+    return (
+        corpus_cache_fingerprint(df),
+        lowercase,
+        config.top_n,
+        config.ngram_top_k,
+        config.zipf_max_rank,
+    )
+
+
 st.title("Whodunit Stylometry 🕵")
 
 with st.sidebar:
@@ -212,6 +227,13 @@ with st.sidebar:
     if st.button("Ejecutar análisis", type="primary", width="stretch"):
         st.session_state.analysis_has_run = True
 
+
+if selected_analysis == "eda":
+    with st.sidebar:
+        st.subheader("Análisis exploratorio")
+        eda_top_n = st.slider("Top palabras", min_value=5, max_value=50, value=20, step=5)
+        eda_ngram_top_k = st.slider("Top n-grams", min_value=5, max_value=50, value=20, step=5)
+        eda_zipf_max_rank = st.slider("Máximo rango Zipf", min_value=500, max_value=10000, value=5000, step=500)
 
 if selected_analysis == "embeddings":
     with st.sidebar:
@@ -436,6 +458,254 @@ with summary_cols[2]:
     metric_card("Tokens", f"{int(author_summary['total_tokens'].sum()):,}")
 with summary_cols[3]:
     metric_card("Media tokens/obra", f"{work_summary['token_count'].mean():,.0f}")
+
+if selected_analysis == "eda":
+    eda_config = EDAConfig(top_n=int(eda_top_n), ngram_top_k=int(eda_ngram_top_k), zipf_max_rank=int(eda_zipf_max_rank))
+    cache_key = eda_cache_key(corpus_df, lowercase, eda_config)
+    eda_cache = st.session_state.setdefault("eda_cache", {})
+    if cache_key in eda_cache:
+        eda_result = eda_cache[cache_key]
+    else:
+        with st.spinner("Calculando métricas exploratorias del corpus..."):
+            eda_result = run_eda_analysis(corpus_df, eda_config)
+        eda_cache[cache_key] = eda_result
+
+    metrics_df = eda_result["metrics_df"]
+    summary_tab, quality_tab, structure_tab, lexical_tab, punctuation_tab, authors_tab, vocab_tab, outliers_tab = (
+        st.tabs(["Resumen", "Calidad", "Estructura", "Léxico", "Puntuación", "Autores", "Vocabulario", "Outliers"])
+    )
+
+    with summary_tab:
+        st.subheader("Resumen del corpus")
+        works_by_author = metrics_df.groupby("author", as_index=False).size().rename(columns={"size": "obras"})
+        works_fig = px.bar(
+            works_by_author,
+            x="author",
+            y="obras",
+            labels={"author": "Autor", "obras": "Obras"},
+            title="Obras por autor",
+        )
+        st.plotly_chart(works_fig, width="stretch")
+
+        length_fig = px.histogram(
+            metrics_df,
+            x="n_tokens_all",
+            color="author",
+            nbins=40,
+            labels={"n_tokens_all": "Tokens por obra", "author": "Autor"},
+            title="Distribución de longitud de las obras",
+        )
+        st.plotly_chart(length_fig, width="stretch")
+        st.dataframe(
+            metrics_df[["author", "work", "filename", "n_tokens_all", "n_chars", "n_sentences", "n_paragraphs"]],
+            width="stretch",
+            hide_index=True,
+        )
+
+    with quality_tab:
+        st.subheader("Métricas de calidad superficial")
+        quality_metric = st.selectbox("Métrica", [col for col in QUALITY_METRICS if col in metrics_df.columns])
+        col1, col2 = st.columns(2)
+        with col1:
+            quality_hist = px.histogram(
+                metrics_df,
+                x=quality_metric,
+                color="author",
+                nbins=30,
+                title=f"Distribución de {quality_metric}",
+            )
+            st.plotly_chart(quality_hist, width="stretch")
+        with col2:
+            quality_box = px.box(
+                metrics_df,
+                x="author",
+                y=quality_metric,
+                points="all",
+                title=f"{quality_metric} por autor",
+            )
+            st.plotly_chart(quality_box, width="stretch")
+
+        quality_corr = metrics_df[[col for col in QUALITY_METRICS if col in metrics_df.columns]].corr()
+        quality_corr_fig = px.imshow(quality_corr, text_auto=".2f", color_continuous_scale="RdBu_r", zmin=-1, zmax=1)
+        st.plotly_chart(quality_corr_fig, width="stretch")
+
+    with structure_tab:
+        st.subheader("Longitud y estructura textual")
+        structural_metric = st.selectbox(
+            "Métrica estructural", [col for col in STRUCTURAL_METRICS if col in metrics_df.columns]
+        )
+        structure_box = px.box(
+            metrics_df,
+            x="author",
+            y=structural_metric,
+            points="all",
+            title=f"{structural_metric} por autor",
+        )
+        st.plotly_chart(structure_box, width="stretch")
+
+        scatter_pairs = [
+            ("n_tokens_all", "n_sentences"),
+            ("n_tokens_all", "n_paragraphs"),
+            ("avg_sentence_len", "avg_paragraph_len"),
+            ("n_sentences", "n_paragraphs"),
+        ]
+        selected_pair = st.selectbox("Relación", [f"{x} vs {y}" for x, y in scatter_pairs])
+        x_col, y_col = scatter_pairs[[f"{x} vs {y}" for x, y in scatter_pairs].index(selected_pair)]
+        scatter_fig = px.scatter(
+            metrics_df,
+            x=x_col,
+            y=y_col,
+            color="author",
+            hover_data=["work"],
+            title=f"{x_col} vs {y_col}",
+        )
+        st.plotly_chart(scatter_fig, width="stretch")
+
+    with lexical_tab:
+        st.subheader("Diversidad y estructura léxica")
+        lexical_metric = st.selectbox("Métrica léxica", [col for col in LEXICAL_METRICS if col in metrics_df.columns])
+        lexical_box = px.box(
+            metrics_df,
+            x="author",
+            y=lexical_metric,
+            points="all",
+            title=f"{lexical_metric} por autor",
+        )
+        st.plotly_chart(lexical_box, width="stretch")
+
+        lexical_scatter = px.scatter(
+            metrics_df,
+            x="n_tokens_all",
+            y=lexical_metric,
+            color="author",
+            hover_data=["work"],
+            title=f"Efecto de longitud sobre {lexical_metric}",
+        )
+        st.plotly_chart(lexical_scatter, width="stretch")
+
+    with punctuation_tab:
+        st.subheader("Uso de puntuación")
+        punctuation_metric = st.selectbox(
+            "Métrica de puntuación",
+            [col for col in PUNCTUATION_METRICS if col in metrics_df.columns],
+        )
+        punctuation_box = px.box(
+            metrics_df,
+            x="author",
+            y=punctuation_metric,
+            points="all",
+            title=f"{punctuation_metric} por autor",
+        )
+        st.plotly_chart(punctuation_box, width="stretch")
+
+        punctuation_corr = metrics_df[[col for col in PUNCTUATION_METRICS if col in metrics_df.columns]].corr()
+        punctuation_corr_fig = px.imshow(
+            punctuation_corr,
+            text_auto=".2f",
+            color_continuous_scale="RdBu_r",
+            zmin=-1,
+            zmax=1,
+            title="Correlación entre métricas de puntuación",
+        )
+        st.plotly_chart(punctuation_corr_fig, width="stretch")
+
+    with authors_tab:
+        st.subheader("Patrones agregados por autor")
+        heatmap_fig = px.imshow(
+            eda_result["author_heatmap_df"],
+            color_continuous_scale="RdBu_r",
+            zmin=-2,
+            zmax=2,
+            aspect="auto",
+            title="Métricas medias estandarizadas por autor",
+        )
+        heatmap_fig.update_layout(height=760)
+        st.plotly_chart(heatmap_fig, width="stretch")
+
+        pca_df = eda_result["author_pca_df"]
+        pca_fig = px.scatter(
+            pca_df,
+            x="PC1",
+            y="PC2",
+            color="author",
+            text="author",
+            title="PCA de autores con métricas estilométricas estables",
+        )
+        pca_fig.update_traces(textposition="top center")
+        st.plotly_chart(pca_fig, width="stretch")
+        st.caption(
+            "Varianza explicada: "
+            + ", ".join(f"PC{i + 1}={value:.3f}" for i, value in enumerate(eda_result["pca_variance"]))
+        )
+
+        st.dataframe(eda_result["author_metric_means"], width="stretch", hide_index=True)
+
+    with vocab_tab:
+        st.subheader("Vocabulario por autor")
+        vocab_author = st.selectbox("Autor", sorted(metrics_df["author"].unique()))
+        vocab_mode = st.radio(
+            "Vista",
+            ["Palabras", "Palabras sin stopwords", "Bigramas", "Trigramas", "Zipf"],
+            horizontal=True,
+        )
+        if vocab_mode == "Palabras":
+            vocab_df = eda_result["top_words"].query("author == @vocab_author")
+            x_col = "token"
+            y_col = "freq"
+        elif vocab_mode == "Palabras sin stopwords":
+            vocab_df = eda_result["top_words_no_stop"].query("author == @vocab_author")
+            x_col = "token"
+            y_col = "freq"
+        elif vocab_mode == "Bigramas":
+            vocab_df = eda_result["top_bigrams"].query("author == @vocab_author")
+            x_col = "ngram"
+            y_col = "freq"
+        elif vocab_mode == "Trigramas":
+            vocab_df = eda_result["top_trigrams"].query("author == @vocab_author")
+            x_col = "ngram"
+            y_col = "freq"
+        else:
+            zipf_df = eda_result["zipf_df"].query("author == @vocab_author")
+            zipf_fig = px.line(
+                zipf_df,
+                x="rank",
+                y="freq",
+                log_x=True,
+                log_y=True,
+                title=f"Curva de Zipf: {vocab_author}",
+                labels={"rank": "Rango", "freq": "Frecuencia"},
+            )
+            st.plotly_chart(zipf_fig, width="stretch")
+            st.dataframe(zipf_df.head(eda_top_n), width="stretch", hide_index=True)
+            vocab_df = None
+
+        if vocab_df is not None:
+            vocab_fig = px.bar(
+                vocab_df.sort_values(y_col),
+                x=y_col,
+                y=x_col,
+                orientation="h",
+                title=f"{vocab_mode}: {vocab_author}",
+            )
+            st.plotly_chart(vocab_fig, width="stretch")
+            st.dataframe(vocab_df, width="stretch", hide_index=True)
+
+    with outliers_tab:
+        st.subheader("Outliers por grupos de métricas")
+        group_labels = {
+            "quality": "Calidad",
+            "structural": "Estructura",
+            "lexical": "Léxico",
+            "punctuation": "Puntuación",
+        }
+        selected_group_label = st.selectbox("Grupo", list(group_labels.values()))
+        selected_group = {value: key for key, value in group_labels.items()}[selected_group_label]
+        outlier_payload = eda_result["outlier_groups"][selected_group]
+        st.dataframe(outlier_payload["summary"], width="stretch", hide_index=True)
+        st.subheader("Obras marcadas")
+        st.dataframe(outlier_payload["outliers"], width="stretch", hide_index=True)
+
+    st.stop()
 
 if selected_analysis == "embeddings":
     embedding_config = EmbeddingsConfig(
