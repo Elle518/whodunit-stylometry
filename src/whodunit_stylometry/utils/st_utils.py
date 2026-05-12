@@ -1,17 +1,22 @@
 """Utils for the stylometry app."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
-from whodunit_stylometry.analysis.classical import add_tokens, load_corpus
 from whodunit_stylometry.analysis.eda import EDAConfig
 from whodunit_stylometry.analysis.embeddings import EmbeddingsConfig
 from whodunit_stylometry.analysis.supervised import SupervisedConfig
 from whodunit_stylometry.analysis.unsupervised import (
     HierarchicalConfig,
     UnsupervisedConfig,
+)
+from whodunit_stylometry.utils.data_utils import load_corpus
+from whodunit_stylometry.utils.nlp_utils import (
+    add_tokens,
 )
 
 ANALYSIS_TYPES = {
@@ -67,8 +72,6 @@ def parse_int_list(value: str) -> list[int]:
 #####################
 # CACHING FUNCTIONS #
 #####################
-
-
 @st.cache_data(show_spinner=False)
 def cached_load_and_tokenize(corpus_path: str, lowercase: bool) -> pd.DataFrame:
     """Load a corpus from disk and return a tokenized DataFrame.
@@ -126,7 +129,6 @@ def eda_cache_key(df: pd.DataFrame, lowercase: bool, config: EDAConfig) -> tuple
         corpus_cache_fingerprint(df),
         lowercase,
         config.top_n,
-        config.ngram_top_k,
         config.zipf_max_rank,
     )
 

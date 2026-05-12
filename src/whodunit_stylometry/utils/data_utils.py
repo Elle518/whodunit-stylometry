@@ -250,3 +250,58 @@ def discover_corpus(corpus_dir: Path) -> pd.DataFrame:
     df = pd.DataFrame(rows)
 
     return df
+
+
+def corpus_summary(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return work-level and author-level descriptive summaries.
+
+    Args:
+        df: Corpus metadata and statistics. Expected columns are
+            ``author``, ``work``, ``filename``, ``char_count``, ``word_count``,
+            ``token_count``, ``type_count``, and ``ttr``.
+
+    Returns:
+        A tuple containing:
+            - A work-level summary with selected metadata and count columns.
+            - An author-level summary aggregated by author, including the number
+              of works, total token count, and mean tokens per work.
+    """
+    work_summary = df[
+        ["author", "work", "filename", "char_count", "word_count", "token_count", "type_count", "ttr"]
+    ].copy()
+
+    author_summary = (
+        df.groupby("author", as_index=False)
+        .agg(
+            n_works=("work", "count"),
+            total_tokens=("token_count", "sum"),
+            mean_tokens_per_work=("token_count", "mean"),
+        )
+        .sort_values("total_tokens", ascending=False)
+    )
+
+    return work_summary, author_summary
+
+
+def load_corpus(corpus_dir: str | Path) -> pd.DataFrame:
+    """Load a text corpus organized by author subdirectories.
+
+    Args:
+        corpus_dir: Path to the corpus root directory. The expected layout is
+            ``corpus_dir/author/*.txt``.
+
+    Returns:
+        A DataFrame describing the discovered corpus files, as returned by
+        ``discover_corpus``.
+    """
+    path = Path(corpus_dir).expanduser()
+    if not path.exists():
+        raise FileNotFoundError(f"No existe la ruta: {path}")
+    if not path.is_dir():
+        raise NotADirectoryError(f"La ruta no es un directorio: {path}")
+
+    df = discover_corpus(path)
+    if df.empty:
+        raise ValueError("No se han encontrado archivos .txt en subcarpetas de autor.")
+
+    return df

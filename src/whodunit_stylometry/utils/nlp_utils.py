@@ -904,3 +904,48 @@ def transform_with_mfw(tokens_by_file, mfw):
         rows.append(row)
 
     return pd.DataFrame(rows)
+
+
+def tokenize_text(text: str, tokenizer: CustomTokenizer, lowercase: bool = True) -> list[str]:
+    """Normalize and tokenize text, keeping only alphabetic tokens.
+
+    Args:
+        text: Text to normalize and tokenize.
+        tokenizer: Tokenizer used to split the normalized text into tokens.
+        lowercase: Whether to lowercase the returned tokens.
+
+    Returns:
+        A list of alphabetic tokens. Tokens are lowercased when ``lowercase`` is
+        ``True``.
+    """
+    tokens = is_alpha_tokens(tokenizer.tokenize(text), keep_alpha=True)
+    if lowercase:
+        return [token.lower() for token in tokens]
+    return tokens
+
+
+def add_tokens(df: pd.DataFrame, lowercase: bool = True) -> pd.DataFrame:
+    """Attach token lists and lexical statistics to a corpus table.
+
+    Args:
+        df: Corpus table containing a ``text`` column with the text to tokenize.
+        lowercase: Whether to lowercase text during tokenization.
+
+    Returns:
+        A copy of ``df`` with four additional columns:
+            - ``tokens``: Token list for each text.
+            - ``token_count``: Number of tokens in each token list.
+            - ``type_count``: Number of unique tokens in each token list.
+            - ``ttr``: Type-token ratio, computed as ``type_count / token_count``.
+              Empty token lists receive ``np.nan``.
+    """
+    tokenizer = CustomTokenizer()
+    out = df.copy()
+    out["tokens"] = [tokenize_text(text, tokenizer=tokenizer, lowercase=lowercase) for text in out["text"]]
+    out["token_count"] = out["tokens"].map(len)
+    out["type_count"] = out["tokens"].map(lambda tokens: len(set(tokens)))
+    out["ttr"] = out.apply(
+        lambda row: row["type_count"] / row["token_count"] if row["token_count"] else np.nan,
+        axis=1,
+    )
+    return out

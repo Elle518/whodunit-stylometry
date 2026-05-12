@@ -86,7 +86,6 @@ class EDAConfig:
     """Configuration for exploratory corpus analysis."""
 
     top_n: int = 20
-    ngram_top_k: int = 20
     zipf_max_rank: int = 5000
 
 
@@ -116,8 +115,8 @@ def run_eda_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any]:
         "pca_variance": pca_variance,
         "top_words": _top_words_by_author(tokens_by_author, config.top_n, remove_stopwords=False),
         "top_words_no_stop": _top_words_by_author(tokens_by_author, config.top_n, remove_stopwords=True),
-        "top_bigrams": _top_ngrams_by_author(tokens_by_author, n=2, top_k=config.ngram_top_k),
-        "top_trigrams": _top_ngrams_by_author(tokens_by_author, n=3, top_k=config.ngram_top_k),
+        "top_bigrams": _top_ngrams_by_author(tokens_by_author, n=2, top_k=config.top_n),
+        "top_trigrams": _top_ngrams_by_author(tokens_by_author, n=3, top_k=config.top_n),
         "zipf_df": _zipf_by_author(tokens_by_author, max_rank=config.zipf_max_rank),
     }
 

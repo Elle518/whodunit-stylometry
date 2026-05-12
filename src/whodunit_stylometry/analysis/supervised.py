@@ -25,9 +25,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 from sklearn.svm import SVC, LinearSVC
 
-from whodunit_stylometry.analysis.classical import tokenize_text
 from whodunit_stylometry.constants import STOPWORDS
-from whodunit_stylometry.utils.nlp_utils import CustomTokenizer
+from whodunit_stylometry.utils.nlp_utils import CustomTokenizer, tokenize_text
 from whodunit_stylometry.utils.stats_utils import drop_highly_correlated_features
 
 FEATURE_SETS = {

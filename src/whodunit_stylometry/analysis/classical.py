@@ -4,20 +4,13 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import jensenshannon
 
 from whodunit_stylometry.constants import STOPWORDS
-from whodunit_stylometry.utils.data_utils import discover_corpus
-from whodunit_stylometry.utils.nlp_utils import (
-    CustomTokenizer,
-    fix_gutenberg_linebreaks,
-    is_alpha_tokens,
-    normalize_text_for_tokenization,
-)
+from whodunit_stylometry.utils.nlp_utils import CustomTokenizer, tokenize_text
 from whodunit_stylometry.utils.stats_utils import (
     align_distributions,
     build_global_vocab,
@@ -25,8 +18,6 @@ from whodunit_stylometry.utils.stats_utils import (
     compute_average_curve,
     compute_feature_stats,
     distance_matrix,
-    get_pairwise_burrows_contributions,
-    get_pairwise_contributions,
     kilgariff_chi2,
     word_length_distributions_random_blocks,
     z_scores,
@@ -45,67 +36,6 @@ class ClassicalAnalysisConfig:
     n_blocks: int = 50
     max_word_len: int = 20
     seed: int = 0
-
-
-def load_corpus(corpus_dir: str | Path) -> pd.DataFrame:
-    """Load a corpus organized as ``corpus_dir/author/*.txt``."""
-
-    path = Path(corpus_dir).expanduser()
-    if not path.exists():
-        raise FileNotFoundError(f"No existe la ruta: {path}")
-    if not path.is_dir():
-        raise NotADirectoryError(f"La ruta no es un directorio: {path}")
-
-    df = discover_corpus(path)
-    if df.empty:
-        raise ValueError("No se han encontrado archivos .txt en subcarpetas de autor.")
-
-    return df
-
-
-def tokenize_text(text: str, tokenizer: CustomTokenizer, lowercase: bool = True) -> list[str]:
-    """Normalize and tokenize a text, keeping only alphabetic tokens."""
-
-    normalized = normalize_text_for_tokenization(fix_gutenberg_linebreaks(text))
-    tokens = is_alpha_tokens(tokenizer.tokenize(normalized), keep_alpha=True)
-    if lowercase:
-        return [token.lower() for token in tokens]
-    return tokens
-
-
-def add_tokens(df: pd.DataFrame, lowercase: bool = True) -> pd.DataFrame:
-    """Attach reusable token lists to the corpus table."""
-
-    tokenizer = CustomTokenizer()
-    out = df.copy()
-    out["tokens"] = [tokenize_text(text, tokenizer=tokenizer, lowercase=lowercase) for text in out["text"]]
-    out["token_count"] = out["tokens"].map(len)
-    out["type_count"] = out["tokens"].map(lambda tokens: len(set(tokens)))
-    out["ttr"] = out.apply(
-        lambda row: row["type_count"] / row["token_count"] if row["token_count"] else np.nan,
-        axis=1,
-    )
-    return out
-
-
-def corpus_summary(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Return work-level and author-level descriptive summaries."""
-
-    work_summary = df[
-        ["author", "work", "filename", "char_count", "word_count", "token_count", "type_count", "ttr"]
-    ].copy()
-
-    author_summary = (
-        df.groupby("author", as_index=False)
-        .agg(
-            n_works=("work", "count"),
-            total_tokens=("token_count", "sum"),
-            mean_tokens_per_work=("token_count", "mean"),
-        )
-        .sort_values("total_tokens", ascending=False)
-    )
-
-    return work_summary, author_summary
 
 
 def tokens_by_author(df: pd.DataFrame) -> dict[str, list[str]]:

@@ -16,7 +16,6 @@ from whodunit_stylometry.analysis.classical import (
     classify_text_with_mendenhall,
     compare_mendenhall_average_curves,
     compute_mendenhall_author_profiles,
-    corpus_summary,
     kilgariff_reference_tables,
     mendenhall_average_curves_to_frame,
     top_tokens_by_author,
@@ -54,6 +53,7 @@ from whodunit_stylometry.analysis.unsupervised import (
     run_unsupervised_experiment,
     run_unsupervised_mfw_robustness,
 )
+from whodunit_stylometry.utils.data_utils import corpus_summary
 from whodunit_stylometry.utils.st_utils import (
     ANALYSIS_TYPES,
     CLASSICAL_METHODS,
@@ -71,20 +71,20 @@ from whodunit_stylometry.utils.st_utils import (
     unsupervised_experiment_cache_key,
 )
 
+######################
+# PAGE CONFIGURATION #
+######################
 st.set_page_config(
     page_title="Whodunit Stylometry",
     page_icon="WS",
     layout="wide",
 )
 
-#############
-# APP TITLE #
-#############
 st.title("Whodunit Stylometry 🕵")
 
-#########################
-# SIDEBAR CONFIGURATION #
-#########################
+#################################
+# GENERAL SIDEBAR CONFIGURATION #
+#################################
 with st.sidebar:
     _, logo_col, _ = st.columns([1, 3, 1])
     with logo_col:
@@ -112,13 +112,17 @@ with st.sidebar:
         st.session_state.analysis_has_run = True
 
 
+##########################################
+# SIDEBAR OPTIONS FOR EACH ANALYSIS TYPE #
+##########################################
 if selected_analysis == "eda":
     with st.sidebar:
         st.subheader("Análisis exploratorio")
-        eda_top_n = st.slider("Top palabras", min_value=5, max_value=50, value=20, step=5)
-        eda_ngram_top_k = st.slider("Top n-grams", min_value=5, max_value=50, value=20, step=5)
+        eda_top_n = st.slider("Top n-grams", min_value=5, max_value=50, value=20, step=5)
         eda_zipf_max_rank = st.slider("Máximo rango Zipf", min_value=500, max_value=10000, value=5000, step=500)
 
+
+#### REVISAR #####
 if selected_analysis == "embeddings":
     with st.sidebar:
         st.subheader("Embeddings de OpenAI")
@@ -325,7 +329,7 @@ if not st.session_state.analysis_has_run:
     st.stop()
 
 try:
-    with st.spinner("Leyendo y tokenizando el corpus..."):
+    with st.spinner("Leyendo y procesando el corpus, esta operación puede tardar unos minutos..."):
         corpus_df = cached_load_and_tokenize(corpus_path, lowercase=lowercase)
 except Exception as exc:
     st.error(str(exc))
@@ -339,12 +343,15 @@ with summary_cols[0]:
 with summary_cols[1]:
     metric_card("Obras", work_summary.shape[0])
 with summary_cols[2]:
-    metric_card("Tokens", f"{int(author_summary['total_tokens'].sum()):,}")
+    metric_card("Tokens", f"{int(author_summary['total_tokens'].sum()):,}".replace(",", "."))
 with summary_cols[3]:
-    metric_card("Media tokens/obra", f"{work_summary['token_count'].mean():,.0f}")
+    metric_card("Media tokens/obra", f"{work_summary['token_count'].mean():,.0f}".replace(",", "."))
 
+##################################################
+# PERFORM CORPUS EXPLORATORY DATA ANALYSIS (EDA) #
+##################################################
 if selected_analysis == "eda":
-    eda_config = EDAConfig(top_n=int(eda_top_n), ngram_top_k=int(eda_ngram_top_k), zipf_max_rank=int(eda_zipf_max_rank))
+    eda_config = EDAConfig(top_n=int(eda_top_n), zipf_max_rank=int(eda_zipf_max_rank))
     cache_key = eda_cache_key(corpus_df, lowercase, eda_config)
     eda_cache = st.session_state.setdefault("eda_cache", {})
     if cache_key in eda_cache:
