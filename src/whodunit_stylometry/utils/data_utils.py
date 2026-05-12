@@ -305,3 +305,50 @@ def load_corpus(corpus_dir: str | Path) -> pd.DataFrame:
         raise ValueError("No se han encontrado archivos .txt en subcarpetas de autor.")
 
     return df
+
+
+def merge_if_needed(
+    df_meta: pd.DataFrame,
+    df_inv: pd.DataFrame,
+    key: str = "file_name",
+) -> pd.DataFrame:
+    """Merge inventory metadata when missing or inconsistent.
+
+    Compares inventory columns from `df_inv` against matching columns in
+    `df_meta`, using `key` as the join key. If any inventory columns are missing
+    from `df_meta`, or if shared inventory columns differ for matching keys, the
+    function left-merges inventory metadata into `df_meta`.
+
+    Existing columns shared by both dataframes, except for `key`, are not merged
+    from `df_inv` to avoid duplicate suffix columns.
+
+    Args:
+        df_meta: Metadata dataframe to check and optionally enrich.
+        df_inv: Inventory dataframe containing metadata columns keyed by `key`.
+        key: Column name used to align and merge both dataframes.
+
+    Returns:
+        A new dataframe. If no merge is needed, returns a copy of `df_meta`.
+        Otherwise, returns `df_meta` left-merged with non-overlapping columns from
+        `df_inv`.
+    """
+    inv_cols = df_inv.columns.difference([key])
+    missing_cols = inv_cols.difference(df_meta.columns)
+    common_cols = inv_cols.intersection(df_meta.columns)
+
+    needs_merge = len(missing_cols) > 0
+
+    if not needs_merge and len(common_cols) > 0:
+        meta_common = df_meta[[key, *common_cols]].set_index(key).sort_index()
+        inv_common = df_inv[[key, *common_cols]].set_index(key).reindex(meta_common.index).sort_index()
+
+        needs_merge = not meta_common.equals(inv_common)
+
+    if not needs_merge:
+        return df_meta.copy()
+
+    return df_meta.merge(
+        df_inv.drop(columns=common_cols),
+        on=key,
+        how="left",
+    )

@@ -600,14 +600,12 @@ def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str
 
     stopwords = stopword_set if stopword_set else STOP_WORDS
 
-    norm_text = normalize_text_for_tokenization(fix_gutenberg_linebreaks(clean_text))
-
     tokenizer = CustomTokenizer()
-    tokens_all = tokenizer.tokenize(norm_text)
+    tokens_all = tokenizer.tokenize(clean_text)
     tokens_alpha = is_alpha_tokens(tokens_all, keep_alpha=True)
     tokens_not_alpha = is_alpha_tokens(tokens_all, keep_alpha=False)
 
-    paragraphs = split_paragraphs(norm_text)
+    paragraphs = split_paragraphs(clean_text)
     paragraph_sentences = split_sentences_by_paragraph(paragraphs)
     sentences = [s for para in paragraph_sentences for s in para]
     sentence_counts_per_paragraph = [len(sents) for sents in paragraph_sentences]
@@ -623,7 +621,7 @@ def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str
     avg_paragraph_len, median_paragraph_len, std_paragraph_len = get_length_stats(paragraphs, tokenizer)
 
     out = {}
-    out.update(text_quality_metrics(norm_text))
+    out.update(text_quality_metrics(clean_text))
 
     out["n_tokens_all"] = len(tokens_all)
     out["n_tokens_alpha"] = len(tokens_alpha)
@@ -649,7 +647,7 @@ def compute_novel_metrics(clean_text: str, stopword_set: set = None) -> dict[str
 
     out.update(stopword_metrics(tokens_alpha, stopwords))
 
-    out.update(punctuation_metrics(norm_text, n_tokens=len(tokens_all)))
+    out.update(punctuation_metrics(clean_text, n_tokens=len(tokens_all)))
 
     # Ratios por 1.000 palabras
     for col in [
@@ -699,8 +697,7 @@ def get_tokens_alpha_by_author(df: pd.DataFrame, is_lower: bool = True) -> dict[
         toks = []
         for _, row in sub.iterrows():
             text = read_book_text(Path(row["path"]))
-            norm_text = normalize_text_for_tokenization(fix_gutenberg_linebreaks(text))
-            tokens_all = tokenizer.tokenize(norm_text)
+            tokens_all = tokenizer.tokenize(text)
             tokens_alpha = is_alpha_tokens(tokens_all, keep_alpha=True)
             if is_lower:
                 tokens_alpha = [t.lower() for t in tokens_alpha]
@@ -831,37 +828,6 @@ def compute_ngrams_frecuencies(
     return out
 
 
-if __name__ == "__main__":
-
-    text = """
-    "Not till the words are said which make us man and wife," declared
-Carleton Roberts. "Unless"--and here his perfect courtesy manifested
-itself even in this crisis of life and death--"you feel it your duty to
-carry what assistance you can to the saving of your frightened flock."
-
-"God must save my flock," said the minister with a solemn glance upward.
-"I am where my duty places me." And calmly as though the pews were
-filled with guests and joy attended the ceremony instead of apprehended
-doom, he proceeded with the rite.
-
-"Wilt thou have this man...."
-
-The glad "I will" leaped bravely from Ermentrude's lips; but it was lost
-in loud calls and shrieks from without, mingled with that sound--terrible
-to all who hear--impossible to describe--of the might of the hills made
-audible in this down-rushing mass, now halting, now gathering fresh
-momentum, but coming--always coming, till its voice, but now a threat,
-swells into thunder in which all human cries are lost, and only from the
-movement of the minister's lips can this couple see that the words which
-make them one are being spoken.
-    """
-
-    text_n = normalize_text_for_tokenization(fix_gutenberg_linebreaks(text))
-
-    print(text_n)
-    print(punctuation_metrics(text_n, n_tokens=100))
-
-
 def build_mfw_features(tokens_by_file, function_words, top_n=100):
     function_words = set(function_words)
 
@@ -949,3 +915,34 @@ def add_tokens(df: pd.DataFrame, lowercase: bool = True) -> pd.DataFrame:
         axis=1,
     )
     return out
+
+
+if __name__ == "__main__":
+
+    text = """
+    "Not till the words are said which make us man and wife," declared
+Carleton Roberts. "Unless"--and here his perfect courtesy manifested
+itself even in this crisis of life and death--"you feel it your duty to
+carry what assistance you can to the saving of your frightened flock."
+
+"God must save my flock," said the minister with a solemn glance upward.
+"I am where my duty places me." And calmly as though the pews were
+filled with guests and joy attended the ceremony instead of apprehended
+doom, he proceeded with the rite.
+
+"Wilt thou have this man...."
+
+The glad "I will" leaped bravely from Ermentrude's lips; but it was lost
+in loud calls and shrieks from without, mingled with that sound--terrible
+to all who hear--impossible to describe--of the might of the hills made
+audible in this down-rushing mass, now halting, now gathering fresh
+momentum, but coming--always coming, till its voice, but now a threat,
+swells into thunder in which all human cries are lost, and only from the
+movement of the minister's lips can this couple see that the words which
+make them one are being spoken.
+    """
+
+    text_n = normalize_text_for_tokenization(fix_gutenberg_linebreaks(text))
+
+    print(text_n)
+    print(punctuation_metrics(text_n, n_tokens=100))
