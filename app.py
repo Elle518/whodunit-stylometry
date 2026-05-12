@@ -320,6 +320,10 @@ elif selected_analysis == "classical":
             st.subheader("Visualización")
             top_n = st.slider("Top palabras por autor", min_value=5, max_value=50, value=20, step=5)
 
+
+########################################
+# INICIALIZE APPLICATION AND LOAD DATA #
+########################################
 if not st.session_state.analysis_has_run:
     st.write(
         "Esta aplicación permite explorar un corpus literario mediante técnicas de estilometría "
@@ -346,6 +350,7 @@ with summary_cols[2]:
     metric_card("Tokens", f"{int(author_summary['total_tokens'].sum()):,}".replace(",", "."))
 with summary_cols[3]:
     metric_card("Media tokens/obra", f"{work_summary['token_count'].mean():,.0f}".replace(",", "."))
+
 
 ##################################################
 # PERFORM CORPUS EXPLORATORY DATA ANALYSIS (EDA) #
