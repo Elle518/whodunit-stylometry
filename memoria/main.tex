@@ -795,7 +795,60 @@ attention. Advancing with small ceremony, I threw it open.
 \section{Apéndice II - Normalización de los textos}
 \label{apx:normalizacion}
 
-\textit{Describir también los que hace el script.}
+Una vez completada la fase de limpieza manual descrita en el Apéndice I, los textos del corpus se someten a un proceso de normalización automática. Esta etapa tiene como objetivo principal homogeneizar determinados aspectos formales de los documentos antes de su tokenización y de la posterior extracción de rasgos estilométricos.
+
+La normalización no modifica el contenido literario de las obras ni introduce cambios en el significado del texto. Su propósito es reducir inconsistencias derivadas del formato de las ediciones digitales, especialmente aquellas relacionadas con saltos de línea, espacios, signos de puntuación u otros caracteres que podrían afectar al comportamiento del tokenizador y, en consecuencia, a los análisis posteriores. En un proyecto de estilometría, este paso resulta especialmente relevante porque pequeñas diferencias de formato pueden traducirse en diferencias artificiales en los recuentos de tokens, signos de puntuación o la estructura de los textos.
+
+El proceso se implementa en el \textit{script} \texttt{corpus\_normalization.py}, que toma como entrada los archivos de texto ubicados en \texttt{corpus/hand\_cleaned} y genera una nueva versión normalizada en \texttt{corpus/normalized}. El \textit{script} conserva la estructura original de carpetas, de modo que los textos continúan organizados por autor y mantienen una correspondencia directa con sus versiones depuradas manualmente. Esta decisión facilita la trazabilidad entre las distintas fases del corpus y permite regenerar los textos normalizados siempre que sea necesario a partir de la versión limpia.
+
+Desde el punto de vista operativo, la normalización se compone de tres grupos principales de transformaciones. En primer lugar, se corrigen los saltos de línea propios de algunas ediciones procedentes de repositorios como \textit{Project Gutenberg}. Muchos textos digitales presentan líneas cortadas artificialmente por razones de maquetación, aunque dichas divisiones no correspondan a verdaderos cambios de párrafo. Para resolverlo, la función \texttt{fix\_gutenberg\_linebreaks()} sustituye los saltos de línea simples por espacios, pero conserva los saltos dobles como separadores de párrafo. De este modo, se evita que una misma oración quede fragmentada en varias líneas sin perder la estructura básica del texto.
+
+En segundo lugar, se aplica una normalización general de espacios en blanco mediante la función \texttt{normalize\_whitespace()}. Esta función unifica los saltos de línea procedentes de distintos sistemas operativos, reemplaza secuencias de espacios y tabuladores por un único espacio, elimina espacios innecesarios al inicio de línea y reduce secuencias largas de líneas vacías a un máximo de dos saltos consecutivos. Finalmente, elimina los espacios sobrantes al inicio y al final del documento. Con ello se obtiene una representación de los textos más regular y estable.
+
+En tercer lugar, la función \texttt{normalize\_text\_for\_tokenization()} aplica transformaciones específicas orientadas a mejorar la consistencia de la tokenización posterior. Entre otras operaciones, elimina algunos caracteres residuales como la tilde suelta (\texttt{\textasciitilde}) o el guion bajo, unifica las elipsis tipográficas y las secuencias de puntos suspensivos bajo una forma común, introduce espacios alrededor de ciertos signos de puntuación y normaliza comillas tipográficas, apóstrofes curvos y rayas largas. Por ejemplo, las comillas curvas se sustituyen por comillas ASCII, los apóstrofes tipográficos se convierten en apóstrofes simples y las rayas se aíslan con espacios para facilitar su tratamiento como signos independientes cuando proceda.
+
+La siguiente enumeración resume las principales operaciones realizadas durante esta fase:
+
+\begin{itemize}
+    \item Normalización de saltos de línea procedentes de distintos sistemas operativos.
+    \item Unión de líneas partidas dentro de un mismo párrafo, conservando los saltos dobles como separación entre párrafos.
+    \item Reducción de espacios y tabuladores consecutivos.
+    \item Eliminación de espacios innecesarios al inicio de línea.
+    \item Reducción de secuencias excesivas de líneas vacías.
+    \item Estandarización de puntos suspensivos y elipsis tipográficas.
+    \item Normalización de comillas, apóstrofes y rayas.
+    \item Inserción de espacios alrededor de determinados signos para favorecer una tokenización más uniforme.
+    \item Eliminación de algunos caracteres residuales no relevantes para el análisis.
+\end{itemize}
+
+Para ilustrar el alcance de estas operaciones, la Tabla \ref{tab:normalizacion-ejemplos} muestra algunos ejemplos de las transformaciones aplicadas por el \textit{script}. Estos ejemplos no proceden necesariamente de una obra concreta, sino que representan casos típicos que pueden aparecer durante la normalización.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Caso} & \textbf{Antes} & \textbf{Después} \\
+\hline
+\textbf{Elipsis tipográfica} & Wait… & Wait ... \\
+\textbf{Comillas curvas} & “text” & \textquotedbl text\textquotedbl \\
+\textbf{Apóstrofo tipográfico} & don’t & don\textquotesingle t \\
+\textbf{Raya larga} & word—word & word — word \\
+\textbf{Línea partida} & line one\textbackslash nline two & line one line two \\
+\hline
+\end{tabular}
+\caption{Ejemplos de transformaciones aplicadas en la normalización}
+\label{tab:normalizacion-ejemplos}
+\end{table}
+
+El \textit{script} se ejecuta desde la raíz del proyecto mediante el siguiente comando:
+
+\begin{verbatim}
+python -m scripts.corpus_normalization
+\end{verbatim}
+
+Esta fase constituye, por tanto, un paso intermedio entre la limpieza manual y la tokenización. La versión \texttt{hand\_cleaned} conserva el resultado de las decisiones manuales tomadas sobre cada obra, mientras que la versión \texttt{normalized} proporciona una entrada más homogénea para los procesos automáticos posteriores. En particular, esta versión normalizada es la que se emplea como entrada del \textit{script} de tokenización descrito en el Apéndice III.
+
+Desde el punto de vista de la reproducibilidad, resulta importante destacar que la versión normalizada no necesita editarse manualmente. Al generarse de forma automática a partir de \texttt{corpus/hand\_cleaned} y del código del \textit{script}, cualquier cambio en los criterios de normalización puede reproducirse de manera sistemática sobre todo el corpus. Esto evita inconsistencias entre documentos, reduce el riesgo de realizar modificaciones manuales que no estén documentadas y permite mantener una separación clara entre los datos de origen depurados y los datos derivados utilizados por el \textit{pipeline} de análisis.
 
 \section{Apéndice III - Tokenización de los textos}
 \label{apx:tokenizacion}

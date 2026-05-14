@@ -93,7 +93,7 @@
   }}
 
 \ifthenelse{\boolean{langspanish}}
-{\RequirePackage[spanish]{babel}}%%% CASTELLÀ
+{\RequirePackage[spanish,es-tabla]{babel}}%%% CASTELLÀ
 	{\ifthenelse{\boolean{langcatalan}}
 	{\RequirePackage[catalan]{babel}}%%% CATALÀ
 	{\RequirePackage[english]{babel}}}%%% ANGLÈS
@@ -603,6 +603,8 @@ All rights reserved. Reproduction in whole or in part of this work by any means 
 \RequirePackage{hyperref}
 \RequirePackage{caption}
 \RequirePackage{longtable}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{textcomp}
 
 \AtBeginEnvironment{longtable}{%
   \setlength{\arrayrulewidth}{0.4pt}%
