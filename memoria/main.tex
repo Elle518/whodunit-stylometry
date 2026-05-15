@@ -613,7 +613,7 @@ Un análisis crítico del seguimiento de la planificación y metodología a lo l
 
 Antes de incorporar las obras al corpus definitivo, se ha llevado a cabo una fase de limpieza manual de los textos descargados de los repositorios de origen. El objetivo de esta revisión ha sido eliminar aquellos elementos ajenos al texto principal que pudieran interferir en el análisis estilométrico posterior.
 
-En términos generales, el procedimiento ha consistido en conservar únicamente el título de la obra en mayúsculas al inicio de cada obra y, a continuación, el cuerpo del texto ya depurado suprimiendo los elementos añadidos por la editorial, el repositorio y el proceso de digitalización.
+En términos generales, el procedimiento ha consistido en conservar únicamente el título en mayúsculas al inicio de cada obra y, a continuación, el cuerpo del texto ya depurado suprimiendo los elementos añadidos por la editorial, el repositorio y el proceso de digitalización.
 
 Las principales modificaciones realizadas ha sido las siguientes:
 
@@ -628,7 +628,7 @@ Esta limpieza se ha llevado a cabo manualmente con el fin de preservar, en la me
 
 A continuación, se muestran algunos ejemplos representativos del tipo de modificaciones realizadas.
 
-\subsection*{Ejemplo 1. Eliminación de cabeceras y licencias de Project Gutenberg}
+\subsection*{Ejemplo 1. Eliminación de cabeceras y licencias de \textit{Project Gutenberg}}
 
 \textbf{Antes de la limpieza:}
 
@@ -795,7 +795,7 @@ attention. Advancing with small ceremony, I threw it open.
 \section{Apéndice II - Normalización de los textos}
 \label{apx:normalizacion}
 
-Una vez completada la fase de limpieza manual descrita en el Apéndice I, los textos del corpus se someten a un proceso de normalización automática. Esta etapa tiene como objetivo principal homogeneizar determinados aspectos formales de los documentos antes de su tokenización y de la posterior extracción de rasgos estilométricos.
+Una vez completada la fase de limpieza manual descrita en el Apéndice I, los textos del corpus se han sometido a un proceso de normalización automática. Esta etapa tiene como objetivo principal homogeneizar determinados aspectos formales de los documentos antes de su tokenización y de la posterior extracción de rasgos estilométricos.
 
 La normalización no modifica el contenido literario de las obras ni introduce cambios en el significado del texto. Su propósito es reducir inconsistencias derivadas del formato de las ediciones digitales, especialmente aquellas relacionadas con saltos de línea, espacios, signos de puntuación u otros caracteres que podrían afectar al comportamiento del tokenizador y, en consecuencia, a los análisis posteriores. En un proyecto de estilometría, este paso resulta especialmente relevante porque pequeñas diferencias de formato pueden traducirse en diferencias artificiales en los recuentos de tokens, signos de puntuación o la estructura de los textos.
 
@@ -831,7 +831,7 @@ Para ilustrar el alcance de estas operaciones, la Tabla \ref{tab:normalizacion-e
 \hline
 \textbf{Elipsis tipográfica} & Wait… & Wait ... \\
 \textbf{Comillas curvas} & “text” & \textquotedbl text\textquotedbl \\
-\textbf{Apóstrofo tipográfico} & don’t & don\textquotesingle t \\
+\textbf{Apóstrofe tipográfico} & don’t & don\textquotesingle t \\
 \textbf{Raya larga} & word—word & word — word \\
 \textbf{Línea partida} & line one\textbackslash nline two & line one line two \\
 \hline
@@ -853,7 +853,74 @@ Desde el punto de vista de la reproducibilidad, resulta importante destacar que 
 \section{Apéndice III - Tokenización de los textos}
 \label{apx:tokenizacion}
 
-\textit{Describir también los que hace el script.}
+Tras obtener la versión normalizada del corpus, el siguiente paso del preprocesamiento consiste en transformar cada obra en una secuencia de unidades lingüísticas o \textit{tokens}. La tokenización constituye una fase especialmente importante en este trabajo, ya que muchos de los análisis estilométricos posteriores dependen directamente de los recuentos de palabras, signos de puntuación, abreviaturas, contracciones y otros elementos del texto. Por tanto, una segmentación poco coherente podría introducir diferencias artificiales entre los textos y afectar a la hora de comparar las obras.
+
+El proceso de tokenización se implementa en el \textit{script} \texttt{corpus\_tokenization.py}, que toma como entrada los archivos de texto ubicados en \texttt{corpus/normalized} y genera una nueva versión tokenizada en \texttt{corpus/tokenized}. Al igual que en las fases anteriores, el \textit{script} conserva la estructura de carpetas del corpus, de modo que los archivos resultantes continúan organizados por autor y mantienen una correspondencia directa con las versiones normalizadas. La diferencia principal es que, en esta fase, cada archivo \texttt{.txt} se transforma en un archivo \texttt{.json} que contiene la lista ordenada de tokens obtenidos a partir del texto original.
+
+Para este TFG se ha creado un tokenizador específico basado en \texttt{spaCy}\cite{spacy2026}, con el objetivo de adaptar la segmentación a las características del corpus y a las necesidades del análisis estilométrico. Aunque los tokenizadores estándar ofrecen una solución robusta en muchos casos, en este trabajo resultaba conveniente controlar algunos comportamientos que podían afectar a los recuentos posteriores. En particular, se buscaba preservar como una única unidad ciertas palabras con apóstrofe y determinadas abreviaturas con puntos internos.
+
+El tokenizador personalizado, implementado en la clase \texttt{CustomTokenizer}, parte de un \textit{pipeline} básico de \texttt{spaCy} para inglés y modifica algunas de sus reglas internas. En primer lugar, define un patrón específico para conservar palabras con apóstrofes, como \texttt{don't}, \texttt{we'll} o \texttt{rock'n'roll}, evitando que se dividan en varios tokens. Esta decisión es importante porque las contracciones son frecuentes en los textos, y su tratamiento como unidades independientes permite mantener una representación más fiel de su uso por parte del autor.
+
+En segundo lugar, el tokenizador incorpora un patrón para preservar abreviaturas con puntos, como \texttt{a.m.}, \texttt{e.g.}, \texttt{i.e.} o \texttt{U.S.A.}. Sin esta regla, estos elementos podrían dividirse en varios tokens independientes alterando los recuentos de palabras y signos de puntuación.
+
+Una vez generado el listado completo de tokens de cada obra, el \textit{script} permite seleccionar distintos subconjuntos mediante el argumento \texttt{--token-kind}. Esta opción puede tomar tres valores:
+
+\begin{itemize}
+    \item \texttt{all}: conserva todos los tokens producidos por el tokenizador.
+    \item \texttt{alpha}: conserva únicamente los tokens considerados alfabéticos.
+    \item \texttt{non\_alpha}: conserva únicamente los tokens no alfabéticos.
+\end{itemize}
+
+La opción \texttt{alpha}, utilizada por defecto, resulta especialmente útil para análisis basados en frecuencias léxicas, vocabulario, palabras funcionales o distribuciones de longitud de palabra. Para decidir qué tokens se consideran alfabéticos, se emplea una expresión regular definida en la constante \texttt{ALPHA\_TOKENS}. Este patrón permite conservar palabras formadas por letras, incluyendo algunos casos con apóstrofes o puntos internos, pero excluye tokens compuestos por números, guiones bajos u otros caracteres no relevantes para este tipo de análisis.
+
+Por su parte, la opción \texttt{non\_alpha} permite aislar los tokens que no cumplen el patrón alfabético, como determinados signos de puntuación u otros elementos formales. Esta salida puede ser útil para estudiar patrones de puntuación de manera separada, especialmente en un trabajo de estilometría donde el uso de comas, puntos, punto y coma, rayas o signos de interrogación puede aportar información sobre los hábitos de escritura de cada autor. Finalmente, la opción \texttt{all} permite conservar la tokenización completa, lo que resulta conveniente cuando se desea mantener una representación exhaustiva del texto.
+
+El \textit{script} permite, además, controlar si los tokens se convierten o no a minúsculas mediante los argumentos \texttt{--lowercase} y \texttt{--no-lowercase}. La conversión a minúsculas resulta útil para agrupar variantes que solo se diferencian por su capitalización, como \texttt{The} y \texttt{the}, y suele ser adecuada en análisis basados en frecuencias de palabras. Sin embargo, conservar las mayúsculas puede ser relevante en otros contextos, por ejemplo si se desea estudiar nombres propios, inicios de frase o determinados patrones de capitalización. De este modo, el \textit{script} permite generar diferentes versiones tokenizadas en función de las necesidades del experimento.
+
+La estructura de salida se construye automáticamente combinando el tipo de token seleccionado y su configuración de capitalización. Así, los resultados se almacenan en rutas como \texttt{corpus/tokenized/alpha/lower}, \texttt{corpus/tokenized/non\_alpha/cased}, etc.. Esta organización facilita mantener separadas las distintas variantes de tokenización y evita sobrescribir los resultados obtenidos con las diferentes configuraciones.
+
+El \textit{script} puede ejecutarse desde la raíz del proyecto mediante comandos como los siguientes:
+
+\begin{verbatim}
+python -m scripts.corpus_tokenization --token-kind alpha --lowercase
+python -m scripts.corpus_tokenization --token-kind all
+python -m scripts.corpus_tokenization --token-kind non_alpha --no-lowercase
+\end{verbatim}
+
+Durante la ejecución, el \textit{script} recorre todos los archivos \texttt{.txt} incluidos en la carpeta de entrada, aplica el tokenizador personalizado, filtra los tokens según la configuración indicada, aplica opcionalmente la conversión a minúsculas y guarda cada resultado como un archivo \texttt{.json}. El uso de este formato permite conservar la lista exacta de tokens generada para cada obra y facilita su reutilización posterior en \textit{notebooks}, experimentos de modelado y funciones de extracción de rasgos.
+
+Esta fase constituye, por tanto, el último paso de preparación de los textos antes de la extracción de características estilométricas. La versión \texttt{normalized} proporciona una entrada homogénea desde el punto de vista formal, mientras que la versión \texttt{tokenized} convierte esa entrada en una representación directamente explotable por el \textit{pipeline} de análisis.
+
+Para ilustrar el resultado de esta fase, se muestra a continuación un fragmento de una obra en su versión normalizada y el inicio de la lista de tokens generada por el \textit{script} de tokenización. El ejemplo permite observar cómo el texto se convierte en una secuencia ordenada de tokens, en la que se conservan tanto las palabras como determinados signos de puntuación, números y separaciones estructurales del texto.
+
+\begin{Verbatim}[breaklines=true, breakanywhere=true, breaksymbolleft={}]
+ROOM NUMBER 3
+
+AND OTHER DETECTIVE STORIES
+
+ROOM NUMBER 3
+
+I
+
+"What door is that? You've opened all the others; why do you pass that one by?"
+
+"Oh, that! That's only Number 3. A mere closet, gentlemen," responded the landlord in a pleasant voice. "To be sure, we sometimes use it as a sleeping-room when we are hard pushed. Jake, the clerk you saw below, used it last night. But it's not on our regular list. Do you want a peep at it?"
+
+"Most assuredly. As you know, it's our duty to see every room in this house, whether it is on your regular list or not."
+\end{Verbatim}
+
+A partir de este fragmento, la tokenización genera una lista como la siguiente:
+
+\begin{Verbatim}[breaklines=true, breakanywhere=true, breaksymbolleft={}]
+["ROOM", "NUMBER", "3", "\n\n", "AND", "OTHER", "DETECTIVE",
+ "STORIES", "\n\n", "ROOM", "NUMBER", "3", "\n\n", "I", "\n\n", "\"", "What", "door", "is", "that", "?", "You've", "opened", "all", "the", "others", ";", "why", "do", "you", "pass", "that", "one", "by", "?", "\"", "\n\n", "\"", "Oh", ",", "that", "!", "That's", "only", "Number", "3", ".", "A", "mere", "closet", ",", "gentlemen", ",", "\"", "responded", "the", "landlord", "in", "a", "pleasant", "voice", ".", "\"", "To", "be", "sure", ",", "we", "sometimes", "use", "it", "as", "a", "sleeping", "-", "room", "when", "we", "are", "hard", "pushed", ".", "Jake", ",", "the", "clerk", "you", "saw", "below", ",", "used", "it", "last", "night", ".", "But", "it's", "not", "on", "our", "regular", "list", ".", "Do", "you", "want", "a", "peep", "at", "it", "?", "\"", "\n\n", "\"", "Most", "assuredly", ".", "As", "you", "know", ",", "it's", "our", "duty", "to", "see", "every", "room", "in", "this", "house", ",", "whether", "it", "is", "on", "your", "regular", "list", "or", "not", ".", "\"", ...
+\end{Verbatim}
+
+Este ejemplo muestra varias decisiones relevantes del proceso. En primer lugar, las palabras se mantienen como unidades independientes y en el orden en que aparecen en el texto. En segundo lugar, las contracciones con apóstrofe, como \texttt{You've}, se conservan como un único token, evitando una segmentación artificial que podría alterar los recuentos. En tercer lugar, los signos de puntuación se mantienen como tokens separados cuando se conserva la tokenización completa, lo que permite estudiar posteriormente patrones como el uso de comillas, interrogaciones, puntos, comas o punto y coma.
+
+También se observa que ciertos elementos estructurales, como los saltos dobles de línea representados mediante \texttt{\textbackslash n\textbackslash n}, pueden conservarse en la salida cuando se utiliza la opción \texttt{--token-kind all}. Esta representación completa resulta útil cuando se desea analizar no solo el componente léxico del texto, sino también su organización. En cambio, si se utiliza la opción \texttt{--token-kind alpha}, el \textit{script} filtrará esta salida para conservar únicamente los tokens alfabéticos, descartando signos de puntuación, números y separadores estructurales.
+
+Desde el punto de vista de la reproducibilidad, la versión tokenizada no necesita editarse manualmente. Al generarse de forma automática a partir de \texttt{corpus/normalized} y del código del \textit{script}, cualquier cambio en los criterios de tokenización puede aplicarse de forma sistemática a todo el corpus. Esto reduce el riesgo de inconsistencias entre obras, permite comparar distintas configuraciones de tokenización y mantiene la trazabilidad entre los textos originales, las versiones depuradas, las versiones normalizadas y los archivos finales utilizados en los experimentos estilométricos.
 
 \bibliographystyle{apalike-es}
 \bibliography{bibliography.bib}
