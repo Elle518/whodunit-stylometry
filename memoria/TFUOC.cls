@@ -605,6 +605,9 @@ All rights reserved. Reproduction in whole or in part of this work by any means 
 \RequirePackage{longtable}
 \RequirePackage[T1]{fontenc}
 \RequirePackage{textcomp}
+\RequirePackage{upquote}
+\RequirePackage{fvextra}
+\RequirePackage{xurl}
 
 \AtBeginEnvironment{longtable}{%
   \setlength{\arrayrulewidth}{0.4pt}%
