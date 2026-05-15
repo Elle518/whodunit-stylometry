@@ -268,7 +268,7 @@ def plot_metrics_boxplots_by_author(
         plt.tight_layout()
 
         if save_path:
-            plt.savefig(f"{save_path.with_suffix('')}_{metric}_{save_path.suffix}", dpi=150, bbox_inches="tight")
+            plt.savefig(f"{save_path.with_suffix('')}_{metric}{save_path.suffix}", dpi=150, bbox_inches="tight")
 
         plt.show()
 
@@ -360,7 +360,16 @@ def plot_metrics_correlations_heatmap(
     fig_height = min(max(min_size, n_metrics * cell_size), max_size)
 
     plt.figure(figsize=(fig_width, fig_height))
-    sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", square=True)
+    sns.heatmap(
+        corr,
+        annot=True,
+        cmap="coolwarm",
+        fmt=".2f",
+        square=True,
+        cbar_kws={
+            "shrink": 0.75,
+        },
+    )
     plt.title("Heatmap de correlaciones entre métricas")
 
     plt.tight_layout()
@@ -502,7 +511,7 @@ def plot_authors_pca(
     for _, row in pca_df.iterrows():
         plt.text(row["PC1"] + 0.03, row["PC2"] + 0.03, row["author"], fontsize=10)
 
-    plt.title("PCA of authors based on stylometric features")
+    plt.title("PCA de autores basados en variables estilométricas")
     plt.xlabel(f"PC1 ({explained[0] * 100:.1f}% var)")
     plt.ylabel(f"PC2 ({explained[1] * 100:.1f}% var)")
     plt.axhline(0, color="red", linestyle="--", linewidth=0.4)
