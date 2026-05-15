@@ -113,17 +113,33 @@ def corpus_cache_fingerprint(df: pd.DataFrame) -> tuple[tuple[int, int], int]:
     return df.shape, int(fingerprint_hash)
 
 
-def eda_cache_key(df: pd.DataFrame, lowercase: bool, config: EDAConfig) -> tuple:
-    """Build a cache key for exploratory data analysis results.
+def eda_core_cache_key(df: pd.DataFrame, lowercase: bool) -> tuple:
+    """Build a cache key for core exploratory data analysis results.
 
     Args:
         df: DataFrame used to compute the corpus fingerprint.
         lowercase: Whether text normalization lowercases the corpus.
-        config: EDA configuration containing cache-relevant analysis settings.
+
+    Returns:
+        A tuple containing the corpus fingerprint and the lowercase flag.
+    """
+    return (
+        corpus_cache_fingerprint(df),
+        lowercase,
+    )
+
+
+def eda_vocab_cache_key(df: pd.DataFrame, lowercase: bool, config: EDAConfig) -> tuple:
+    """Build a cache key for EDA vocabulary tables.
+
+    Args:
+        df: DataFrame used to compute the corpus fingerprint.
+        lowercase: Whether text normalization lowercases the corpus.
+        config: EDA configuration containing vocabulary settings.
 
     Returns:
         A tuple containing the corpus fingerprint, the lowercase flag, and selected
-        EDA configuration values.
+        vocabulary configuration values.
     """
     return (
         corpus_cache_fingerprint(df),
@@ -131,6 +147,29 @@ def eda_cache_key(df: pd.DataFrame, lowercase: bool, config: EDAConfig) -> tuple
         config.top_n,
         config.zipf_max_rank,
     )
+
+
+def eda_cache_key(
+    df: pd.DataFrame,
+    lowercase: bool,
+    config: EDAConfig,
+) -> tuple[object, ...]:
+    """Builds a cache key for full exploratory data analysis results.
+
+    The key combines the core EDA cache key with configuration values that
+    affect the full exploratory analysis output.
+
+    Args:
+        df: DataFrame used to build the core cache key.
+        lowercase: Whether text normalization lowercases values when building
+            the core cache key.
+        config: EDA configuration containing additional cache-relevant options.
+
+    Returns:
+        A tuple containing the core EDA cache key values followed by
+        `config.top_n` and `config.zipf_max_rank`.
+    """
+    return (*eda_core_cache_key(df, lowercase), config.top_n, config.zipf_max_rank)
 
 
 def supervised_experiment_cache_key(
