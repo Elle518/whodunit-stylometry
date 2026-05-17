@@ -103,6 +103,17 @@ def apply_correlation_heatmap_layout(fig, n_features: int) -> None:
     fig.update_yaxes(automargin=True)
 
 
+def show_metric_table_by_work(metrics_df: pd.DataFrame, metric_cols: list[str]) -> None:
+    """Display work-level values for the metric group shown in a tab."""
+    available_cols = [col for col in metric_cols if col in metrics_df.columns]
+    id_cols = [col for col in ["author", "work", "filename"] if col in metrics_df.columns]
+    st.dataframe(
+        metrics_df[[*id_cols, *available_cols]],
+        width="stretch",
+        hide_index=True,
+    )
+
+
 #################################
 # GENERAL SIDEBAR CONFIGURATION #
 #################################
@@ -399,8 +410,28 @@ if selected_analysis == "eda":
     eda_result = {**eda_core_result, **eda_vocab_result}
 
     metrics_df = eda_result["metrics_df"]
-    summary_tab, quality_tab, structure_tab, lexical_tab, punctuation_tab, authors_tab, vocab_tab, outliers_tab = (
-        st.tabs(["Resumen", "Calidad", "Estructura", "Léxico", "Puntuación", "Autores", "Vocabulario", "Outliers"])
+    (
+        summary_tab,
+        quality_tab,
+        structure_tab,
+        lexical_tab,
+        punctuation_tab,
+        outliers_tab,
+        authors_tab,
+        vocab_tab,
+        zipf_tab,
+    ) = st.tabs(
+        [
+            "Resumen",
+            "Calidad",
+            "Estructura",
+            "Léxico",
+            "Puntuación",
+            "Outliers",
+            "Autores",
+            "Vocabulario",
+            "Zipf",
+        ]
     )
 
     with summary_tab:
@@ -459,6 +490,7 @@ if selected_analysis == "eda":
         quality_corr_fig = px.imshow(quality_corr, text_auto=".2f", color_continuous_scale="RdBu_r", zmin=-1, zmax=1)
         apply_correlation_heatmap_layout(quality_corr_fig, len(quality_corr.columns))
         st.plotly_chart(quality_corr_fig, width="stretch")
+        show_metric_table_by_work(metrics_df, QUALITY_METRICS)
 
     with structure_tab:
         st.subheader("Longitud y estructura textual")
@@ -497,6 +529,7 @@ if selected_analysis == "eda":
         )
         apply_correlation_heatmap_layout(structural_corr_fig, len(structural_corr.columns))
         st.plotly_chart(structural_corr_fig, width="stretch")
+        show_metric_table_by_work(metrics_df, STRUCTURAL_METRICS)
 
     with lexical_tab:
         st.subheader("Diversidad y estructura léxica")
@@ -533,6 +566,7 @@ if selected_analysis == "eda":
         )
         apply_correlation_heatmap_layout(lexical_corr_fig, len(lexical_corr.columns))
         st.plotly_chart(lexical_corr_fig, width="stretch")
+        show_metric_table_by_work(metrics_df, LEXICAL_METRICS)
 
     with punctuation_tab:
         st.subheader("Uso de puntuación")
@@ -572,6 +606,7 @@ if selected_analysis == "eda":
         )
         apply_correlation_heatmap_layout(punctuation_corr_fig, len(punctuation_corr.columns))
         st.plotly_chart(punctuation_corr_fig, width="stretch")
+        show_metric_table_by_work(metrics_df, PUNCTUATION_METRICS)
 
     with authors_tab:
         st.subheader("Patrones agregados por autor")
@@ -626,7 +661,7 @@ if selected_analysis == "eda":
         vocab_author = st.selectbox("Autor", sorted(metrics_df["author"].unique()))
         vocab_mode = st.radio(
             "Vista",
-            ["Palabras", "Palabras sin stopwords", "Bigramas", "Trigramas", "Zipf"],
+            ["Palabras", "Palabras sin stopwords", "Bigramas", "Trigramas"],
             horizontal=True,
         )
         if vocab_mode == "Palabras":
@@ -645,31 +680,36 @@ if selected_analysis == "eda":
             vocab_df = eda_result["top_trigrams"].query("author == @vocab_author")
             x_col = "ngram"
             y_col = "freq"
-        else:
-            zipf_df = eda_result["zipf_df"].query("author == @vocab_author")
-            zipf_fig = px.line(
-                zipf_df,
-                x="rank",
-                y="freq",
-                log_x=True,
-                log_y=True,
-                title=f"Curva de Zipf: {vocab_author}",
-                labels={"rank": "Rango", "freq": "Frecuencia"},
-            )
-            st.plotly_chart(zipf_fig, width="stretch")
-            st.dataframe(zipf_df.head(eda_top_n), width="stretch", hide_index=True)
-            vocab_df = None
 
-        if vocab_df is not None:
-            vocab_fig = px.bar(
-                vocab_df.sort_values(y_col),
-                x=y_col,
-                y=x_col,
-                orientation="h",
-                title=f"{vocab_mode}: {vocab_author}",
-            )
-            st.plotly_chart(vocab_fig, width="stretch")
-            st.dataframe(vocab_df, width="stretch", hide_index=True)
+        vocab_fig = px.bar(
+            vocab_df.sort_values(y_col),
+            x=y_col,
+            y=x_col,
+            orientation="h",
+            title=f"{vocab_mode}: {vocab_author}",
+        )
+        vocab_fig.update_layout(height=max(520, 32 * len(vocab_df) + 160))
+        vocab_fig.update_yaxes(
+            tickmode="array",
+            tickvals=vocab_df.sort_values(y_col)[x_col].tolist(),
+            automargin=True,
+        )
+        st.plotly_chart(vocab_fig, width="stretch")
+        st.dataframe(vocab_df, width="stretch", hide_index=True)
+
+    with zipf_tab:
+        st.subheader("Curvas de Zipf por autor")
+        zipf_fig = px.line(
+            eda_result["zipf_df"],
+            x="rank",
+            y="relative_freq",
+            color="author",
+            log_x=True,
+            log_y=True,
+            labels={"rank": "Rango", "relative_freq": "Frecuencia relativa", "author": "Autor"},
+        )
+        zipf_fig.update_layout(height=680)
+        st.plotly_chart(zipf_fig, width="stretch")
 
     with outliers_tab:
         st.subheader("Outliers por grupos de métricas")
