@@ -26,7 +26,8 @@ from whodunit_stylometry.analysis.eda import (
     QUALITY_METRICS,
     STRUCTURAL_METRICS,
     EDAConfig,
-    run_eda_analysis,
+    run_eda_core_analysis,
+    run_eda_vocab_analysis,
 )
 from whodunit_stylometry.analysis.embeddings import (
     EMBEDDING_MODELS,
@@ -62,7 +63,8 @@ from whodunit_stylometry.utils.st_utils import (
     UNSUPERVISED_WORKFLOWS,
     cached_load_and_tokenize,
     corpus_cache_fingerprint,
-    eda_cache_key,
+    eda_core_cache_key,
+    eda_vocab_cache_key,
     embeddings_experiment_cache_key,
     hierarchical_experiment_cache_key,
     metric_card,
@@ -81,6 +83,25 @@ st.set_page_config(
 )
 
 st.title("Whodunit Stylometry 🕵")
+
+
+def apply_work_box_hover(fig, metric_name: str) -> None:
+    """Use a stable hover format for work-level metric boxplots."""
+    fig.update_traces(
+        hovertemplate=("Autor: %{x}<br>" "Obra: %{customdata[0]}<br>" f"{metric_name}: %{{y:.6f}}" "<extra></extra>")
+    )
+
+
+def apply_correlation_heatmap_layout(fig, n_features: int) -> None:
+    """Scale correlation heatmaps so metric names remain readable."""
+    size = max(520, min(980, 70 * n_features))
+    fig.update_layout(
+        height=size,
+        margin=dict(l=220, r=40, t=60, b=180),
+    )
+    fig.update_xaxes(tickangle=45, automargin=True)
+    fig.update_yaxes(automargin=True)
+
 
 #################################
 # GENERAL SIDEBAR CONFIGURATION #
@@ -357,14 +378,25 @@ with summary_cols[3]:
 ##################################################
 if selected_analysis == "eda":
     eda_config = EDAConfig(top_n=int(eda_top_n), zipf_max_rank=int(eda_zipf_max_rank))
-    cache_key = eda_cache_key(corpus_df, lowercase, eda_config)
-    eda_cache = st.session_state.setdefault("eda_cache", {})
-    if cache_key in eda_cache:
-        eda_result = eda_cache[cache_key]
+    core_cache_key = eda_core_cache_key(corpus_df, lowercase)
+    vocab_cache_key = eda_vocab_cache_key(corpus_df, lowercase, eda_config)
+    eda_core_cache = st.session_state.setdefault("eda_core_cache", {})
+    eda_vocab_cache = st.session_state.setdefault("eda_vocab_cache", {})
+    if core_cache_key in eda_core_cache:
+        eda_core_result = eda_core_cache[core_cache_key]
     else:
         with st.spinner("Calculando métricas exploratorias del corpus..."):
-            eda_result = run_eda_analysis(corpus_df, eda_config)
-        eda_cache[cache_key] = eda_result
+            eda_core_result = run_eda_core_analysis(corpus_df)
+        eda_core_cache[core_cache_key] = eda_core_result
+
+    if vocab_cache_key in eda_vocab_cache:
+        eda_vocab_result = eda_vocab_cache[vocab_cache_key]
+    else:
+        with st.spinner("Calculando tablas de vocabulario..."):
+            eda_vocab_result = run_eda_vocab_analysis(corpus_df, eda_config)
+        eda_vocab_cache[vocab_cache_key] = eda_vocab_result
+
+    eda_result = {**eda_core_result, **eda_vocab_result}
 
     metrics_df = eda_result["metrics_df"]
     summary_tab, quality_tab, structure_tab, lexical_tab, punctuation_tab, authors_tab, vocab_tab, outliers_tab = (
@@ -416,13 +448,16 @@ if selected_analysis == "eda":
                 metrics_df,
                 x="author",
                 y=quality_metric,
+                custom_data=["work"],
                 points="all",
                 title=f"{quality_metric} por autor",
             )
+            apply_work_box_hover(quality_box, quality_metric)
             st.plotly_chart(quality_box, width="stretch")
 
         quality_corr = metrics_df[[col for col in QUALITY_METRICS if col in metrics_df.columns]].corr()
         quality_corr_fig = px.imshow(quality_corr, text_auto=".2f", color_continuous_scale="RdBu_r", zmin=-1, zmax=1)
+        apply_correlation_heatmap_layout(quality_corr_fig, len(quality_corr.columns))
         st.plotly_chart(quality_corr_fig, width="stretch")
 
     with structure_tab:
@@ -430,54 +465,74 @@ if selected_analysis == "eda":
         structural_metric = st.selectbox(
             "Métrica estructural", [col for col in STRUCTURAL_METRICS if col in metrics_df.columns]
         )
-        structure_box = px.box(
-            metrics_df,
-            x="author",
-            y=structural_metric,
-            points="all",
-            title=f"{structural_metric} por autor",
-        )
-        st.plotly_chart(structure_box, width="stretch")
+        col1, col2 = st.columns(2)
+        with col1:
+            structure_hist = px.histogram(
+                metrics_df,
+                x=structural_metric,
+                color="author",
+                nbins=30,
+                title=f"Distribución de {structural_metric}",
+            )
+            st.plotly_chart(structure_hist, width="stretch")
+        with col2:
+            structure_box = px.box(
+                metrics_df,
+                x="author",
+                y=structural_metric,
+                custom_data=["work"],
+                points="all",
+                title=f"{structural_metric} por autor",
+            )
+            apply_work_box_hover(structure_box, structural_metric)
+            st.plotly_chart(structure_box, width="stretch")
 
-        scatter_pairs = [
-            ("n_tokens_all", "n_sentences"),
-            ("n_tokens_all", "n_paragraphs"),
-            ("avg_sentence_len", "avg_paragraph_len"),
-            ("n_sentences", "n_paragraphs"),
-        ]
-        selected_pair = st.selectbox("Relación", [f"{x} vs {y}" for x, y in scatter_pairs])
-        x_col, y_col = scatter_pairs[[f"{x} vs {y}" for x, y in scatter_pairs].index(selected_pair)]
-        scatter_fig = px.scatter(
-            metrics_df,
-            x=x_col,
-            y=y_col,
-            color="author",
-            hover_data=["work"],
-            title=f"{x_col} vs {y_col}",
+        structural_corr = metrics_df[[col for col in STRUCTURAL_METRICS if col in metrics_df.columns]].corr()
+        structural_corr_fig = px.imshow(
+            structural_corr,
+            text_auto=".2f",
+            color_continuous_scale="RdBu_r",
+            zmin=-1,
+            zmax=1,
         )
-        st.plotly_chart(scatter_fig, width="stretch")
+        apply_correlation_heatmap_layout(structural_corr_fig, len(structural_corr.columns))
+        st.plotly_chart(structural_corr_fig, width="stretch")
 
     with lexical_tab:
         st.subheader("Diversidad y estructura léxica")
         lexical_metric = st.selectbox("Métrica léxica", [col for col in LEXICAL_METRICS if col in metrics_df.columns])
-        lexical_box = px.box(
-            metrics_df,
-            x="author",
-            y=lexical_metric,
-            points="all",
-            title=f"{lexical_metric} por autor",
-        )
-        st.plotly_chart(lexical_box, width="stretch")
+        col1, col2 = st.columns(2)
+        with col1:
+            lexical_hist = px.histogram(
+                metrics_df,
+                x=lexical_metric,
+                color="author",
+                nbins=30,
+                title=f"Distribución de {lexical_metric}",
+            )
+            st.plotly_chart(lexical_hist, width="stretch")
+        with col2:
+            lexical_box = px.box(
+                metrics_df,
+                x="author",
+                y=lexical_metric,
+                custom_data=["work"],
+                points="all",
+                title=f"{lexical_metric} por autor",
+            )
+            apply_work_box_hover(lexical_box, lexical_metric)
+            st.plotly_chart(lexical_box, width="stretch")
 
-        lexical_scatter = px.scatter(
-            metrics_df,
-            x="n_tokens_all",
-            y=lexical_metric,
-            color="author",
-            hover_data=["work"],
-            title=f"Efecto de longitud sobre {lexical_metric}",
+        lexical_corr = metrics_df[[col for col in LEXICAL_METRICS if col in metrics_df.columns]].corr()
+        lexical_corr_fig = px.imshow(
+            lexical_corr,
+            text_auto=".2f",
+            color_continuous_scale="RdBu_r",
+            zmin=-1,
+            zmax=1,
         )
-        st.plotly_chart(lexical_scatter, width="stretch")
+        apply_correlation_heatmap_layout(lexical_corr_fig, len(lexical_corr.columns))
+        st.plotly_chart(lexical_corr_fig, width="stretch")
 
     with punctuation_tab:
         st.subheader("Uso de puntuación")
@@ -485,14 +540,27 @@ if selected_analysis == "eda":
             "Métrica de puntuación",
             [col for col in PUNCTUATION_METRICS if col in metrics_df.columns],
         )
-        punctuation_box = px.box(
-            metrics_df,
-            x="author",
-            y=punctuation_metric,
-            points="all",
-            title=f"{punctuation_metric} por autor",
-        )
-        st.plotly_chart(punctuation_box, width="stretch")
+        col1, col2 = st.columns(2)
+        with col1:
+            punctuation_hist = px.histogram(
+                metrics_df,
+                x=punctuation_metric,
+                color="author",
+                nbins=30,
+                title=f"Distribución de {punctuation_metric}",
+            )
+            st.plotly_chart(punctuation_hist, width="stretch")
+        with col2:
+            punctuation_box = px.box(
+                metrics_df,
+                x="author",
+                y=punctuation_metric,
+                custom_data=["work"],
+                points="all",
+                title=f"{punctuation_metric} por autor",
+            )
+            apply_work_box_hover(punctuation_box, punctuation_metric)
+            st.plotly_chart(punctuation_box, width="stretch")
 
         punctuation_corr = metrics_df[[col for col in PUNCTUATION_METRICS if col in metrics_df.columns]].corr()
         punctuation_corr_fig = px.imshow(
@@ -501,8 +569,8 @@ if selected_analysis == "eda":
             color_continuous_scale="RdBu_r",
             zmin=-1,
             zmax=1,
-            title="Correlación entre métricas de puntuación",
         )
+        apply_correlation_heatmap_layout(punctuation_corr_fig, len(punctuation_corr.columns))
         st.plotly_chart(punctuation_corr_fig, width="stretch")
 
     with authors_tab:
@@ -518,6 +586,8 @@ if selected_analysis == "eda":
         heatmap_fig.update_layout(height=760)
         st.plotly_chart(heatmap_fig, width="stretch")
 
+        st.subheader("Análisis de componentes principales (PCA)")
+
         pca_df = eda_result["author_pca_df"]
         pca_fig = px.scatter(
             pca_df,
@@ -530,11 +600,26 @@ if selected_analysis == "eda":
         pca_fig.update_traces(textposition="top center")
         st.plotly_chart(pca_fig, width="stretch")
         st.caption(
-            "Varianza explicada: "
-            + ", ".join(f"PC{i + 1}={value:.3f}" for i, value in enumerate(eda_result["pca_variance"]))
+            "**Varianza explicada:** "
+            + ", ".join(f"PC{i + 1}={value * 100:.1f}%" for i, value in enumerate(eda_result["pca_variance"]))
         )
 
         st.dataframe(eda_result["author_metric_means"], width="stretch", hide_index=True)
+
+        st.markdown("**Loadings del PCA**")
+        st.caption(
+            "**Tip:** cada *loading* indica cuánto contribuye una variable a un componente. "
+            "La magnitud absoluta muestra la fuerza de la contribución y el signo indica la dirección. "
+            "Variables con el mismo signo empujan el componente en la misma dirección, y variables con signos "
+            "opuestos separan a los autores hacia lados contrarios del eje."
+        )
+        pca_loadings_df = eda_result["pca_loadings_df"]
+        top_loadings_df = pca_loadings_df.groupby("component", as_index=False, group_keys=False).head(10)
+        st.dataframe(
+            top_loadings_df.style.format({"loading": "{:.4f}", "abs_loading": "{:.4f}"}),
+            width="stretch",
+            hide_index=True,
+        )
 
     with vocab_tab:
         st.subheader("Vocabulario por autor")

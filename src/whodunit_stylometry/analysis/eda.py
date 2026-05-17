@@ -20,31 +20,39 @@ QUALITY_METRICS = [
     "non_alpha_ratio",
     "digit_ratio",
     "whitespace_ratio",
-    "non_alpha_token_ratio",
 ]
 
 STRUCTURAL_METRICS = [
     "n_tokens_all",
+    "n_tokens_alpha",
+    "n_tokens_not_alpha",
+    "non_alpha_token_ratio",
     "n_sentences",
-    "n_paragraphs",
     "avg_sentence_len",
     "median_sentence_len",
     "std_sentence_len",
     "sentences_per_1000_tokens",
+    "short_sentence_ratio",
+    "long_sentence_ratio",
+    "n_paragraphs",
     "avg_paragraph_len",
+    "median_paragraph_len",
+    "std_paragraph_len",
     "paragraphs_per_1000_tokens",
     "avg_sentences_per_paragraph",
+    "median_sentences_per_paragraph",
 ]
 
 LEXICAL_METRICS = [
     "n_types",
     "ttr",
+    "hapax_count",
     "hapax_ratio",
-    "mattr_100",
-    "stopword_ratio",
     "avg_word_len",
     "median_word_len",
     "long_word_ratio",
+    "mattr_100",
+    "stopword_ratio",
 ]
 
 PUNCTUATION_METRICS = [
@@ -59,6 +67,7 @@ PUNCTUATION_METRICS = [
     "dialog_dash_count_per_1000",
     "hyphen_count_per_1000",
     "parenthesis_count_per_1000",
+    "punctuation_ratio",
 ]
 
 STABLE_AUTHOR_METRICS = [
@@ -69,14 +78,17 @@ STABLE_AUTHOR_METRICS = [
     "short_sentence_ratio",
     "long_sentence_ratio",
     "avg_paragraph_len",
+    "median_paragraph_len",
+    "std_paragraph_len",
     "paragraphs_per_1000_tokens",
     "avg_sentences_per_paragraph",
+    "median_sentences_per_paragraph",
     "mattr_100",
     "stopword_ratio",
     "avg_word_len",
+    "median_word_len",
     "long_word_ratio",
     "non_alpha_token_ratio",
-    "punctuation_ratio",
     *PUNCTUATION_METRICS,
 ]
 
@@ -89,9 +101,8 @@ class EDAConfig:
     zipf_max_rank: int = 5000
 
 
-def run_eda_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any]:
-    """Compute corpus-level metrics, author summaries, vocabulary tables, and outliers."""
-
+def run_eda_core_analysis(df: pd.DataFrame) -> dict[str, Any]:
+    """Compute corpus-level metrics, author summaries, PCA, and outliers."""
     metrics_df = _build_metrics_df(df)
     outlier_groups = {
         "quality": _outlier_payload(metrics_df, QUALITY_METRICS),
@@ -102,8 +113,7 @@ def run_eda_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any]:
     desc_by_author = _describe_by_author(metrics_df, STABLE_AUTHOR_METRICS)
     author_metric_means = _author_metric_means(desc_by_author)
     author_heatmap_df = _standardized_author_heatmap(author_metric_means)
-    author_pca_df, pca_variance = _author_pca(author_metric_means)
-    tokens_by_author = _tokens_by_author(df)
+    author_pca_df, pca_variance, pca_loadings_df = _author_pca(author_metric_means)
 
     return {
         "metrics_df": metrics_df,
@@ -113,6 +123,14 @@ def run_eda_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any]:
         "author_heatmap_df": author_heatmap_df,
         "author_pca_df": author_pca_df,
         "pca_variance": pca_variance,
+        "pca_loadings_df": pca_loadings_df,
+    }
+
+
+def run_eda_vocab_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any]:
+    """Compute vocabulary tables controlled by the EDA vocabulary settings."""
+    tokens_by_author = _tokens_by_author(df)
+    return {
         "top_words": _top_words_by_author(tokens_by_author, config.top_n, remove_stopwords=False),
         "top_words_no_stop": _top_words_by_author(tokens_by_author, config.top_n, remove_stopwords=True),
         "top_bigrams": _top_ngrams_by_author(tokens_by_author, n=2, top_k=config.top_n),
@@ -121,10 +139,16 @@ def run_eda_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any]:
     }
 
 
+def run_eda_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any]:
+    """Compute full exploratory corpus analysis results."""
+    return {**run_eda_core_analysis(df), **run_eda_vocab_analysis(df, config)}
+
+
 def _build_metrics_df(df: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for row in df.itertuples(index=False):
-        metrics = compute_novel_metrics(row.text, STOPWORDS)
+        tokens_all = getattr(row, "tokens_all", None)
+        metrics = compute_novel_metrics(row.text, STOPWORDS, tokens_all=tokens_all, tokens_alpha=row.tokens)
         metrics.update(
             {
                 "author": row.author,
@@ -174,16 +198,35 @@ def _standardized_author_heatmap(author_metric_means: pd.DataFrame) -> pd.DataFr
     return pd.DataFrame(scaled, index=author_metric_means["author"], columns=metric_cols)
 
 
-def _author_pca(author_metric_means: pd.DataFrame) -> tuple[pd.DataFrame, list[float]]:
+def _author_pca(author_metric_means: pd.DataFrame) -> tuple[pd.DataFrame, list[float], pd.DataFrame]:
     metric_cols = [col for col in author_metric_means.columns if col != "author"]
     n_components = min(2, len(author_metric_means), len(metric_cols))
     scaled = StandardScaler().fit_transform(author_metric_means[metric_cols])
-    coords = PCA(n_components=n_components).fit_transform(scaled)
+    pca = PCA(n_components=n_components)
+    coords = pca.fit_transform(scaled)
     out = author_metric_means[["author"]].copy()
     out["PC1"] = coords[:, 0]
     out["PC2"] = coords[:, 1] if n_components > 1 else 0.0
-    variance = PCA(n_components=n_components).fit(scaled).explained_variance_ratio_
-    return out, [float(value) for value in variance]
+
+    loading_rows = []
+    for component_idx in range(n_components):
+        component = f"PC{component_idx + 1}"
+        for metric, loading in zip(metric_cols, pca.components_[component_idx]):
+            loading_rows.append(
+                {
+                    "component": component,
+                    "metric": metric,
+                    "loading": float(loading),
+                    "abs_loading": abs(float(loading)),
+                }
+            )
+    loadings_df = pd.DataFrame(loading_rows).sort_values(
+        ["component", "abs_loading"],
+        ascending=[True, False],
+        ignore_index=True,
+    )
+
+    return out, [float(value) for value in pca.explained_variance_ratio_], loadings_df
 
 
 def _tokens_by_author(df: pd.DataFrame) -> dict[str, list[str]]:
