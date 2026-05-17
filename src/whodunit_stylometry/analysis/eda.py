@@ -6,7 +6,6 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -102,7 +101,29 @@ class EDAConfig:
 
 
 def run_eda_core_analysis(df: pd.DataFrame) -> dict[str, Any]:
-    """Compute corpus-level metrics, author summaries, PCA, and outliers."""
+    """Compute core exploratory data analysis outputs for a corpus.
+
+    Builds document-level metrics, groups outlier payloads by metric category,
+    computes author-level descriptive summaries, derives author metric means,
+    standardizes those means for heatmap use, and runs author-level PCA.
+
+    Args:
+        df: Input corpus data used to compute document- and author-level
+            exploratory metrics. The required columns are determined by
+            `_build_metrics_df()` and the downstream helper functions.
+
+    Returns:
+        A dictionary containing the following analysis outputs:
+            - `metrics_df`: Document-level metrics.
+            - `outlier_groups`: Outlier payloads grouped by metric category.
+            - `desc_by_author`: Descriptive statistics grouped by author.
+            - `author_metric_means`: Mean metric values per author.
+            - `author_heatmap_df`: Standardized author metric values for heatmap
+              visualization.
+            - `author_pca_df`: Author-level PCA coordinates.
+            - `pca_variance`: Explained variance information from PCA.
+            - `pca_loadings_df`: PCA loading values by metric.
+    """
     metrics_df = _build_metrics_df(df)
     outlier_groups = {
         "quality": _outlier_payload(metrics_df, QUALITY_METRICS),
@@ -128,7 +149,28 @@ def run_eda_core_analysis(df: pd.DataFrame) -> dict[str, Any]:
 
 
 def run_eda_vocab_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any]:
-    """Compute vocabulary tables controlled by the EDA vocabulary settings."""
+    """Compute author-level vocabulary analysis tables.
+
+    Tokenizes the input corpus by author, then computes top words with and
+    without stopwords, top bigrams, top trigrams, and Zipf rank-frequency data
+    according to the provided EDA configuration.
+
+    Args:
+        df: Input corpus data. Required columns are determined by
+            `_tokens_by_author()` and the downstream vocabulary helper
+            functions.
+        config: EDA configuration containing vocabulary settings, including
+            `top_n` for top token and n-gram counts, and `zipf_max_rank` for
+            Zipf output limits.
+
+    Returns:
+        A dictionary containing the following vocabulary analysis outputs:
+            - `top_words`: Top words by author, including stopwords.
+            - `top_words_no_stop`: Top words by author after stopword removal.
+            - `top_bigrams`: Top bigrams by author.
+            - `top_trigrams`: Top trigrams by author.
+            - `zipf_df`: Zipf rank-frequency data by author.
+    """
     tokens_by_author = _tokens_by_author(df)
     return {
         "top_words": _top_words_by_author(tokens_by_author, config.top_n, remove_stopwords=False),
@@ -139,12 +181,24 @@ def run_eda_vocab_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any
     }
 
 
-def run_eda_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any]:
-    """Compute full exploratory corpus analysis results."""
-    return {**run_eda_core_analysis(df), **run_eda_vocab_analysis(df, config)}
-
-
 def _build_metrics_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Build a document-level metrics dataframe from corpus rows.
+
+    Iterates over each row in the input dataframe, computes text metrics using
+    `compute_novel_metrics()`, and adds identifying metadata and basic size
+    counts for each document.
+
+    Args:
+        df: Input corpus dataframe. Each row is expected to provide `text`,
+            `tokens`, `author`, `work`, and `filename` fields. If a
+            `tokens_all` field exists, it is passed to `compute_novel_metrics()`;
+            otherwise, `None` is passed.
+
+    Returns:
+        A dataframe with one row per input document. Each row contains the
+        metrics returned by `compute_novel_metrics()` plus `author`, `work`,
+        `filename`, `token_count`, and `char_count` columns.
+    """
     rows = []
     for row in df.itertuples(index=False):
         tokens_all = getattr(row, "tokens_all", None)
@@ -163,6 +217,31 @@ def _build_metrics_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _outlier_payload(metrics_df: pd.DataFrame, metric_cols: list[str]) -> dict[str, pd.DataFrame]:
+    """Build summary and row-level outlier data for selected metric columns.
+
+    Filters the requested metric columns to those present in `metrics_df`, adds
+    IQR-based outlier flags, extracts rows with at least one outlier, and formats
+    the outlier metric names for display.
+
+    Args:
+        metrics_df: Metrics dataframe containing document metadata and numeric
+            metric columns. Expected metadata columns are `author`, `work`, and
+            `filename`. `add_iqr_outlier_flags()` is expected to add
+            `has_any_outlier` and `outlier_metrics` columns to its checked
+            dataframe output.
+        metric_cols: Candidate metric column names to check for outliers.
+            Missing columns are ignored.
+
+    Returns:
+        A dictionary containing:
+            - `summary`: Outlier summary dataframe with the original index reset
+              into a `metric` column.
+            - `outliers`: Dataframe of rows where `has_any_outlier` is true,
+              including metadata, formatted outlier metric names, and available
+              metric values.
+            - `metrics`: List of metric columns that were present in
+              `metrics_df` and included in the outlier check.
+    """
     available_cols = [col for col in metric_cols if col in metrics_df.columns]
     checked_df, summary_df = add_iqr_outlier_flags(metrics_df, available_cols)
     outlier_cols = ["author", "work", "filename", "outlier_metrics", *available_cols]
@@ -176,6 +255,24 @@ def _outlier_payload(metrics_df: pd.DataFrame, metric_cols: list[str]) -> dict[s
 
 
 def _describe_by_author(metrics_df: pd.DataFrame, metric_cols: list[str]) -> pd.DataFrame:
+    """Compute descriptive statistics for selected metrics grouped by author.
+
+    Filters the requested metric columns to those present in `metrics_df`, then
+    computes pandas descriptive statistics for each available metric grouped by
+    author. Percentile statistic names are normalized from `25%`, `50%`, and
+    `75%` to `p25`, `p50`, and `p75`.
+
+    Args:
+        metrics_df: Metrics dataframe containing an `author` column and the
+            metric columns to summarize.
+        metric_cols: Candidate metric column names to summarize. Missing columns
+            are ignored.
+
+    Returns:
+        A dataframe with one row per author and flattened summary-statistic
+        columns. Each generated metric column follows the pattern
+        `{metric}_{stat}`, such as `token_count_mean` or `sentence_count_p50`.
+    """
     available_cols = [col for col in metric_cols if col in metrics_df.columns]
     desc = metrics_df.groupby("author")[available_cols].describe()
     desc.columns = [
@@ -186,6 +283,21 @@ def _describe_by_author(metrics_df: pd.DataFrame, metric_cols: list[str]) -> pd.
 
 
 def _author_metric_means(desc_by_author: pd.DataFrame) -> pd.DataFrame:
+    """Extract author-level metric means from descriptive statistics.
+
+    Selects the `author` column and all columns ending in `_mean`, then removes
+    the `_mean` suffix from the selected metric column names.
+
+    Args:
+        desc_by_author: Author-level descriptive statistics dataframe containing
+            an `author` column and zero or more metric mean columns whose names
+            end with `_mean`.
+
+    Returns:
+        A dataframe containing the `author` column and one column per extracted
+        metric mean. Metric mean columns are renamed by removing the `_mean`
+        suffix.
+    """
     mean_cols = [col for col in desc_by_author.columns if col.endswith("_mean")]
     out = desc_by_author[["author", *mean_cols]].copy()
     out = out.rename(columns={col: col.removesuffix("_mean") for col in mean_cols})
@@ -193,12 +305,47 @@ def _author_metric_means(desc_by_author: pd.DataFrame) -> pd.DataFrame:
 
 
 def _standardized_author_heatmap(author_metric_means: pd.DataFrame) -> pd.DataFrame:
+    """Standardize author metric means for heatmap visualization.
+
+    Uses all columns except `author` as metric columns and applies standard
+    scaling so each metric has zero mean and unit variance across authors. The
+    returned dataframe is indexed by author and preserves the metric column
+    names.
+
+    Args:
+        author_metric_means: Dataframe containing an `author` column and one or
+            more numeric metric columns with author-level mean values.
+
+    Returns:
+        A dataframe of standardized metric values. The index contains author
+        values from `author_metric_means["author"]`, and the columns are the
+        standardized metric columns.
+    """
     metric_cols = [col for col in author_metric_means.columns if col != "author"]
     scaled = StandardScaler().fit_transform(author_metric_means[metric_cols])
     return pd.DataFrame(scaled, index=author_metric_means["author"], columns=metric_cols)
 
 
 def _author_pca(author_metric_means: pd.DataFrame) -> tuple[pd.DataFrame, list[float], pd.DataFrame]:
+    """Run PCA on standardized author-level metric means.
+
+    Uses all columns except `author` as metric columns, standardizes them across
+    authors, and computes up to two principal components. The returned PCA
+    coordinate dataframe always includes `PC1` and `PC2`; when only one
+    component can be computed, `PC2` is filled with `0.0`.
+
+    Args:
+        author_metric_means: Dataframe containing an `author` column and one or
+            more numeric metric columns with author-level mean values.
+
+    Returns:
+        A tuple containing:
+            - PCA coordinates dataframe with `author`, `PC1`, and `PC2` columns.
+            - Explained variance ratio values for the fitted components.
+            - PCA loadings dataframe with `component`, `metric`, `loading`, and
+              `abs_loading` columns, sorted by component and descending absolute
+              loading.
+    """
     metric_cols = [col for col in author_metric_means.columns if col != "author"]
     n_components = min(2, len(author_metric_means), len(metric_cols))
     scaled = StandardScaler().fit_transform(author_metric_means[metric_cols])
@@ -230,6 +377,20 @@ def _author_pca(author_metric_means: pd.DataFrame) -> tuple[pd.DataFrame, list[f
 
 
 def _tokens_by_author(df: pd.DataFrame) -> dict[str, list[str]]:
+    """Collect normalized alphabetic tokens grouped by author.
+
+    Groups the input dataframe by `author`, flattens each author's `tokens`
+    values, keeps only alphabetic tokens, and lowercases the retained tokens.
+
+    Args:
+        df: Input corpus dataframe containing `author` and `tokens` columns.
+            Each value in `tokens` is expected to be an iterable of string
+            tokens.
+
+    Returns:
+        A dictionary mapping each author to a list of lowercase alphabetic
+        tokens from that author's rows.
+    """
     return {
         author: [token.lower() for tokens in sub["tokens"] for token in tokens if token.isalpha()]
         for author, sub in df.groupby("author")
@@ -241,6 +402,26 @@ def _top_words_by_author(
     top_n: int,
     remove_stopwords: bool,
 ) -> pd.DataFrame:
+    """Compute top word frequencies by author.
+
+    Counts tokens for each author and returns the most common tokens up to
+    `top_n`. Stopwords are excluded before counting when `remove_stopwords` is
+    true.
+
+    Args:
+        tokens_by_author: Mapping of author names to token lists. Tokens are
+            expected to already be normalized as needed by the caller.
+        top_n: Maximum number of top tokens to return per author.
+        remove_stopwords: Whether to exclude tokens present in `STOPWORDS`
+            before counting.
+
+    Returns:
+        A dataframe with one row per selected token and the following columns:
+        `author`, `rank`, `token`, `freq`, and `relative_freq`. The
+        `relative_freq` value is the token frequency divided by the total number
+        of selected tokens for that author, or `0.0` if the selected token count
+        is zero.
+    """
     rows = []
     for author, tokens in tokens_by_author.items():
         selected_tokens = [token for token in tokens if token not in STOPWORDS] if remove_stopwords else tokens
@@ -260,6 +441,22 @@ def _top_words_by_author(
 
 
 def _top_ngrams_by_author(tokens_by_author: dict[str, list[str]], n: int, top_k: int) -> pd.DataFrame:
+    """Compute top n-gram frequencies by author.
+
+    Generates n-grams for each author's tokens using `top_ngrams()`, excluding
+    stopwords according to `STOPWORDS`, and returns the most frequent n-grams up
+    to `top_k` per author.
+
+    Args:
+        tokens_by_author: Mapping of author names to token lists. Tokens are
+            expected to already be normalized as needed by the caller.
+        n: Size of each n-gram to generate.
+        top_k: Maximum number of top n-grams to return per author.
+
+    Returns:
+        A dataframe with one row per selected n-gram and the following columns:
+        `author`, `rank`, `ngram`, and `freq`.
+    """
     rows = []
     for author, tokens in tokens_by_author.items():
         for rank, (ngram, freq) in enumerate(top_ngrams(tokens, n=n, top_k=top_k, stopword_set=STOPWORDS), start=1):
@@ -268,9 +465,34 @@ def _top_ngrams_by_author(tokens_by_author: dict[str, list[str]], n: int, top_k:
 
 
 def _zipf_by_author(tokens_by_author: dict[str, list[str]], max_rank: int) -> pd.DataFrame:
+    """Compute Zipf rank-frequency data by author.
+
+    Counts tokens for each author and returns token frequencies ordered by
+    descending frequency up to `max_rank`.
+
+    Args:
+        tokens_by_author: Mapping of author names to token lists. Tokens are
+            expected to already be normalized as needed by the caller.
+        max_rank: Maximum number of ranked tokens to return per author.
+
+    Returns:
+        A dataframe with one row per ranked token and the following columns:
+        `author`, `rank`, `token`, `freq`, and `relative_freq`. The
+        `relative_freq` value is the token frequency divided by the total token
+        count for that author, or `0.0` if the author has no tokens.
+    """
     rows = []
     for author, tokens in tokens_by_author.items():
         counter = Counter(tokens)
+        total = sum(counter.values())
         for rank, (token, freq) in enumerate(counter.most_common(max_rank), start=1):
-            rows.append({"author": author, "rank": rank, "token": token, "freq": freq})
+            rows.append(
+                {
+                    "author": author,
+                    "rank": rank,
+                    "token": token,
+                    "freq": freq,
+                    "relative_freq": freq / total if total else 0.0,
+                }
+            )
     return pd.DataFrame(rows)
