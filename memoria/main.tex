@@ -332,7 +332,7 @@ Esta distinción es especialmente relevante en el presente trabajo, ya que el co
 
 Finalmente, la estilometría computacional actual se sitúa en un punto intermedio entre la tradición filológica y los métodos modernos de ciencia de datos. Por un lado, mantiene el interés clásico por el estilo, la autoría y la comparación entre textos. Por otro, utiliza técnicas procedentes del procesamiento del lenguaje natural, la estadística y el aprendizaje automático para representar los textos como datos analizables. Esta combinación permite estudiar grandes volúmenes de texto de forma reproducible, pero también nos obliga a ser cuidadosos con la interpretación puesto que un rasgo importante para un modelo no siempre equivale automáticamente a una característica literaria significativa. En consecuencia, en este TFG la atribución de autoría se aborda no solo como un problema de clasificación, sino también como un ejercicio de análisis explicable del estilo literario.
 
-\section{Casos paradigmáticos de atribución de autoría}
+\section{Caso de uso reales en atribución de autoría}
 
 La atribución de autoría no es solo un problema teórico, sino que ha tenido aplicaciones relevantes en contextos literarios, históricos, periodísticos y forenses. Algunos casos han adquirido un valor paradigmático porque muestran cómo el análisis del estilo puede contribuir a resolver dudas sobre textos anónimos, pseudónimos o de autoría disputada.
 
@@ -515,8 +515,6 @@ No obstante, combinar más información no siempre conduce a mejores resultados.
 
 En el contexto de este TFG, los enfoques modernos resultan especialmente relevantes porque permiten comparar la tradición estilométrica con técnicas actuales de aprendizaje automático y PLN. El objetivo no es sustituir los métodos clásicos por modelos más complejos, sino analizar qué aporta cada familia de métodos al estudio computacional del estilo literario. De este modo, la atribución de autoría se plantea como un problema doble: por un lado, clasificar correctamente los textos; por otro, comprender qué rasgos lingüísticos o representacionales permiten diferenciar a los autores del corpus.
 
-
-\section{Evaluación en atribución de autoría}
 
 \section{Evaluación en atribución de autoría}
 
@@ -1518,6 +1516,197 @@ Este ejemplo muestra varias decisiones relevantes del proceso. En primer lugar, 
 También se observa que ciertos elementos estructurales, como los saltos dobles de línea representados mediante \texttt{\textbackslash n\textbackslash n}, pueden conservarse en la salida cuando se utiliza la opción \texttt{--token-kind all}. Esta representación completa resulta útil cuando se desea analizar no solo el componente léxico del texto, sino también su organización. En cambio, si se utiliza la opción \texttt{--token-kind alpha}, el \textit{script} filtrará esta salida para conservar únicamente los tokens alfabéticos, descartando signos de puntuación, números y separadores estructurales.
 
 Desde el punto de vista de la reproducibilidad, la versión tokenizada no necesita editarse manualmente. Al generarse de forma automática a partir de \texttt{corpus/normalized} y del código del \textit{script}, cualquier cambio en los criterios de tokenización puede aplicarse de forma sistemática a todo el corpus. Esto reduce el riesgo de inconsistencias entre obras, permite comparar distintas configuraciones de tokenización y mantiene la trazabilidad entre los textos originales, las versiones depuradas, las versiones normalizadas y los archivos finales utilizados en los experimentos estilométricos.
+
+\section{Apéndice IV - Manual de uso de la aplicación}
+\label{apx:manual-usuario}
+
+Este apéndice recoge una guía básica de uso de la aplicación \textit{Whodunit Stylometry} desde la perspectiva de una persona usuaria que desea analizar un corpus literario. No se describen aquí los detalles técnicos de implementación de la herramienta, sino los pasos necesarios para cargar un corpus, seleccionar un tipo de análisis, interpretar las principales salidas y utilizar las opciones de atribución de autoría.
+
+\subsection*{Estructura esperada del corpus}
+
+Para poder analizar un corpus, la aplicación espera una carpeta principal que contenga una subcarpeta por cada autor. Dentro de cada subcarpeta deben incluirse los archivos de texto plano (\texttt{.txt}) correspondientes a las obras de ese autor. Una estructura válida sería, por ejemplo:
+
+\begin{verbatim}
+corpus/
+  Arthur Conan Doyle/
+    the_hound_of_the_baskervilles.txt
+    the_sign_of_the_four.txt
+  Agatha Christie/
+    the_mysterious_affair_at_styles.txt
+    the_secret_adversary.txt
+\end{verbatim}
+
+Los nombres de las carpetas se utilizan como etiquetas de autor y los archivos \texttt{.txt} como unidades de análisis. Por ello, conviene revisar que cada obra esté ubicada en la carpeta correcta y que los textos no incluyan cabeceras editoriales, licencias, índices u otros elementos ajenos al contenido literario que puedan distorsionar las métricas.
+
+\subsection*{Carga inicial y controles generales}
+
+Al abrir la aplicación, la barra lateral permite configurar los elementos comunes a todos los análisis:
+
+\begin{enumerate}
+    \item En el campo \textbf{Ruta al corpus}, introducir la ruta de la carpeta principal del corpus.
+    \item En \textbf{Tipo de análisis}, seleccionar la familia de análisis que se desea ejecutar.
+    \item Activar o desactivar la opción \textbf{Normalizar a minúsculas}. Esta opción suele ser recomendable cuando se quieren comparar frecuencias léxicas sin distinguir entre mayúsculas y minúsculas.
+    \item Pulsar el botón \textbf{Ejecutar análisis}.
+\end{enumerate}
+
+\begin{figure}[H]
+	 \centering
+	 \includegraphics[width=0.8\textwidth]{img/streamlit_1.png}
+	 \caption{Pantalla de inicio}
+     \label{fig:streamlit_1}
+\end{figure}
+
+Tras la carga del corpus, la aplicación muestra una fila de indicadores generales con el número de autores, el número de obras, el total de tokens y la media de tokens por obra. Estos valores permiten comprobar rápidamente si el corpus cargado coincide con lo esperado antes de interpretar resultados más detallados.
+
+\subsection*{Análisis exploratorio del corpus}
+
+La opción \textbf{Análisis exploratorio} está pensada como primer paso de revisión del corpus. Permite inspeccionar su composición, detectar posibles desequilibrios y observar patrones generales de estilo antes de aplicar los modelos de atribución.
+
+En la barra lateral se pueden ajustar dos parámetros: el número de n-gramas que se mostrarán en las tablas de vocabulario y el rango máximo utilizado para las curvas de Zipf. Una vez ejecutado el análisis, la aplicación organiza los resultados en varias pestañas:
+
+\begin{itemize}
+    \item \textbf{Resumen}: muestra la distribución de obras por autor, la longitud de las obras y una tabla con métricas básicas.
+    \item \textbf{Calidad}: permite revisar indicadores superficiales del texto, como proporciones de caracteres no alfabéticos, dígitos o espacios.
+    \item \textbf{Estructura}: agrupa métricas relacionadas con la longitud de oraciones, párrafos y la organización de los textos.
+    \item \textbf{Léxico}: presenta medidas de diversidad y composición léxica, como la riqueza del vocabulario, la longitud media de palabra o la proporción de palabras largas.
+    \item \textbf{Puntuación}: permite comparar el uso de signos de puntuación entre autores y obras.
+    \item \textbf{Outliers}: identifica obras con valores atípicos dentro de cada grupo de métricas.
+    \item \textbf{Autores}: resume patrones agregados por autor mediante un mapa de calor y una proyección PCA.
+    \item \textbf{Vocabulario}: muestra palabras, palabras sin \textit{stopwords}, bigramas y trigramas más frecuentes por autor.
+    \item \textbf{Zipf}: presenta las curvas de frecuencia de palabras por autor.
+\end{itemize}
+
+\begin{figure}[H]
+	 \centering
+	 \includegraphics[width=0.8\textwidth]{img/streamlit_2.png}
+	 \caption{Análisis exploratorio del corpus}
+     \label{fig:streamlit_2}
+\end{figure}
+
+Esta sección es especialmente útil para comprobar si algún texto presenta comportamientos anómalos. Por ejemplo, una obra con una proporción muy alta de caracteres no alfabéticos o una longitud muy distinta al resto puede requerir una revisión manual antes de incorporarse al análisis final.
+
+\subsection*{Métodos clásicos de atribución}
+
+La opción \textbf{Métodos clásicos} permite aplicar tres aproximaciones estilométricas tradicionales: el test de Mendenhall, el chi-cuadrado de Kilgariff y la distancia de Burrows. Estos métodos son adecuados para obtener una primera comparación interpretable entre autores y para atribuir una obra externa a uno de los perfiles del corpus.
+
+En el caso del \textbf{Test de Mendenhall}, la aplicación muestra las curvas características de longitud de palabra por bloques y las curvas medias por autor. En la pestaña \textbf{Test de atribución} se puede subir un archivo \texttt{.txt} externo y la aplicación calcula su curva y la compara con las curvas medias de los autores del corpus. El autor más similar será el que presente menor distancia.
+
+En el \textbf{Chi-cuadrado de Kilgariff}, la aplicación construye perfiles léxicos comparables entre autores. La pestaña \textbf{Vocabulario global} muestra los términos utilizados en la comparación, mientras que la pestaña \textbf{Atribución de obra} permite subir una obra externa y consultar el ránking de autores candidatos. En este método, valores más bajos de chi-cuadrado indican mayor similitud.
+
+En la \textbf{Distancia de Burrows}, las frecuencias se normalizan mediante puntuaciones z para comparar el comportamiento relativo de cada término. La pestaña de atribución funciona de forma similar, se sube una obra \texttt{.txt}, se obtiene un ránking de autores y se puede consultar qué palabras explican mejor la distancia respecto a cada candidato. En este caso, el autor con menor Delta es el más cercano.
+
+Para Kilgariff y Burrows, la pestaña \textbf{Contribuciones} ayuda a interpretar por qué una obra se aproxima o se aleja de un autor. Es recomendable revisar no solo el primer autor del ránking, sino también la separación respecto al segundo candidato. Si las distancias son muy parecidas, la atribución debe considerarse menos concluyente.
+
+\begin{figure}[H]
+	 \centering
+	 \includegraphics[width=0.8\textwidth]{img/streamlit_3.png}
+	 \caption{Métodos clásicos}
+     \label{fig:streamlit_3}
+\end{figure}
+
+\subsection*{Métodos supervisados}
+
+La opción \textbf{Métodos supervisados} permite entrenar modelos de clasificación a partir de obras con un autor conocido. La aplicación ofrece dos flujos principales:
+
+\begin{itemize}
+    \item \textbf{Experimento supervisado}: entrena y evalúa varios modelos con una partición de entrenamiento y test.
+    \item \textbf{Robustez MFW}: ejecuta un barrido con distintos valores de palabras más frecuentes (\texttt{TOP\_N\_MFW}) y semillas aleatorias para comprobar la estabilidad del rendimiento.
+\end{itemize}
+
+En el experimento supervisado, se puede seleccionar el conjunto de rasgos, los modelos que se desea comparar, el número de palabras frecuentes y el número de obras de test por autor. Los resultados se presentan en pestañas:
+
+\begin{itemize}
+    \item \textbf{Datos}: resume la partición entre entrenamiento y test.
+    \item \textbf{Rasgos}: muestra las variables utilizadas por los modelos.
+    \item \textbf{Modelos}: compara el rendimiento medio en validación cruzada.
+    \item \textbf{Evaluación}: presenta las métricas del mejor modelo y la matriz de confusión.
+    \item \textbf{Predicciones}: lista las predicciones realizadas obra por obra.
+    \item \textbf{Atribuir obra}: permite subir una obra externa y obtener un ránking de autores candidatos.
+\end{itemize}
+
+\begin{figure}[H]
+	 \centering
+	 \includegraphics[width=0.8\textwidth]{img/streamlit_4.png}
+	 \caption{Métodos supervisados}
+     \label{fig:streamlit_4}
+\end{figure}
+
+La pestaña \textbf{Evaluación} debe revisarse con especial atención. Un valor alto de F1-macro indica que el modelo funciona de manera equilibrada entre autores, mientras que la matriz de confusión permite detectar qué autores se confunden con mayor frecuencia. En la atribución de obras externas, el ránking y el \textit{score} deben interpretarse como un apoyo cuantitativo, no como una prueba definitiva de autoría.
+
+\subsection*{Métodos no supervisados}
+
+La opción \textbf{Métodos no supervisados} agrupa análisis de \textit{clustering}, es decir, métodos que forman grupos de obras a partir de sus rasgos sin utilizar las etiquetas de autor durante la construcción de los clústeres. La aplicación permite ejecutar tres flujos:
+
+\begin{itemize}
+    \item \textbf{Experimento de clustering}: compara varios algoritmos no supervisados.
+    \item \textbf{Robustez MFW}: analiza cómo cambia la calidad del \textit{clustering} al variar el número de palabras más frecuentes.
+    \item \textbf{\textit{Clustering} jerárquico}: construye agrupaciones jerárquicas y muestra un dendrograma.
+\end{itemize}
+
+Aunque las etiquetas de autor no se usan para crear los grupos, la aplicación las emplea después para evaluar la correspondencia entre clústeres y autores reales. Las métricas como ARI, NMI, \textit{homogeneity}, \textit{completeness} y V-\textit{measure} ayudan a valorar si los grupos obtenidos se parecen a la clasificación por autor.
+
+\begin{figure}[H]
+	 \centering
+	 \includegraphics[width=0.8\textwidth]{img/streamlit_5.png}
+	 \caption{Métodos no supervisados}
+     \label{fig:streamlit_5}
+\end{figure}
+
+En este tipo de análisis conviene prestar atención a las pestañas de \textbf{Contingencia}, \textbf{Evaluación} y \textbf{Visualización}. La tabla de contingencia muestra qué autores predominan en cada clúster, la matriz de confusión permite detectar mezclas entre autores y las proyecciones t-SNE o los dendrogramas ayudan a observar visualmente proximidades entre obras.
+
+\subsection*{\textit{Embeddings} de OpenAI}
+
+La opción \textbf{\textit{Embeddings} de OpenAI} permite representar las obras mediante vectores generados por modelos de \textit{embeddings}. Este flujo requiere introducir una API key de OpenAI en el campo correspondiente de la barra lateral. La clave se utiliza durante la ejecución para generar los \textit{embeddings} y no se muestra en las salidas de la aplicación.
+
+Antes de generar los \textit{embeddings}, la pestaña \textbf{API} muestra una estimación del número de fragmentos y tokens que se enviarán al modelo. Esta información permite ajustar parámetros como el tamaño de los fragmentos, el solapamiento o las dimensiones antes de lanzar el cálculo.
+
+Una vez generados los \textit{embeddings}, se habilitan las pestañas de resultados:
+
+\begin{itemize}
+    \item \textbf{Fragmentos}: muestra los fragmentos textuales usados para generar las representaciones.
+    \item \textbf{Proyección}: visualiza obras y fragmentos mediante UMAP en dos o tres dimensiones.
+    \item \textbf{Similitud}: muestra matrices de similitud coseno entre autores y entre obras.
+    \item \textbf{Vecinos}: permite consultar qué obras aparecen como más próximas entre sí.
+    \item \textbf{Cohesión}: resume si las obras de un mismo autor tienden a agruparse.
+    \item \textbf{Red}: representa una red de similitud entre obras.
+\end{itemize}
+
+\begin{figure}[H]
+	 \centering
+	 \includegraphics[width=0.8\textwidth]{img/streamlit_6.png}
+	 \caption{\textit{Embeddings} de OpenAI}
+     \label{fig:streamlit_6}
+\end{figure}
+
+Este análisis resulta útil para observar relaciones globales entre textos desde una representación más semántica o contextual. Aun así, sus resultados deben interpretarse junto con los análisis estilométricos clásicos y las métricas supervisadas, ya que una alta similitud vectorial puede reflejar tanto estilo como tema, género, vocabulario compartido u otros factores.
+
+\subsection*{Atribución de una obra externa}
+
+Varios apartados de la aplicación permiten subir una obra externa en formato \texttt{.txt}. Para obtener resultados más comparables, se recomienda que el texto externo tenga una calidad y preparación semejantes a las obras del corpus de referencia. En particular:
+
+\begin{itemize}
+    \item Debe contener únicamente el texto literario que se desea analizar.
+    \item Conviene eliminar licencias, metadatos editoriales, índices y notas ajenas a la obra.
+    \item Es preferible que el texto tenga una extensión suficiente para que las frecuencias sean estables.
+    \item La interpretación debe considerar siempre el ránking completo, no solo el primer candidato.
+\end{itemize}
+
+Cuando el margen entre el primer y el segundo autor es reducido, o cuando varios métodos ofrecen resultados contradictorios, la atribución debe interpretarse como incierta. En esos casos, puede ser útil revisar las contribuciones por palabra, la matriz de confusión de los modelos supervisados y los patrones observados en el análisis exploratorio.
+
+\subsection*{Recomendaciones de uso}
+
+Para un análisis completo de un corpus nuevo, se recomienda seguir este orden:
+
+\begin{enumerate}
+    \item Ejecutar primero el \textbf{Análisis exploratorio} para revisar composición, calidad, \textit{outliers} y rasgos generales.
+    \item Revisar posibles textos problemáticos antes de pasar a los modelos de atribución.
+    \item Aplicar \textbf{Métodos clásicos} para obtener una comparación interpretable entre autores.
+    \item Ejecutar \textbf{Métodos supervisados} para evaluar la capacidad de clasificación del corpus.
+    \item Utilizar \textbf{Métodos no supervisados} para comprobar si las obras se agrupan de forma coherente sin usar etiquetas de autor.
+    \item Usar \textbf{Embeddings de OpenAI} como análisis complementario cuando se desee explorar similitudes vectoriales entre obras o autores.
+\end{enumerate}
+
+Los resultados de la aplicación deben entenderse como un apoyo al análisis literario y no usarse en sustitución de la interpretación crítica. La atribución automática de autoría depende del corpus de referencia, de la calidad de los textos, del equilibrio entre autores y de los rasgos seleccionados. Por ello, cualquier conclusión debe apoyarse preferiblemente en la convergencia de varios métodos y en una revisión cualitativa de los textos.
 
 \bibliographystyle{apalike-es}
 \bibliography{bibliography.bib}
