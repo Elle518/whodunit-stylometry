@@ -51,6 +51,19 @@ A maximum of 250 words, detailing the purpose, contexto of application, methodol
 
 \listoftables
 
+\cleardoublepage
+
+\vspace*{0.15\textheight}
+
+\noindent\hfill
+\begin{minipage}{0.75\textwidth}
+{\Large\bfseries whodunit} \textit{nombre}. \textit{/ju-dán-it/}. Relato de misterio o novela detectivesca cuya intriga principal gira en torno a la pregunta de quién ha cometido un crimen. En este tipo de narraciones, la investigación avanza mediante la presentación gradual de pistas, sospechosos y posibles motivos, hasta llegar a la identificación final del responsable. Del inglés \textit{Who done it?}, forma coloquial de \textit{Who did it?}, `¿quién lo hizo?'.
+\end{minipage}
+
+\vspace{2em}
+
+\cleardoublepage
+
 \chapter{Introducción}
 
 \section{Contexto y justificación del trabajo}
@@ -1655,14 +1668,14 @@ En este tipo de análisis conviene prestar atención a las pestañas de \textbf{
 
 \subsection*{\textit{Embeddings} de OpenAI}
 
-La opción \textbf{\textit{Embeddings} de OpenAI} permite representar las obras mediante vectores generados por modelos de \textit{embeddings}. Este flujo requiere introducir una API key de OpenAI en el campo correspondiente de la barra lateral. La clave se utiliza durante la ejecución para generar los \textit{embeddings} y no se muestra en las salidas de la aplicación.
+La opción \textbf{\textit{Embeddings} de OpenAI} permite representar las obras mediante vectores generados por modelos de \textit{embeddings}. Este flujo requiere introducir una API key de OpenAI en el campo correspondiente de la barra lateral. La clave se utiliza durante la ejecución para generar los \textit{embeddings} y no se muestra en las salidas de la aplicación ni se guarda en ningún momento por motivos de seguridad.
 
 Antes de generar los \textit{embeddings}, la pestaña \textbf{API} muestra una estimación del número de fragmentos y tokens que se enviarán al modelo. Esta información permite ajustar parámetros como el tamaño de los fragmentos, el solapamiento o las dimensiones antes de lanzar el cálculo.
 
 Una vez generados los \textit{embeddings}, se habilitan las pestañas de resultados:
 
 \begin{itemize}
-    \item \textbf{Fragmentos}: muestra los fragmentos textuales usados para generar las representaciones.
+    \item \textbf{Fragmentos}: muestra los fragmentos de texto usados para generar las representaciones.
     \item \textbf{Proyección}: visualiza obras y fragmentos mediante UMAP en dos o tres dimensiones.
     \item \textbf{Similitud}: muestra matrices de similitud coseno entre autores y entre obras.
     \item \textbf{Vecinos}: permite consultar qué obras aparecen como más próximas entre sí.
@@ -1677,7 +1690,7 @@ Una vez generados los \textit{embeddings}, se habilitan las pestañas de resulta
      \label{fig:streamlit_6}
 \end{figure}
 
-Este análisis resulta útil para observar relaciones globales entre textos desde una representación más semántica o contextual. Aun así, sus resultados deben interpretarse junto con los análisis estilométricos clásicos y las métricas supervisadas, ya que una alta similitud vectorial puede reflejar tanto estilo como tema, género, vocabulario compartido u otros factores.
+Este análisis resulta útil para observar relaciones globales entre textos usando una representación más semántica o de contexto. Aun así, sus resultados deben interpretarse junto con los análisis estilométricos clásicos y las métricas supervisadas, ya que una alta similitud vectorial puede reflejar tanto el estilo como el tema, el género, un vocabulario compartido u otros factores.
 
 \subsection*{Atribución de una obra externa}
 
@@ -1705,7 +1718,7 @@ Para un análisis completo de un corpus nuevo, se recomienda seguir este orden:
     \item Usar \textbf{Embeddings de OpenAI} como análisis complementario cuando se desee explorar similitudes vectoriales entre obras o autores.
 \end{enumerate}
 
-Los resultados de la aplicación deben entenderse como un apoyo al análisis literario y no usarse en sustitución de la interpretación crítica. La atribución automática de autoría depende del corpus de referencia, de la calidad de los textos, del equilibrio entre autores y de los rasgos seleccionados. Por ello, cualquier conclusión debe apoyarse preferiblemente en la convergencia de varios métodos y en una revisión cualitativa de los textos.
+Los resultados de esta aplicación deben entenderse como un apoyo al estudio literario y no usarse en sustitución de un análisis crítico. La atribución automática de autoría depende del corpus de referencia, de la calidad de los textos, del equilibrio entre autores y de los rasgos seleccionados. Por ello, cualquier conclusión debe apoyarse preferiblemente en la convergencia de varios métodos y en una revisión cualitativa de los textos.
 
 \bibliographystyle{apalike-es}
 \bibliography{bibliography.bib}
