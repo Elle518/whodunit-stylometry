@@ -247,6 +247,8 @@
 %% ----------------------- Definició del resum -----------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newcommand{\abstractpar}{\par\vspace{0.5\baselineskip}}
+
 \newcommand{\@abstractidioma}{}
 
 \newcommand{\abstractidioma}[1]{

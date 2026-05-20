@@ -31,26 +31,29 @@
 
 %%%%%%%%%%
 % Resumen en el idioma
-
 \abstractidioma{
+\abstractpar
 Este Trabajo de Fin de Grado desarrolla un \textit{pipeline} automatizado para atribución de autoría en novela de misterio clásica, que combina estilometría, procesamiento del lenguaje natural, aprendizaje automático y técnicas de explicabilidad. La investigación se sitúa en el ámbito del análisis literario basado en datos, con un corpus de 95 obras en inglés de seis autores canónicos de los siglos XIX y XX: Anna Katharine Green, Arthur Conan Doyle, Arthur Morrison, G. K. Chesterton, R. Austin Freeman y Wilkie Collins.
-
+\abstractpar
 La metodología incluye la construcción y documentación del corpus, limpieza manual, normalización, tokenización, análisis exploratorio, extracción de rasgos estilométricos, aplicación de métodos clásicos de atribución, entrenamiento de modelos supervisados y no supervisados, generación de \textit{embeddings} y ajuste fino de un modelo RoBERTa. Además, se incorporan técnicas de interpretabilidad global y local, como coeficientes de modelos lineales y valores SHAP, junto con una herramienta interactiva en Streamlit.
-
-Los resultados muestran que las palabras funcionales son la representación más eficaz y estable: los modelos basados en MFW alcanzan una F1 macro de 1,000 en el conjunto de test equilibrado y mantienen un rendimiento robusto con 25 rasgos. Los métodos clásicos basados en frecuencias de palabras funcionales también obtienen resultados sólidos, mientras que los \textit{embeddings} y \textit{transformers} aportan perspectivas complementarias aunque menos transparentes.
-
+\abstractpar
+Los resultados muestran que las palabras funcionales son la representación más eficaz y estable: los modelos basados en MFW alcanzan una F1 macro de 1,0 en el conjunto de test equilibrado y mantienen un rendimiento robusto con 25 rasgos. Los métodos clásicos basados en frecuencias de palabras funcionales también obtienen resultados sólidos, mientras que los \textit{embeddings} y \textit{transformers} aportan perspectivas complementarias aunque menos transparentes.
+\abstractpar
 Se concluye que la atribución de autoría mediante métodos cuantitativos es viable en este corpus y que los enfoques interpretables pueden ofrecer un rendimiento competitivo, siempre que los resultados se analicen con cautela y dentro de sus límites metodológicos.
+\abstractpar
 }
 
 % Resumen en inglés.
 \abstractenglish{
-This Final Degree Project develops an automated \textit{pipeline} for authorship attribution in classic mystery fiction, combining stylometry, natural language processing, machine learning, and explainability techniques. The research is situated within the field of data-driven literary analysis, using a corpus of 95 works in English by six canonical authors from the nineteenth and twentieth centuries: Anna Katharine Green, Arthur Conan Doyle, Arthur Morrison, G. K. Chesterton, R. Austin Freeman, and Wilkie Collins.
-
-The methodology includes corpus construction and documentation, manual cleaning, normalization, tokenization, exploratory analysis, extraction of stylometric features, application of classical attribution methods, training of supervised and unsupervised models, generation of \textit{embeddings}, and fine-tuning of a RoBERTa model. In addition, global and local interpretability techniques are incorporated, such as linear model coefficients and SHAP values, together with an interactive tool developed in Streamlit.
-
-The results show that function words are the most effective and stable representation: models based on MFW achieve a macro F1-score of 1.000 on the balanced test set and maintain robust performance with 25 features. Classical methods based on function word frequencies also obtain solid results, while \textit{embeddings} and \textit{transformers} provide complementary perspectives, although they are less transparent.
-
+\abstractpar
+This Final Degree Project develops an automated \textit{pipeline} for authorship attribution in classic mystery fiction, combining stylometry, natural language processing, machine learning and explainability techniques. The research is situated within the field of data-driven literary analysis, using a corpus of 95 works in English by six canonical authors from the nineteenth and twentieth centuries: Anna Katharine Green, Arthur Conan Doyle, Arthur Morrison, G. K. Chesterton, R. Austin Freeman and Wilkie Collins.
+\abstractpar
+The methodology includes corpus construction and documentation, manual cleaning, normalization, tokenization, exploratory analysis, extraction of stylometric features, application of classical attribution methods, training of supervised and unsupervised models, generation of embeddings, and fine-tuning of a RoBERTa model. In addition, global and local interpretability techniques are incorporated, such as linear model coefficients and SHAP values, together with an interactive tool developed in Streamlit.
+\abstractpar
+The results show that function words are the most effective and stable representation: models based on MFW achieve a macro F1-score of 1.0 on the balanced test set and maintain robust performance with 25 features. Classical methods based on function word frequencies also obtain solid results, while embeddings and transformers provide complementary perspectives, although they are less transparent.
+\abstractpar
 It is concluded that authorship attribution through quantitative methods is feasible in this corpus and that interpretable approaches can offer competitive performance, provided that the results are analysed with caution and within their methodological limits.
+\abstractpar
 }
 
 \begin{document}
