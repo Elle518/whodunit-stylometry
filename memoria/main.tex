@@ -2276,8 +2276,266 @@ En conjunto, la planificación se ha seguido de forma satisfactoria, aunque con 
 
 \chapter{Glosario}
 
-\textit{Definición de los términos y acrónimos más relevantes utilizados dentro de la Memoria.}
+\begin{longtable}{|p{4cm}|p{10.5cm}|}
+\hline
+\textbf{Término} & \textbf{Definición} \\
+\hline
 
+Atribución de autoría &
+Tarea consistente en determinar el autor más probable de un texto a partir de sus características lingüísticas o estilísticas. En este trabajo se plantea como un problema de clasificación entre autores conocidos. \\
+\hline
+
+Corpus &
+Conjunto organizado de textos utilizado como base para el análisis. En este TFG, el corpus está formado por obras literarias de dominio público de seis autores clásicos. \\
+\hline
+
+Dominio público &
+Situación jurídica de una obra cuyos derechos de explotación han expirado, lo que permite su uso y reutilización respetando la autoría y la integridad de la obra. \\
+\hline
+
+Estilometría &
+Disciplina que estudia el estilo de los textos mediante métodos cuantitativos. Se basa en la idea de que los autores presentan patrones lingüísticos medibles y relativamente estables. \\
+\hline
+
+PLN &
+Procesamiento del Lenguaje Natural. Área de la inteligencia artificial dedicada al análisis, representación y generación automática del lenguaje humano. \\
+\hline
+
+Pipeline &
+Secuencia organizada de pasos de procesamiento y análisis. En este trabajo incluye carga del corpus, preprocesamiento, extracción de rasgos, modelado, evaluación e interpretación. \\
+\hline
+
+Preprocesamiento &
+Conjunto de operaciones aplicadas a los textos antes del análisis, como limpieza, normalización, tokenización y preparación de los datos para los modelos. \\
+\hline
+
+Normalización &
+Proceso de homogeneización formal de los textos, por ejemplo mediante la unificación de comillas, espacios, saltos de línea, guiones o apóstrofes. \\
+\hline
+
+Token &
+Unidad mínima de análisis obtenida al segmentar un texto. Puede corresponder a una palabra, signo de puntuación, número u otro elemento textual. \\
+\hline
+
+Tokenización &
+Proceso mediante el cual un texto se divide en tokens. Es una fase básica para calcular frecuencias, métricas léxicas y rasgos estilométricos. \\
+\hline
+
+Rasgo &
+Variable numérica utilizada para representar una obra en un modelo. Puede ser, por ejemplo, la frecuencia de una palabra funcional, la longitud media de oración o una métrica de puntuación. \\
+\hline
+
+Palabras funcionales &
+Palabras de alta frecuencia y baja carga semántica, como artículos, preposiciones, conjunciones, pronombres o auxiliares. Son importantes en estilometría porque suelen reflejar hábitos de escritura poco conscientes. \\
+\hline
+
+Stopwords &
+Lista de palabras frecuentes que en muchas tareas de PLN se eliminan por considerarse poco informativas. En este trabajo se utilizan como aproximación operativa a las palabras funcionales. \\
+\hline
+
+MFW &
+\textit{Most Frequent Words}. Conjunto de palabras más frecuentes utilizadas como rasgos estilométricos. En este trabajo se emplean principalmente palabras funcionales. \\
+\hline
+
+EDA &
+\textit{Exploratory Data Analysis}. Análisis exploratorio de datos. Fase inicial orientada a describir el corpus, detectar anomalías y comprender sus principales características. \\
+\hline
+
+Método de Mendenhall &
+Método clásico de estilometría basado en comparar distribuciones de longitud de palabra entre textos o autores. \\
+\hline
+
+Método de Kilgariff &
+Método de atribución basado en la comparación de frecuencias léxicas mediante una distancia de chi-cuadrado. \\
+\hline
+
+Delta de Burrows &
+Medida clásica de distancia estilométrica basada en frecuencias estandarizadas de palabras frecuentes, habitualmente palabras funcionales. \\
+\hline
+
+Aprendizaje supervisado &
+Tipo de aprendizaje automático en el que el modelo se entrena con ejemplos etiquetados. En este TFG, la etiqueta corresponde al autor de cada obra. \\
+\hline
+
+Aprendizaje no supervisado &
+Tipo de aprendizaje automático que busca estructuras o agrupamientos en los datos sin utilizar etiquetas durante el ajuste del modelo. \\
+\hline
+
+Clasificación multiclase &
+Tarea de clasificación en la que existen más de dos clases posibles. En este trabajo, cada clase corresponde a un autor. \\
+\hline
+
+Escenario cerrado &
+Planteamiento de atribución de autoría en el que se asume que el autor verdadero del texto está entre los candidatos disponibles. \\
+\hline
+
+Escenario abierto &
+Planteamiento más complejo en el que el autor verdadero puede no estar incluido entre los autores candidatos. \\
+\hline
+
+Train/test &
+División de los datos en un conjunto de entrenamiento y otro de prueba. El primero se usa para ajustar el modelo y el segundo para evaluar su rendimiento sobre textos no vistos. \\
+\hline
+
+Validación cruzada &
+Procedimiento de evaluación en el que el conjunto de entrenamiento se divide en varios pliegues para estimar el rendimiento del modelo de forma más estable. \\
+\hline
+
+Fuga de información &
+Situación en la que información del conjunto de prueba influye directa o indirectamente en el entrenamiento del modelo, generando una estimación demasiado optimista del rendimiento. \\
+\hline
+
+Desbalance de clases &
+Situación en la que algunas clases tienen muchas más muestras que otras. En este trabajo ocurre porque la disponibilidad de obras no es igual para todos los autores. \\
+\hline
+
+Accuracy &
+Proporción de predicciones correctas sobre el total de ejemplos evaluados. \\
+\hline
+
+Precisión &
+Métrica que indica qué proporción de las predicciones asignadas a una clase son correctas. \\
+\hline
+
+Recall &
+Métrica que indica qué proporción de los ejemplos reales de una clase han sido identificados correctamente. También se denomina exhaustividad. \\
+\hline
+
+F1 macro &
+Media del F1 calculado de forma independiente para cada clase. Es especialmente útil cuando las clases están desbalanceadas, ya que da el mismo peso a todos los autores. \\
+\hline
+
+Matriz de confusión &
+Tabla que compara las etiquetas reales con las predichas por el modelo, permitiendo identificar errores y confusiones entre clases. \\
+\hline
+
+Embedding &
+Representación vectorial densa de un texto, fragmento o palabra. Permite medir similitudes en un espacio numérico de alta dimensión. \\
+\hline
+
+Transformer &
+Arquitectura de red neuronal basada en mecanismos de atención, ampliamente utilizada en modelos modernos de lenguaje. \\
+\hline
+
+RoBERTa &
+Modelo de lenguaje basado en la arquitectura Transformer y derivado de BERT. En este trabajo se utiliza para entrenar un clasificador contextual de autoría. \\
+\hline
+
+Fine-tuning &
+Proceso de ajuste de un modelo preentrenado sobre una tarea específica, como la clasificación de autoría. \\
+\hline
+
+SHAP &
+\textit{SHapley Additive exPlanations}. Técnica de explicabilidad que estima la contribución de cada rasgo a una predicción del modelo. \\
+\hline
+
+Explicabilidad global &
+Análisis orientado a comprender el comportamiento general del modelo, por ejemplo identificando los rasgos más importantes en conjunto. \\
+\hline
+
+Explicabilidad local &
+Análisis centrado en una predicción concreta, con el objetivo de entender qué rasgos han contribuido a esa decisión individual. \\
+\hline
+
+PCA &
+\textit{Principal Component Analysis}. Técnica de reducción de dimensionalidad que proyecta los datos en componentes que explican la mayor parte posible de la varianza. \\
+\hline
+
+UMAP &
+\textit{Uniform Manifold Approximation and Projection}. Técnica de reducción de dimensionalidad utilizada para visualizar datos complejos en dos o tres dimensiones. \\
+\hline
+
+Clustering &
+Conjunto de técnicas no supervisadas cuyo objetivo es agrupar observaciones similares entre sí. \\
+\hline
+
+ARI &
+\textit{Adjusted Rand Index}. Métrica que compara un agrupamiento con las etiquetas reales, corrigiendo el acuerdo esperado por azar. \\
+\hline
+
+NMI &
+\textit{Normalized Mutual Information}. Métrica que mide la correspondencia entre clusters y etiquetas reales a partir de la información compartida entre ambas particiones. \\
+\hline
+
+V-measure &
+Métrica de clustering que combina homogeneidad y completitud para evaluar la relación entre grupos y clases reales. \\
+\hline
+
+Silhouette &
+Métrica que evalúa la cohesión interna de los clusters y su separación respecto a otros grupos. Valores más altos indican agrupamientos más definidos. \\
+\hline
+
+Streamlit &
+Biblioteca de Python utilizada para construir aplicaciones web interactivas de análisis de datos. En este trabajo se emplea para desarrollar la herramienta del proyecto. \\
+\hline
+
+Google Colab &
+Entorno de ejecución en la nube utilizado para entrenar el modelo basado en RoBERTa con acceso a recursos computacionales más adecuados que los disponibles localmente. \\
+\hline
+
+Humanidades digitales &
+Campo interdisciplinar que aplica métodos computacionales al estudio de objetos culturales, históricos y literarios. En este trabajo sirve de marco para conectar ciencia de datos y análisis literario. \\
+\hline
+
+Whodunit &
+Subgénero de la narrativa de misterio centrado en descubrir quién ha cometido un crimen. El término procede de la expresión inglesa \textit{Who did it?}. \\
+\hline
+
+Novela de misterio &
+Género narrativo en el que la trama se articula en torno a un enigma, investigación, crimen o situación no resuelta. Constituye el dominio literario principal del corpus. \\
+\hline
+
+Riqueza léxica &
+Conjunto de medidas que describen la variedad del vocabulario de un texto, como la relación entre tipos y tokens o la proporción de palabras únicas. \\
+\hline
+
+TTR &
+\textit{Type-Token Ratio}. Métrica de riqueza léxica calculada como el cociente entre el número de palabras distintas y el número total de tokens. \\
+\hline
+
+MATTR &
+\textit{Moving-Average Type-Token Ratio}. Variante de la TTR calculada sobre ventanas móviles, menos dependiente de la longitud total del texto. \\
+\hline
+
+Hapax legomena &
+Palabras que aparecen una sola vez en un texto o corpus. Su proporción puede utilizarse como indicador de riqueza o dispersión léxica. \\
+\hline
+
+Puntuación z &
+Valor estandarizado que indica cuántas desviaciones típicas se aleja una observación de la media. Se utiliza, por ejemplo, en la Delta de Burrows. \\
+\hline
+
+Distancia coseno &
+Medida de distancia basada en el ángulo entre dos vectores. Es habitual para comparar embeddings y otras representaciones vectoriales de textos. \\
+\hline
+
+Similitud coseno &
+Medida de similitud entre dos vectores basada en el coseno del ángulo que forman. Valores más altos indican mayor proximidad en el espacio vectorial. \\
+\hline
+
+Robustez &
+Grado en que los resultados se mantienen estables ante cambios razonables en la configuración experimental, como la semilla aleatoria, el número de rasgos o la partición de datos. \\
+\hline
+
+Interpretabilidad &
+Capacidad de comprender el comportamiento de un modelo y relacionar sus decisiones con rasgos observables o significativos del problema analizado. \\
+\hline
+
+Colinealidad &
+Presencia de alta correlación entre variables predictoras. Puede dificultar la interpretación de los modelos y motivar la eliminación de rasgos redundantes. \\
+\hline
+
+Semilla aleatoria &
+Valor utilizado para inicializar procesos pseudoaleatorios y hacer reproducibles operaciones como particiones de datos, entrenamiento de modelos o experimentos de robustez. \\
+\hline
+
+API &
+\textit{Application Programming Interface}. Interfaz que permite a un programa comunicarse con otro servicio o sistema. En este trabajo se utiliza, entre otros casos, para generar embeddings mediante OpenAI. \\
+\hline
+
+\caption{Glosario de términos y acrónimos principales utilizados en la memoria.}
+\label{tab:glosario}
+\end{longtable}
 
 \chapter{Apéndices}
 
