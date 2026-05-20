@@ -326,14 +326,33 @@ Comparar varios enfoques y justificar mis elecciones con la bibliografía \\
 \label{tab:gestion_riesgos_tfg}
 \end{longtable}
 }
-
 \section{Breve sumario de productos obtenidos}
 
-\textit{No hay que entrar en detalle: la descripción detallada se hará en el resto de capítulos.}
+Como resultado del desarrollo del trabajo se han obtenido varios productos complementarios. En primer lugar, se ha construido un corpus literario compuesto por obras de dominio público de autores clásicos vinculados a la novela de misterio, acompañado de una tabla de metadatos normalizada que permite documentar la procedencia, autoría, género, fecha, licencia y ruta de cada texto. Este corpus se organiza en distintos niveles de procesamiento, desde los textos en bruto hasta las versiones depuradas, normalizadas y tokenizadas.
+
+En segundo lugar, se ha desarrollado un \textit{pipeline} reproducible en Python, integrado en el paquete \texttt{whodunit\_stylometry}. Este incluye módulos para carga de datos, preprocesamiento, análisis exploratorio, extracción de rasgos estilométricos, métodos clásicos de atribución, modelos supervisados, modelos no supervisados, representaciones mediante \textit{embeddings} y técnicas de explicabilidad. Además, se han elaborado distintos cuadernos Jupyter que documentan los experimentos realizados y permiten revisar paso a paso las decisiones metodológicas adoptadas.
+
+En tercer lugar, se ha implementado una aplicación interactiva en \texttt{Streamlit} que permite ejecutar los principales análisis del proyecto desde una interfaz gráfica. Esta herramienta facilita la exploración del corpus, la aplicación de métodos clásicos, el entrenamiento y evaluación de modelos, el análisis no supervisado, la generación de \textit{embeddings} y la clasificación de textos externos.
+
+Finalmente, se ha generado un conjunto de resultados, visualizaciones y análisis interpretativos que permiten comparar enfoques clásicos y modernos de atribución de autoría. Estos productos constituyen tanto una evidencia empírica para responder a las preguntas de investigación como una base reutilizable para futuros trabajos de estilometría computacional.
 
 \section{Estructura de la memoria}
 
-\textit{Breve explicación de los contenidos de cada capítulo y su relación con el proyecto global.}
+La memoria se organiza en seis capítulos principales, además del glosario, los apéndices y la bibliografía.
+
+El Capítulo 1 introduce el contexto del trabajo, su motivación, objetivos, preguntas de investigación, hipótesis, alcance, metodología general y planificación. También presenta el impacto ético-social, de sostenibilidad y diversidad asociado al proyecto.
+
+El Capítulo 2 recoge el marco teórico y el estado del arte. En él se revisan los conceptos fundamentales de estilometría y atribución de autoría, los métodos clásicos, los enfoques modernos basados en aprendizaje automático, \textit{embeddings} y \textit{transformers}, así como las principales cuestiones relacionadas con evaluación, explicabilidad y herramientas de referencia.
+
+El Capítulo 3 describe la construcción del corpus y la gestión de los datos. Se explican las fuentes utilizadas, los criterios de selección y exclusión, el esquema de metadatos, el control de calidad textual, el análisis exploratorio inicial, el marco ético-legal y el plan de gestión de datos.
+
+El Capítulo 4 presenta los materiales y métodos. En este capítulo se detalla el entorno técnico, el diseño experimental, el preprocesamiento, la extracción de rasgos, las representaciones distribuidas, los modelos de clasificación, los procedimientos de ajuste y validación, la explicabilidad del sistema y la implementación del \textit{pipeline} y de la herramienta interactiva.
+
+El Capítulo 5 expone los resultados obtenidos. Se describe la composición final del corpus, se analiza el rendimiento de los modelos, se comparan enfoques clásicos y modernos, y se estudian tanto la interpretabilidad global como la interpretabilidad local y la robustez de los resultados.
+
+El Capítulo 6 recoge la discusión y las conclusiones. En él se interpretan los principales hallazgos, se revisan las limitaciones del trabajo, se consideran sus implicaciones sociotécnicas, se presentan las conclusiones finales, se proponen líneas de trabajo futuro y se realiza un seguimiento crítico de la planificación.
+
+Por último, los apéndices documentan con mayor detalle los procesos de limpieza manual, normalización, tokenización y uso de la aplicación, con el objetivo de reforzar la reproducibilidad del trabajo y facilitar su reutilización.
 
 \chapter{Marco teórico y estado del arte}
 
