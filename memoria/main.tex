@@ -2091,54 +2091,157 @@ Podemos decir que los análisis de robustez y validez respaldan la conclusión p
 
 \chapter{Discusión y conclusiones}
 
+Este capítulo cierra la memoria retomando los objetivos, preguntas de investigación e hipótesis planteadas al inicio del trabajo, y poniéndolos en relación con los resultados obtenidos. A diferencia del capítulo anterior, centrado en presentar métricas, tablas y evidencias empíricas, aquí se interpretan esos resultados desde una perspectiva más amplia: qué indican sobre la atribución de autoría en el corpus estudiado, qué aportan los distintos enfoques metodológicos y qué límites deben tenerse en cuenta antes de generalizar las conclusiones.
+
+La discusión se organiza en cinco partes. En primer lugar, se revisan los principales hallazgos del trabajo y su relación con las hipótesis iniciales. A continuación, se exponen las limitaciones del estudio, tanto desde el punto de vista del corpus como de los modelos y la evaluación. Después, se consideran algunas implicaciones sociotécnicas del uso de sistemas de atribución de autoría, especialmente en contextos donde las predicciones automáticas podrían interpretarse como evidencia. Finalmente, se presentan las conclusiones generales y se proponen posibles líneas de trabajo futuro.
+
 \section{Discusión de hallazgos}
 
-\textit{Discusión de los resultados en el contexto del proyecto. Es en este apartado donde cobran sentido y en el cual se responden las preguntas de investigación y se muestra como los resultados dan respuesta a los problemas planteados.}
+Los resultados obtenidos muestran que la atribución de autoría en el corpus estudiado es viable mediante distintas aproximaciones computacionales. Tanto los métodos clásicos como los modelos supervisados y el modelo basado en \textit{transformers} fueron capaces de capturar diferencias entre los seis autores analizados. No obstante, los resultados también muestran que no todas las representaciones son igual de eficaces ni igual de interpretables.
+
+El hallazgo más consistente del trabajo es la importancia de las palabras funcionales. Las representaciones basadas en MFW alcanzaron el mejor rendimiento en los modelos supervisados y también ofrecieron buenos resultados en métodos clásicos como Kilgariff y Burrows. Además, el análisis de robustez mostró que un conjunto relativamente reducido de 25 palabras funcionales era suficiente para mantener el mejor rendimiento observado. Este resultado confirma la hipótesis de que las palabras de baja carga temática pueden capturar hábitos de escritura estables y útiles para diferenciar autores.
+
+Las métricas estilométricas agregadas también aportaron información relevante, aunque con menor capacidad discriminativa. Variables como la longitud media de palabra, la estructura de las oraciones, la proporción de palabras funcionales o los patrones de puntuación permitieron obtener un rendimiento alto, pero inferior al de las MFW. Esto sugiere que los rasgos globales describen diferencias estilísticas generales, mientras que las frecuencias de palabras funcionales proporcionan una señal más fina para la clasificación.
+
+La comparación entre enfoques clásicos y modernos muestra que los métodos tradicionales siguen siendo competitivos cuando se aplican sobre rasgos adecuados. Mendenhall, basado únicamente en longitudes de palabra, resultó menos robusto, pero Kilgariff y Burrows obtuvieron resultados muy sólidos. Esto indica que la evolución hacia modelos modernos no invalida los principios de la estilometría clásica; más bien, los integra en un marco experimental más amplio, reproducible y evaluable.
+
+El modelo RoBERTa obtuvo también un rendimiento muy alto a nivel de documento, aunque su comportamiento por fragmento fue más moderado. Esta diferencia es importante: la agregación de múltiples fragmentos permite corregir errores locales y recuperar la señal autoral global de una obra. Sin embargo, el modelo contextual es menos transparente que los enfoques basados en rasgos explícitos, por lo que su utilidad debe valorarse no solo por su rendimiento, sino también por su coste computacional y sus limitaciones de interpretabilidad.
+
+Los \textit{embeddings} de OpenAI ofrecieron una perspectiva complementaria. Las distancias intraautor fueron menores que las distancias interautor y la silueta por autor fue positiva, aunque moderada. Esto sugiere que las representaciones distribuidas capturan cierta estructura autoral, pero también incorporan señales semánticas, temáticas y narrativas. Por tanto, resultan útiles para explorar similitudes entre obras, aunque menos adecuadas como evidencia estilométrica directa si no se acompañan de análisis interpretativo.
+
+En relación con las preguntas de investigación, los resultados permiten afirmar que existen patrones cuantificables capaces de diferenciar a los autores del corpus. Estos patrones aparecen con especial claridad en las palabras funcionales, pero también en rasgos estructurales, léxicos y de puntuación. Asimismo, se observa que los enfoques clásicos y modernos no deben entenderse como alternativas excluyentes, sino como herramientas complementarias: los primeros aportan transparencia y tradición metodológica; los segundos, flexibilidad, capacidad predictiva y nuevas formas de representación.
+
+Finalmente, la explicabilidad del sistema ha resultado fundamental para interpretar los resultados. El análisis de coeficientes y valores SHAP mostró que las predicciones no dependían de nombres de personajes o términos temáticos evidentes, sino de combinaciones de palabras funcionales como \textit{but}, \textit{at}, \textit{to}, \textit{in}, \textit{his} o \textit{the}. Esta observación refuerza la validez estilométrica del enfoque, aunque no elimina por completo la posibilidad de que factores como género, época, narrador o serie literaria influyan en las señales aprendidas por los modelos.
+
+\begin{longtable}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Pregunta} & \textbf{Respuesta a partir de los resultados} \\
+\hline
+PI1 & Existen patrones estilométricos cuantificables que permiten diferenciar a los autores del corpus, especialmente mediante palabras funcionales. \\
+\hline
+PI2 & Los enfoques clásicos basados en frecuencias funcionales siguen siendo competitivos, aunque los modelos supervisados permiten sistematizar y ampliar la comparación. \\
+\hline
+PI3 & Las representaciones modernas, como embeddings y transformers, aportan información útil, pero son menos transparentes y no sustituyen a los rasgos interpretables. \\
+\hline
+PI4 & La explicabilidad resulta necesaria para verificar que las predicciones se apoyan en señales estilométricas plausibles y no solo en rendimiento agregado. \\
+\hline
+\caption{Respuesta sintética a las preguntas de investigación.}
+\label{tab:respuesta-preguntas-investigacion}
+\end{longtable}
 
 \section{Limitaciones}
 
+Aunque los resultados obtenidos son positivos, el trabajo presenta una serie de limitaciones que deben tenerse en cuenta al interpretar las conclusiones. Estas limitaciones afectan principalmente a la composición del corpus, al diseño experimental, a la comparabilidad entre modelos y al alcance real de las predicciones de autoría.
+
+La primera limitación es el tamaño y el desbalance del corpus. Aunque el conjunto final contiene 95 obras, su distribución por autor no es homogénea: Anna Katharine Green cuenta con 34 obras, mientras que Arthur Morrison solo dispone de 6. Esta diferencia procede de la disponibilidad desigual de textos en dominio público y con calidad suficiente para ser incorporados al corpus, no de una decisión arbitraria de muestreo. Sin embargo, tiene consecuencias metodológicas: los autores con más obras pueden quedar mejor representados en el espacio de rasgos, mientras que los autores con menos textos pueden presentar perfiles estilométricos menos estables.
+
+Una segunda limitación está relacionada con la heterogeneidad interna del corpus. Aunque el núcleo del trabajo es la narrativa de misterio, se han incluido también obras de ficción general, ciencia ficción, terror e historia. Esta decisión permite observar hasta qué punto los modelos capturan señales de autor más allá del género, pero también introduce variación temática y formal. En algunos casos, una obra puede alejarse del perfil más característico de su autor no por razones estrictamente estilísticas, sino por pertenecer a otro género, serie narrativa o tipo de composición.
+
+También debe considerarse la diferencia entre novelas y colecciones de relatos. Ambos tipos de obra se han tratado como unidades comparables, pero no presentan exactamente la misma estructura. Una novela larga puede ofrecer un desarrollo estilístico más continuo, mientras que una colección de relatos puede contener mayor variación interna en personajes, situaciones y registros. Esta diferencia puede afectar a métricas de longitud, estructura, vocabulario y fragmentación, especialmente en los modelos que trabajan a nivel de obra o mediante fragmentos.
+
+Otra limitación importante es el escenario cerrado de atribución de autoría. En este trabajo, todos los textos evaluados pertenecen a alguno de los seis autores candidatos. Esta formulación es adecuada para comparar modelos y estudiar el corpus seleccionado, pero resulta más sencilla que un escenario abierto, donde el verdadero autor podría no estar presente entre las clases disponibles. Por tanto, el sistema no debe interpretarse como una herramienta general capaz de atribuir cualquier texto literario, sino como un modelo válido dentro del conjunto de autores y obras considerado.
+
+El tamaño reducido del conjunto de test también condiciona la interpretación de las métricas. En los modelos tabulares, el test equilibrado contiene dos obras por autor, es decir, 12 obras en total. Esto permite una comparación justa entre clases, pero implica que una sola predicción errónea puede modificar de forma importante las puntuaciones. Del mismo modo, los resultados perfectos obtenidos por algunos modelos deben entenderse como evidencia fuerte en esa partición concreta, no como garantía de ausencia de error en cualquier partición futura.
+
+La comparación entre modelos tampoco es completamente homogénea. Los modelos tabulares, los métodos clásicos, los embeddings y el transformer no comparten exactamente el mismo procedimiento de evaluación ni la misma unidad de análisis. Por ejemplo, RoBERTa se entrena y evalúa a nivel de fragmento, con agregación posterior a nivel de documento, mientras que los modelos tabulares trabajan directamente con rasgos agregados por obra. Esta diferencia dificulta una comparación estrictamente directa entre todos los resultados, aunque sí permite una lectura complementaria de sus comportamientos.
+
+Desde el punto de vista de los rasgos, el trabajo se ha centrado principalmente en métricas estilométricas agregadas y palabras funcionales. No se han incorporado de forma sistemática otros rasgos potencialmente útiles, como n-gramas de caracteres, etiquetas morfosintácticas, patrones sintácticos o medidas específicas de diálogo. Esta decisión ha permitido mantener el análisis en un marco interpretable y controlado, pero limita la exploración de otras señales que podrían mejorar el rendimiento o aportar perspectivas estilísticas adicionales.
+
+En relación con los modelos basados en embeddings y transformers, una limitación relevante es su menor interpretabilidad. Aunque se han aplicado técnicas como Captum, BertViz y SHAP en las partes correspondientes del sistema, las representaciones internas de estos modelos no son tan transparentes como las frecuencias de palabras funcionales o los coeficientes de una regresión logística. Por ello, aunque pueden ofrecer buen rendimiento, sus predicciones deben interpretarse con mayor cautela, especialmente si se pretende relacionarlas con rasgos literarios concretos.
+
+También existe una posible influencia de factores externos al estilo individual, como la época, el país, la edición digital, el género o los personajes recurrentes. Aunque se ha realizado una limpieza cuidadosa del corpus y se han evitado metadatos externos en los modelos, no es posible garantizar que todas las señales aprendidas sean puramente autorales. En particular, las obras pertenecientes a una misma serie o protagonizadas por un mismo detective pueden compartir convenciones narrativas que el modelo podría utilizar indirectamente.
+
+Por último, el trabajo se ha desarrollado sobre textos en inglés de autores canónicos y de dominio público. Esto limita la generalización de los resultados a otros idiomas, periodos históricos, registros o contextos textuales. La metodología podría adaptarse a ensayos, artículos científicos, textos periodísticos u otros géneros, pero sería necesario reconstruir el corpus, revisar los criterios de preprocesamiento y validar de nuevo los modelos en cada caso.
+
+En conjunto, estas limitaciones no invalidan los resultados obtenidos, pero sí delimitan su alcance. El sistema desarrollado demuestra que es posible construir un pipeline estilométrico eficaz, reproducible e interpretable para este corpus concreto, pero sus conclusiones deben entenderse dentro de las condiciones metodológicas en las que ha sido diseñado y evaluado.
+
 \section{Implicaciones sociotécnicas}
+
+Aunque este trabajo se centra en un corpus literario de dominio público y en un contexto académico, la atribución automática de autoría tiene implicaciones que van más allá del análisis de novelas de misterio. Los sistemas estilométricos pueden utilizarse en ámbitos como la filología, la historia literaria, la detección de plagio, el análisis forense, la investigación periodística o la moderación de contenidos. Por ello, es importante considerar no solo su rendimiento técnico, sino también las condiciones bajo las cuales sus resultados pueden interpretarse y utilizarse de forma responsable.
+
+Una primera implicación tiene que ver con el estatuto de la predicción. Un modelo de atribución de autoría no demuestra por sí solo quién ha escrito un texto; produce una inferencia probabilística o una medida de similitud dentro de un conjunto definido de candidatos. Esta distinción es fundamental. En un escenario cerrado, como el de este trabajo, el sistema siempre asigna el texto a uno de los autores disponibles, aunque el verdadero autor no estuviera representado. Por tanto, cualquier uso fuera del contexto experimental debe evitar presentar la salida del modelo como una prueba definitiva.
+
+La interpretabilidad resulta especialmente relevante en este tipo de sistemas. Si una herramienta atribuye una obra a un autor, es necesario poder examinar en qué señales se apoya: palabras funcionales, patrones de puntuación, rasgos estructurales, similitudes semánticas o fragmentos concretos del texto. Sin este análisis, existe el riesgo de convertir una predicción en una autoridad opaca. En este trabajo, la prioridad dada a MFW, coeficientes lineales, contribuciones locales y SHAP responde precisamente a la necesidad de que el sistema no solo clasifique, sino que permita revisar críticamente sus decisiones.
+
+También debe tenerse en cuenta el riesgo de sesgo en los datos. Un corpus desbalanceado, limitado a ciertos autores, épocas o géneros, puede generar modelos que funcionen bien en el entorno de prueba pero que sean poco fiables fuera de él. Además, los modelos pueden aprender señales indirectas relacionadas con la edición, el tema, los personajes o las convenciones de una serie narrativa. En contextos sensibles, como una investigación forense o una acusación de plagio, estas limitaciones podrían tener consecuencias importantes si no se comunican adecuadamente.
+
+Otra cuestión sociotécnica es la tensión entre anonimato y atribución. Las técnicas de estilometría pueden servir para estudiar obras anónimas o seudónimas, pero también pueden utilizarse para intentar identificar autores que desean permanecer anónimos. Aunque este TFG trabaja con textos históricos y autores fallecidos, la misma metodología aplicada a textos contemporáneos podría afectar a la privacidad, la seguridad o la libertad de expresión de personas reales. Por ello, cualquier aplicación en contextos actuales debería valorar cuidadosamente la legitimidad del objetivo, el consentimiento, el posible daño y las condiciones de uso.
+
+Desde una perspectiva cultural, la atribución computacional de autoría puede aportar nuevas herramientas a los estudios literarios, pero no sustituye a la interpretación humana. Los modelos permiten detectar patrones difíciles de observar manualmente, comparar grandes volúmenes de texto y generar hipótesis sobre estilo, proximidad o anomalías. Sin embargo, estas hipótesis deben integrarse con conocimiento histórico, filológico y crítico. La literatura no se reduce a vectores, frecuencias o probabilidades; estos elementos son instrumentos de análisis, no sustitutos de la lectura contextual.
+
+El uso de modelos modernos, como embeddings o transformers, introduce además una tensión entre rendimiento y explicabilidad. Estos enfoques pueden capturar relaciones complejas en el texto, pero sus representaciones son menos transparentes que las métricas estilométricas clásicas. Esto plantea una decisión práctica: en aplicaciones donde la explicación sea importante, puede ser preferible un modelo algo más simple pero interpretable antes que un modelo más potente y opaco. En este trabajo, los mejores resultados interpretables proceden de palabras funcionales y modelos lineales, lo que muestra que la transparencia no tiene por qué estar reñida con un rendimiento elevado.
+
+Por último, la construcción del corpus plantea implicaciones legales y éticas. El uso de obras de dominio público permite desarrollar el proyecto respetando el marco de propiedad intelectual y favorece la reproducibilidad del análisis. No obstante, incluso cuando los textos son de dominio público, sigue siendo necesario documentar su procedencia, respetar la autoría y conservar la trazabilidad de las ediciones utilizadas. Esta práctica no solo cumple una función legal, sino también académica: permite que otros investigadores comprendan, revisen o reproduzcan los resultados.
+
+En conjunto, las implicaciones sociotécnicas de este trabajo apuntan a una conclusión prudente: los sistemas de atribución de autoría pueden ser herramientas valiosas para la investigación, siempre que se utilicen como apoyo analítico y no como mecanismos automáticos de decisión. Su valor depende tanto de la calidad del modelo como de la transparencia del corpus, la interpretación crítica de los resultados y la comunicación honesta de sus límites.
 
 \section{Conclusiones finales}
 
-Este capítulo tiene que incluir:
-\begin{itemize}
-	\item Una descripción de las conclusiones del trabajo:
-	\begin{itemize}
-    	\item Una vez se han obtenido los resultados, ¿qué conclusiones se extraen?
-    	\item ¿Estos resultados son los esperados? ¿O han sido sorprendentes? ¿Por qué?
-	\end{itemize}
-	\item Una reflexión crítica sobre el logro de los objetivos planteados inicialmente:
-	\begin{itemize}
-    	\item ¿Hemos logrado todos los objetivos? Si la respuesta es negativa, ¿por qué motivo?
-	\end{itemize}
-	\item Un análisis crítico del seguimiento de la planificación y metodología a lo largo del producto:
-	\begin{itemize}
-    	\item ¿Se ha seguido la planificación?
-    	\item ¿La metodología prevista ha sido suficientemente adecuada?
-    	\item ¿Ha habido que introducir cambios para garantizar el éxito del trabajo? ¿Por qué?
-	\end{itemize}
-	\item De los impactos previstos en \ref{s:etic}, ético-sociales, de sostenibilidad y de diversidad, evaluar/mencionar si se han mitigado (si eran negativos) o si se han conseguido (si eran positivos).
-	\item Si han aparecido impactos no previstos a \ref{s:etic}, evaluar/mencionar cómo se han mitigado (si eran negativos) o que han aportado (si eran positivos).
-	\item Las líneas de trabajo futuro que no se han podido explorar en este trabajo y han quedado pendientes.
-	\item Una descripción de las conclusiones del trabajo: Qué lecciones se han aprendido del trabajo?
-	\item Una reflexión crítica sobre el logro de los objetivos planteados inicialmente: Hemos conseguido todos los objetivos? Si la respuesta es negativa, por qué motivo?
-	\item De los impactos previstos, una evaluación, o al menos, mención, sobre si se han mitigado (si eran negativos) o si se han conseguido (si eran positivos).
-\end{itemize}
+El objetivo principal de este trabajo era desarrollar y evaluar un \textit{pipeline} computacional para la atribución de autoría en un corpus de novela de misterio clásica, combinando técnicas de estilometría tradicional, aprendizaje automático, representaciones distribuidas y métodos de explicabilidad. A partir de los resultados obtenidos, puede concluirse que este objetivo se ha cumplido: se ha construido un corpus documentado y trazable, se ha implementado una herramienta modular de análisis estilométrico y se han comparado distintos enfoques de modelado desde una perspectiva predictiva e interpretativa.
+
+La primera conclusión es que los autores del corpus presentan patrones estilométricos cuantificables. Estos patrones aparecen en distintos niveles del texto, como la distribución de palabras funcionales, las métricas léxicas, la estructura de las oraciones y el uso de la puntuación. Aunque no todos los rasgos tienen la misma capacidad discriminativa, el análisis confirma que existen diferencias medibles entre los autores estudiados y que dichas diferencias pueden utilizarse para tareas de atribución de autoría.
+
+La segunda conclusión es que las palabras funcionales constituyen la representación más eficaz y estable en este trabajo. Los modelos basados en MFW alcanzaron los mejores resultados en clasificación supervisada, mostraron un comportamiento robusto ante distintos valores de \texttt{TOP\_N\_MFW} y ofrecieron agrupamientos coherentes en los análisis no supervisados. Además, su interpretación es compatible con los principios clásicos de la estilometría, ya que se trata de palabras frecuentes, poco temáticas y vinculadas a hábitos lingüísticos relativamente estables.
+
+La tercera conclusión es que los métodos clásicos siguen siendo relevantes. Aunque el test de Mendenhall resultó más limitado, los métodos de Kilgariff y Burrows obtuvieron resultados muy sólidos. Esto muestra que la estilometría tradicional no queda obsoleta frente a los modelos modernos, sino que sigue ofreciendo herramientas útiles, especialmente cuando se apoya en rasgos adecuados. En este sentido, el trabajo confirma que los enfoques clásicos y modernos pueden entenderse como complementarios.
+
+La cuarta conclusión se refiere a los modelos modernos. Los modelos supervisados permiten optimizar la clasificación y comparar representaciones de forma sistemática, mientras que los embeddings y transformers aportan formas más ricas de representar los textos. RoBERTa obtuvo un rendimiento muy alto a nivel documental, y los embeddings mostraron cierta estructura autoral en el espacio de similitud. Sin embargo, estos enfoques presentan menor transparencia y pueden capturar señales temáticas o semánticas además de rasgos estrictamente estilísticos. Por tanto, su uso debe acompañarse de análisis interpretativo y cautela metodológica.
+
+La quinta conclusión es que la explicabilidad resulta imprescindible en atribución de autoría. En este trabajo, el análisis de coeficientes, contribuciones locales y valores SHAP permitió comprobar que las predicciones de los modelos interpretables se apoyaban principalmente en combinaciones de palabras funcionales, y no en términos temáticos evidentes. Esto refuerza la validez del enfoque y permite conectar los resultados cuantitativos con una lectura estilométrica más razonada.
+
+Desde el punto de vista aplicado, el trabajo ha producido una herramienta interactiva que permite cargar un corpus organizado por autores, ejecutar análisis exploratorios, aplicar métodos clásicos, entrenar modelos supervisados y no supervisados, generar embeddings y visualizar resultados. Esta herramienta convierte el trabajo en algo más que una serie de experimentos aislados: proporciona una base reutilizable para futuros estudios de atribución de autoría o análisis estilométrico en otros corpus.
+
+En relación con las hipótesis planteadas al inicio, los resultados apoyan de forma general las principales expectativas del trabajo. Los rasgos estilométricos clásicos permiten diferenciar autores, especialmente cuando se utilizan palabras funcionales; los modelos supervisados mejoran o igualan el rendimiento de los métodos clásicos en varios escenarios; las representaciones distribuidas aportan información útil sobre similitud, aunque menos directamente interpretable; y la explicabilidad contribuye a evaluar la plausibilidad de las predicciones.
+
+En definitiva, este TFG muestra que es posible combinar ciencia de datos, procesamiento del lenguaje natural y análisis literario en un flujo de trabajo reproducible e interpretable. La atribución computacional de autoría no debe entenderse como una sustitución de la lectura crítica o del análisis filológico, sino como una herramienta complementaria capaz de detectar patrones, formular hipótesis y aportar evidencia cuantitativa. Su valor reside precisamente en esa combinación: modelos capaces de clasificar, métodos capaces de explicar y una interpretación humana capaz de situar los resultados en su contexto.
+
+La principal aportación del trabajo es, por tanto, haber demostrado que un enfoque estilométrico interpretable, basado en datos cuidadosamente documentados y en modelos reproducibles, puede ofrecer resultados competitivos frente a técnicas más complejas, manteniendo al mismo tiempo una lectura crítica de sus límites.
 
 \section{Trabajos futuros}
 
-\textit{Las líneas de trabajo futuro que no se han podido explorar en este trabajo y han quedado pendientes.}
+A partir de las limitaciones y resultados del trabajo, pueden plantearse varias líneas de mejora y ampliación. Algunas se orientan a reforzar la validez experimental del sistema, mientras que otras buscan ampliar su alcance hacia nuevos corpus, nuevos tipos de rasgos o nuevas formas de interacción con la herramienta desarrollada.
+
+Una primera línea de trabajo futuro sería ampliar y equilibrar el corpus. Aunque el conjunto actual es suficiente para los objetivos del TFG, el desbalance entre autores limita la estabilidad de algunos resultados. Incorporar más obras de autores poco representados, como Arthur Morrison, permitiría construir perfiles estilométricos más sólidos y reducir la dependencia de unas pocas obras. También sería interesante añadir nuevos autores del mismo periodo o del mismo género para comprobar si los modelos mantienen su rendimiento en un escenario con más clases candidatas.
+
+Otra ampliación relevante consistiría en evaluar el sistema en escenarios de atribución abierta. En este trabajo, todos los textos de prueba pertenecen a alguno de los autores presentes en el corpus. Sin embargo, en situaciones reales puede ocurrir que el verdadero autor no esté entre los candidatos. Para abordar este problema sería necesario incorporar mecanismos de rechazo, umbrales de confianza o modelos capaces de distinguir entre autores conocidos y textos externos al conjunto de referencia.
+
+También sería útil profundizar en el control del género y de la época. El corpus combina obras de misterio con textos de ficción general, ciencia ficción, terror e historia, y cubre un periodo amplio entre mediados del siglo XIX y las primeras décadas del XX. En futuros experimentos se podrían diseñar particiones específicas para separar mejor los efectos de autor, género y periodo histórico. Por ejemplo, podría compararse el rendimiento usando solo obras de misterio frente a un corpus mixto, o entrenar modelos que controlen explícitamente la variable temporal.
+
+Desde el punto de vista de los rasgos, una línea natural sería incorporar n-gramas de caracteres y n-gramas de palabras filtrados. Los n-gramas de caracteres son habituales en atribución de autoría y podrían mejorar el rendimiento al capturar regularidades ortográficas, morfológicas y de puntuación fina. No se han incluido en el flujo principal de este trabajo para mantener el foco en rasgos interpretables y evitar espacios de muy alta dimensionalidad, pero constituyen una extensión clara para futuros experimentos. Del mismo modo, los n-gramas de palabras podrían utilizarse con filtros que reduzcan el peso de nombres propios o expresiones demasiado temáticas.
+
+Otra posible mejora sería incorporar rasgos sintácticos. Las etiquetas morfosintácticas, las secuencias de categorías gramaticales o las dependencias sintácticas podrían aportar información menos dependiente del vocabulario concreto y más vinculada a patrones de construcción de frases. Estos rasgos permitirían analizar diferencias estilísticas a un nivel distinto del léxico, aunque exigirían validar cuidadosamente la calidad de los analizadores sobre textos literarios históricos.
+
+En relación con los modelos, sería interesante realizar una evaluación más amplia de arquitecturas basadas en transformers. El modelo RoBERTa entrenado en este trabajo ofrece resultados prometedores, pero podría compararse con modelos específicos para inglés literario, modelos entrenados con fragmentos de distinta longitud o estrategias de agregación más sofisticadas a nivel de documento. También podría estudiarse si el ajuste fino mejora realmente frente a utilizar embeddings congelados o clasificadores ligeros sobre representaciones preentrenadas.
+
+Otra línea de trabajo consiste en reforzar la evaluación de robustez. Se podrían aplicar validaciones cruzadas repetidas a nivel de obra, pruebas \textit{leave-one-work-out}, experimentos de reducción progresiva del corpus o evaluaciones con autores parcialmente excluidos. Estas pruebas permitirían estimar mejor la estabilidad del sistema y comprobar hasta qué punto los resultados dependen de una partición concreta.
+
+Además, sería conveniente evaluar el sistema sobre corpus externos no utilizados durante el desarrollo. Esta validación permitiría comprobar si los patrones aprendidos se mantienen fuera del conjunto original y ayudaría a distinguir mejor entre rendimiento interno del experimento y capacidad real de generalización.
+
+Desde la perspectiva de explicabilidad, el sistema podría ampliarse con informes automáticos por predicción. Estos informes podrían combinar probabilidad, margen de confianza, rasgos más influyentes, comparación con el segundo autor más probable y advertencias sobre posibles factores de confusión. Esta funcionalidad sería especialmente útil en la aplicación interactiva, donde el usuario podría analizar no solo qué autor predice el modelo, sino por qué lo hace y con qué grado de cautela.
+
+La herramienta Streamlit también ofrece margen de mejora. En futuras versiones podrían incorporarse más visualizaciones interactivas, exportación automática de resultados, comparación entre varios corpus, gestión de experimentos guardados y mensajes de ayuda para interpretar métricas, distancias y gráficos. Asimismo, sería útil añadir pruebas unitarias y de integración más completas para reforzar la mantenibilidad del código y facilitar futuras ampliaciones.
+
+Finalmente, aunque este trabajo se centra en novela de misterio clásica, la metodología puede trasladarse a otros dominios textuales. Podría aplicarse a ensayos, artículos periodísticos, textos científicos, correspondencia, discursos políticos o literatura contemporánea, siempre que se adapten los criterios de corpus, preprocesamiento y evaluación. Esta extensión permitiría comprobar hasta qué punto las conclusiones obtenidas aquí son propias del género y periodo estudiados, o si reflejan principios más generales de la atribución computacional de autoría.
+
+De esta manera, los trabajos futuros apuntan a una misma dirección: ampliar el alcance del sistema sin perder interpretabilidad ni control metodológico. El valor del proyecto no reside únicamente en los resultados obtenidos sobre este corpus, sino en haber construido una base reproducible sobre la que pueden desarrollarse nuevas preguntas estilométricas, literarias y computacionales.
 
 \section{Seguimiento de la planificación}
 
-Un análisis crítico del seguimiento de la planificación y metodología a lo largo del trabajo:
+El desarrollo del trabajo ha seguido, en términos generales, la planificación prevista al inicio del TFG. Las fases principales definidas en el plan inicial se han mantenido: revisión bibliográfica, construcción y limpieza del corpus, análisis exploratorio, implementación de métodos clásicos, desarrollo de modelos supervisados y no supervisados, incorporación de representaciones distribuidas, explicabilidad y construcción de una herramienta interactiva. Esta secuencia ha resultado adecuada, ya que cada fase dependía de la anterior y permitía avanzar de forma progresiva desde la preparación de los datos hasta la interpretación de los resultados.
 
-\begin{itemize}
-    \item Se ha seguido la planificación?
-    \item La metodología prevista ha sido la adecuada?
-    \item Ha habido que introducir cambios para garantizar el éxito del trabajo? ¿Por qué?
-\end{itemize}
+No obstante, como suele ocurrir en proyectos de ciencia de datos, la planificación inicial tuvo que ajustarse a medida que avanzaba el trabajo. La fase de construcción y depuración del corpus requirió más tiempo del previsto, especialmente por la necesidad de revisar manualmente las obras descargadas, eliminar elementos ajenos al texto literario y comprobar la calidad de las versiones digitalizadas. Esta desviación fue importante, pero necesaria: en un proyecto de estilometría, la calidad del corpus condiciona directamente la validez de todos los experimentos posteriores. Reducir esta fase habría supuesto aumentar el riesgo de que los modelos aprendieran artefactos editoriales o de digitalización en lugar de rasgos de autoría.
+
+La metodología prevista ha sido adecuada para los objetivos del trabajo. El planteamiento incremental, empezando por análisis exploratorio y métodos clásicos antes de pasar a modelos supervisados, embeddings y transformers, permitió comprender mejor el corpus antes de aplicar técnicas más complejas. Esta estrategia facilitó detectar problemas, interpretar resultados y evitar que el proyecto se convirtiera únicamente en una comparación de modelos sin justificación estilométrica. Además, el uso de métricas macro, particiones por obra y análisis de robustez fue especialmente importante para trabajar con un corpus desbalanceado.
+
+Durante el desarrollo se introdujeron algunos cambios metodológicos para garantizar la viabilidad y coherencia del trabajo. Uno de ellos fue priorizar las palabras funcionales y las métricas estilométricas interpretables frente a otros rasgos de alta dimensionalidad, como los n-gramas de caracteres. Aunque estos últimos son habituales en atribución de autoría, se decidió no incorporarlos al flujo experimental principal para mantener el foco en representaciones explicables y ajustadas al alcance del TFG. Esta decisión permitió dedicar más esfuerzo a la interpretación de los resultados y a la comparación entre enfoques clásicos, supervisados y modernos.
+
+Otro cambio relevante fue entrenar el modelo basado en \textit{transformers} en Google Colab. Esta decisión respondió a una limitación práctica: el ajuste fino de RoBERTa requiere recursos computacionales superiores a los necesarios para los modelos tabulares. Separar este experimento del flujo principal de la aplicación permitió incorporarlo al trabajo sin comprometer la reproducibilidad del resto del pipeline ni depender de una configuración local con GPU.
+
+También se amplió el peso de la explicabilidad respecto a lo previsto inicialmente. A medida que los modelos obtenían buenos resultados, se hizo evidente que no bastaba con presentar métricas de rendimiento: era necesario analizar qué señales estaban utilizando. Por ello, se incorporaron análisis de coeficientes, contribuciones locales, SHAP y técnicas específicas para el transformer. Esta ampliación mejoró la calidad metodológica del trabajo, ya que permitió conectar el rendimiento predictivo con una interpretación estilométrica más razonada.
+
+En cuanto a la herramienta interactiva, su desarrollo permitió consolidar el código del proyecto y convertir los experimentos en un pipeline más reutilizable. Aunque no todas las funcionalidades experimentales quedaron integradas en la aplicación, especialmente el modelo transformer por sus requisitos computacionales, la herramienta sí recoge los bloques principales del análisis: EDA, métodos clásicos, modelos supervisados, métodos no supervisados y embeddings. Esto cumple el objetivo de obtener un producto funcional más allá de los notebooks.
+
+En conjunto, la planificación se ha seguido de forma satisfactoria, aunque con ajustes razonables derivados de las necesidades reales del proyecto. Los principales cambios no supusieron una desviación del objetivo inicial, sino una adaptación para reforzar la calidad de los datos, la interpretabilidad de los modelos y la viabilidad técnica del sistema. La metodología elegida ha resultado adecuada porque permitió avanzar desde técnicas simples e interpretables hacia enfoques más complejos, manteniendo en todo momento una relación clara entre corpus, rasgos, modelos, evaluación y explicación.
 
 \chapter{Glosario}
 
