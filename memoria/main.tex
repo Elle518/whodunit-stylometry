@@ -1660,14 +1660,434 @@ Con todo ello, la implementación persigue tres objetivos: reproducibilidad, mod
 
 \chapter{Resultados}
 
+Este capítulo presenta los resultados obtenidos tras aplicar el \textit{pipeline} estilométrico descrito en el capítulo anterior sobre el corpus final del proyecto. A diferencia de los capítulos previos, centrados en la construcción de los datos y en la definición metodológica de los experimentos, aquí se analizan los resultados empíricos derivados de la caracterización del corpus, la evaluación de los modelos, la comparación entre enfoques clásicos y modernos, y la interpretación de las predicciones.
+
+La exposición se organiza de forma progresiva. En primer lugar, se resume la composición final del corpus utilizado en los experimentos, prestando atención a su distribución por autor, género, tipo de obra y extensión. A continuación, se presentan los resultados de los modelos de clasificación y se comparan los enfoques basados en rasgos clásicos, representaciones distribuidas y modelos contextuales. Finalmente, se analizan los resultados desde una perspectiva interpretativa, revisando tanto la importancia global de los rasgos como algunos casos concretos de acierto y error.
+
 \section{Descripción final del corpus}
+
+El corpus final utilizado en los experimentos está formado por 95 obras escritas en inglés y atribuidas a seis autores canónicos vinculados, en mayor o menor medida, a la narrativa de misterio de los siglos XIX y primeras décadas del XX: Anna Katharine Green, Arthur Conan Doyle, Arthur Morrison, Gilbert Keith Chesterton, Richard Austin Freeman y Wilkie Collins. En conjunto, los textos normalizados ocupan aproximadamente 42,48 MB y contienen en torno a 8,05 millones de palabras, considerando una segmentación básica por espacios.
+
+Desde el punto de vista cronológico, el corpus cubre un periodo amplio, entre 1852 y 1937. Esta amplitud temporal permite incluir autores y obras pertenecientes a distintas fases de consolidación de la ficción detectivesca y de misterio, aunque también introduce una posible fuente de variación estilística relacionada con la época. Por ello, los resultados deben interpretarse teniendo en cuenta que las diferencias observadas entre autores pueden reflejar tanto rasgos individuales como convenciones históricas, editoriales o genéricas.
+
+\begin{longtable}{|p{4.2cm}|r|r|r|p{2.5cm}|}
+\hline
+\textbf{Autor} & \textbf{Obras} & \textbf{\%} & \textbf{Palabras aprox.} & \textbf{Periodo} \\
+\hline
+Anna Katharine Green & 34 & 35,8 & 2\,620\,127 & 1878--1923 \\
+\hline
+Gilbert Keith Chesterton & 18 & 18,9 & 931\,031 & 1904--1937 \\
+\hline
+Richard Austin Freeman & 15 & 15,8 & 1\,321\,726 & 1905--1928 \\
+\hline
+Arthur Conan Doyle & 12 & 12,6 & 932\,763 & 1887--1921 \\
+\hline
+Wilkie Collins & 10 & 10,5 & 1\,876\,214 & 1852--1878 \\
+\hline
+Arthur Morrison & 6 & 6,3 & 369\,498 & 1894--1903 \\
+\hline
+\caption{Distribución final del corpus por autor.}
+\label{tab:resultados-corpus-autores}
+\end{longtable}
+
+Como se observa en la Tabla~\ref{tab:resultados-corpus-autores}, el corpus presenta un desbalance claro entre autores. Anna Katharine Green es la autora con mayor representación, con 34 obras, mientras que Arthur Morrison cuenta únicamente con 6. Esta diferencia no responde a una decisión arbitraria de muestreo, sino a la disponibilidad desigual de textos adecuados, en dominio público y con calidad suficiente para su incorporación al corpus. El desbalance también se observa en el volumen textual: Green aporta aproximadamente 2,62 millones de palabras, frente a las 369\,498 de Morrison. En cambio, Wilkie Collins, aunque solo cuenta con 10 obras, aporta un volumen elevado de palabras debido a la extensión de sus novelas.
+
+Esta distribución tiene consecuencias directas para la interpretación de los modelos. Los autores con más obras y mayor volumen textual pueden quedar mejor representados durante el entrenamiento, mientras que los autores con menos textos pueden ofrecer perfiles estilométricos más inestables. Por esta razón, en la evaluación posterior se emplean particiones equilibradas por autor, métricas macro y, cuando procede, modelos con ponderación de clases. De este modo, se evita que el rendimiento global quede dominado por las clases mayoritarias.
+
+En cuanto al tipo de obra, el corpus incluye 64 novelas y 31 colecciones de relatos. Esta combinación resulta relevante porque la estructura narrativa, la longitud media, la organización en capítulos o relatos y el ritmo del texto pueden variar entre ambos formatos. Por ejemplo, una colección de relatos puede contener cambios internos de situación, personajes o tono más frecuentes que una novela extensa, lo que puede afectar a métricas estructurales y léxicas.
+
+Desde el punto de vista genérico, el conjunto está dominado por la novela de misterio, con 79 obras etiquetadas como \textit{mystery}. No obstante, también se incluyen 12 obras de ficción general, 2 de ciencia ficción, 1 de terror y 1 de ficción histórica. Esta composición permite mantener el foco principal en la narrativa de misterio, pero introduce cierta diversidad genérica que resulta útil para comprobar si los modelos capturan únicamente convenciones temáticas del género o si son capaces de identificar señales más estables de autoría.
+
+En relación con la procedencia, 61 obras corresponden a autores británicos y 34 a autores estadounidenses. Las fuentes digitales utilizadas son principalmente \textit{Project Gutenberg USA}, con 77 textos, y \textit{Project Gutenberg Australia}, con 18. Todas las obras han sido sometidas al proceso de limpieza, normalización y tokenización descrito en los capítulos anteriores, por lo que los experimentos se realizan sobre una versión homogénea y trazable del corpus.
+
+Esta descripción final del corpus muestra un conjunto suficientemente amplio para realizar una comparación estilométrica entre autores, pero también condicionado por limitaciones propias de los estudios literarios con obras de dominio público: desbalance entre clases, diferencias de extensión, combinación de novelas y relatos, y cierta heterogeneidad genérica y temporal. Estas características no invalidan el análisis, pero sí justifican las decisiones metodológicas adoptadas en la evaluación y obligan a interpretar los resultados con cautela.
+
 \section{Rendimiento de modelos}
+
+En esta sección se presentan los resultados obtenidos por los modelos de clasificación supervisada sobre la tarea de atribución de autoría. La métrica principal utilizada es \textit{F1 macro}, ya que permite evaluar el rendimiento medio por autor dando el mismo peso a todas las clases, independientemente del número de obras disponibles para cada una. Esta decisión es especialmente importante en este corpus, donde existe un desbalance claro entre autores.
+
+Los primeros experimentos comparan tres representaciones tabulares: métricas estilométricas agregadas, frecuencias de palabras funcionales más frecuentes (MFW) y una combinación de ambas. En todos los casos, la evaluación se realiza sobre un conjunto de test equilibrado con dos obras por autor, es decir, 12 obras en total. La Tabla~\ref{tab:rendimiento-modelos-supervisados} resume los resultados principales.
+
+\begin{longtable}{|p{3.6cm}|p{3.2cm}|r|r|r|r|}
+\hline
+\textbf{Representación} & \textbf{Mejor modelo} & \textbf{Rasgos} & \textbf{CV F1 macro} & \textbf{Test accuracy} & \textbf{Test F1 macro} \\
+\hline
+Métricas estilométricas & Regresión logística & 25 & 0,943 & 0,917 & 0,911 \\
+\hline
+MFW & Linear SVC & 50 & 1,000 & 1,000 & 1,000 \\
+\hline
+Métricas + MFW & Linear SVC & 75 & 1,000 & 1,000 & 1,000 \\
+\hline
+\caption{Rendimiento de los modelos supervisados sobre el conjunto de test equilibrado.}
+\label{tab:rendimiento-modelos-supervisados}
+\end{longtable}
+
+Para completar la evaluación global, la Tabla~\ref{tab:rendimiento-base-por-autor} muestra el informe de clasificación por autor del modelo basado únicamente en métricas estilométricas agregadas. Este desglose permite observar que el rendimiento no es completamente homogéneo entre clases, aunque la puntuación global sea alta.
+
+\begin{longtable}{|p{4.5cm}|r|r|r|r|}
+\hline
+\textbf{Autor} & \textbf{Precisión} & \textbf{Recall} & \textbf{F1} & \textbf{Soporte} \\
+\hline
+Anna Katharine Green & 0,67 & 1,00 & 0,80 & 2 \\
+\hline
+Arthur Conan Doyle & 1,00 & 1,00 & 1,00 & 2 \\
+\hline
+Arthur Morrison & 1,00 & 1,00 & 1,00 & 2 \\
+\hline
+Gilbert Keith Chesterton & 1,00 & 1,00 & 1,00 & 2 \\
+\hline
+Richard Austin Freeman & 1,00 & 0,50 & 0,67 & 2 \\
+\hline
+Wilkie Collins & 1,00 & 1,00 & 1,00 & 2 \\
+\hline
+\caption{Rendimiento por autor del modelo con métricas estilométricas agregadas.}
+\label{tab:rendimiento-base-por-autor}
+\end{longtable}
+
+El desglose por autor muestra que el único fallo del modelo de métricas estilométricas agregadas afecta a Richard Austin Freeman, cuya exhaustividad desciende a 0,50. La precisión de Anna Katharine Green también baja a 0,67 porque recibe una obra atribuida erróneamente a esta clase. En cambio, el resto de autores obtiene valores perfectos en esta partición. Este resultado indica que las métricas agregadas son útiles, pero menos finas que las frecuencias de palabras funcionales para distinguir ciertos perfiles autorales.
+
+Los resultados muestran que las representaciones basadas en palabras funcionales son las más eficaces en este experimento. Tanto el modelo basado únicamente en MFW como el modelo combinado alcanzan una puntuación perfecta en el conjunto de test, con \textit{accuracy} y \textit{F1 macro} iguales a 1,000. Esto indica que, para la partición evaluada, las frecuencias relativas de palabras funcionales contienen una señal estilométrica suficiente para separar correctamente a los seis autores.
+
+No obstante, estos resultados perfectos deben interpretarse dentro del diseño experimental concreto. El conjunto de test es equilibrado, cerrado y de tamaño reducido, con dos obras por autor en los modelos tabulares. Por tanto, una puntuación de 1,000 no implica que el sistema esté libre de error en cualquier corpus o escenario de atribución, sino que en esta partición concreta las señales estilométricas utilizadas han sido suficientes para separar correctamente las obras evaluadas. Esta cautela es especialmente importante al comparar modelos entrenados y evaluados bajo particiones distintas, como ocurre con el modelo RoBERTa.
+
+El modelo basado solo en métricas estilométricas agregadas obtiene también un rendimiento alto, con una \textit{accuracy} de 0,917 y una \textit{F1 macro} de 0,911. Sin embargo, queda por debajo de los modelos basados en MFW. El único error observado en esta configuración afecta a Richard Austin Freeman, cuya exhaustividad baja a 0,50. Este resultado sugiere que las métricas globales de longitud, riqueza léxica, estructura y puntuación capturan diferencias relevantes entre autores, pero pueden no ser suficientemente específicas para distinguir todos los casos con la misma precisión que las palabras funcionales.
+
+Como experimento adicional, se evaluó un modelo XGBoost utilizando únicamente rasgos estilométricos agregados. Aunque se trata de un clasificador más flexible y capaz de modelar relaciones no lineales, su rendimiento fue inferior al de la regresión logística sobre rasgos estilométricos: obtuvo una \textit{accuracy} de 0,750 y una \textit{F1 macro} de 0,750 en test. Este resultado indica que, en este corpus y con este conjunto de variables, un modelo más complejo no necesariamente mejora el rendimiento. Dado el tamaño reducido del conjunto de entrenamiento, los modelos lineales parecen aprovechar mejor las señales disponibles sin introducir tanta varianza.
+
+\begin{longtable}{|p{4.2cm}|p{3.2cm}|r|r|r|}
+\hline
+\textbf{Modelo} & \textbf{Representación} & \textbf{Rasgos} & \textbf{Test accuracy} & \textbf{Test F1 macro} \\
+\hline
+Regresión logística & Métricas estilométricas & 25 & 0,917 & 0,911 \\
+\hline
+XGBoost & Métricas estilométricas & 32 & 0,750 & 0,750 \\
+\hline
+Linear SVC & MFW & 50 & 1,000 & 1,000 \\
+\hline
+Linear SVC & Métricas + MFW & 75 & 1,000 & 1,000 \\
+\hline
+\caption{Comparación global de los principales modelos tabulares evaluados.}
+\label{tab:comparacion-modelos-tabulares}
+\end{longtable}
+
+Además de los modelos tabulares, se entrenó un modelo basado en \textit{transformers}, concretamente RoBERTa, en Google Colab. En este caso, el procedimiento de evaluación difiere del flujo tabular, ya que las obras se dividen en fragmentos y el modelo genera primero predicciones a nivel de fragmento. Posteriormente, estas predicciones se agregan para obtener una atribución final a nivel de documento.
+
+A nivel de fragmento, el modelo RoBERTa obtuvo una \textit{accuracy} de 0,8645 y una \textit{F1 macro} de 0,8140 sobre 6\,519 fragmentos de test. A nivel de documento, tras agregar las predicciones de los fragmentos, el rendimiento alcanzó una \textit{accuracy} y una \textit{F1 macro} de 1,000 sobre 14 obras de test.
+
+\begin{longtable}{|p{4cm}|r|r|r|r|}
+\hline
+\textbf{Nivel de evaluación} & \textbf{Muestras} & \textbf{Accuracy} & \textbf{F1 macro} & \textbf{F1 weighted} \\
+\hline
+Fragmento & 6\,519 & 0,8645 & 0,8140 & 0,8638 \\
+\hline
+Documento & 14 & 1,0000 & 1,0000 & 1,0000 \\
+\hline
+\caption{Rendimiento del modelo RoBERTa en el conjunto de test.}
+\label{tab:rendimiento-transformer}
+\end{longtable}
+
+La diferencia entre la evaluación por fragmento y por documento es importante. A nivel de fragmento, el modelo comete errores apreciables, especialmente en autores con menos representación o con fragmentos estilísticamente más ambiguos. Sin embargo, al agregar múltiples fragmentos de una misma obra, las predicciones erróneas individuales pueden quedar compensadas por la tendencia mayoritaria del documento, lo que explica la mejora observada a nivel de obra.
+
+Así, los resultados muestran que la atribución de autoría en este corpus es viable con distintos enfoques, pero también que las representaciones no aportan el mismo tipo de información. Las MFW ofrecen el mejor equilibrio entre rendimiento e interpretabilidad, los rasgos estilométricos agregados proporcionan una línea base sólida pero algo menos precisa, y el modelo \textit{transformer} alcanza un rendimiento muy alto a nivel documental, aunque con menor transparencia y con un procedimiento de evaluación no directamente comparable al de los modelos tabulares.
+
+
 \section{Comparativa: enfoques clásicos vs. modernos}
+
+La comparación entre enfoques clásicos y modernos permite valorar no solo qué métodos obtienen mejor rendimiento, sino también qué tipo de evidencia estilométrica aporta cada uno. En este trabajo se consideran como enfoques clásicos los métodos basados en distancias estilométricas explícitas, como Mendenhall, Kilgariff y Burrows. Como enfoques modernos se incluyen los modelos supervisados entrenados con rasgos tabulares, las representaciones distribuidas mediante \textit{embeddings} y el modelo contextual basado en RoBERTa.
+
+Conviene señalar que las métricas no son completamente equivalentes entre todos los enfoques. Los métodos clásicos se evaluaron sobre un conjunto controlado de 12 obras, con dos textos por autor, mientras que los modelos supervisados se evaluaron sobre una partición de test equilibrada también formada por 12 obras. El modelo RoBERTa, en cambio, se evaluó sobre una partición específica de 14 documentos y 6\,519 fragmentos. Por tanto, la comparación debe interpretarse como una lectura conjunta de rendimiento y comportamiento, no como una competición estrictamente homogénea entre sistemas.
+
+\begin{longtable}{|p{3.7cm}|p{3.9cm}|p{3.2cm}|r|}
+\hline
+\textbf{Enfoque} & \textbf{Método} & \textbf{Representación principal} & \textbf{Rendimiento} \\
+\hline
+Clásico & Mendenhall & Longitud de palabras & 75,0 \% accuracy \\
+\hline
+Clásico & Kilgariff & Frecuencias léxicas / funcionales & 100,0 \% accuracy \\
+\hline
+Clásico & Delta de Burrows & MFW estandarizadas & 100,0 \% accuracy \\
+\hline
+Supervisado tabular & Regresión logística & Métricas estilométricas & 0,911 F1 macro \\
+\hline
+Supervisado tabular & Linear SVC & MFW & 1,000 F1 macro \\
+\hline
+Supervisado tabular & Linear SVC & Métricas + MFW & 1,000 F1 macro \\
+\hline
+Supervisado tabular & XGBoost & Métricas estilométricas & 0,750 F1 macro \\
+\hline
+Transformer & RoBERTa & Fragmentos contextualizados & 0,814 F1 macro por fragmento \\
+\hline
+Transformer & RoBERTa & Agregación por documento & 1,000 F1 macro por documento \\
+\hline
+\caption{Comparación general entre enfoques clásicos y modernos.}
+\label{tab:comparativa-clasicos-modernos}
+\end{longtable}
+
+El resultado más débil entre los métodos clásicos corresponde al test de Mendenhall, que alcanza un 75 \% de acierto. Este comportamiento es coherente con las limitaciones conocidas del método: la distribución de longitud de palabra puede reflejar diferencias generales de estilo, pero es una señal relativamente gruesa y sensible a factores como género, época, edición o composición del corpus. En los casos analizados, Mendenhall confunde algunas obras de Gilbert Keith Chesterton, Richard Austin Freeman y Arthur Morrison, lo que sugiere que la longitud de palabra por sí sola no basta para separar de forma estable a todos los autores.
+
+Los métodos de Kilgariff y Burrows obtienen, en cambio, un rendimiento perfecto en el conjunto evaluado. Ambos se apoyan en frecuencias de palabras comunes o funcionales, una familia de rasgos mucho más informativa para la atribución de autoría. Este resultado conecta directamente con los modelos supervisados basados en MFW, que también alcanzan una \textit{F1 macro} de 1,000. La coincidencia entre métodos clásicos y modelos supervisados refuerza la idea de que las palabras funcionales constituyen una señal estilométrica especialmente robusta en este corpus.
+
+La diferencia principal entre Kilgariff, Burrows y los modelos supervisados no está tanto en el rendimiento como en la forma de utilizar los rasgos. Los métodos clásicos calculan distancias explícitas entre un texto y los perfiles de autor, lo que facilita una interpretación directa de la atribución. Los modelos supervisados, por su parte, aprenden fronteras de decisión a partir de los mismos rasgos y permiten combinar distintas familias de variables. En este trabajo, la combinación de métricas estilométricas y MFW no mejora el resultado obtenido solo con MFW, pero confirma que las palabras funcionales ya contienen una señal suficientemente discriminativa para la partición evaluada.
+
+Los rasgos estilométricos agregados ofrecen un rendimiento inferior al de las MFW, aunque siguen siendo útiles. La regresión logística con métricas estructurales, léxicas y de puntuación obtiene una \textit{F1 macro} de 0,911, lo que indica que variables como la longitud de las oraciones, la riqueza léxica o el uso de signos de puntuación capturan diferencias relevantes entre autores. Sin embargo, estas métricas resumen propiedades globales de cada obra y pueden perder matices que sí aparecen en la distribución detallada de palabras funcionales.
+
+El experimento con XGBoost muestra que una mayor complejidad del modelo no garantiza mejores resultados. Aunque XGBoost puede capturar relaciones no lineales, su rendimiento con rasgos estilométricos agregados fue inferior al de la regresión logística. Este resultado sugiere que, con un número limitado de obras, los modelos más complejos pueden ser menos estables que los modelos lineales, especialmente cuando el espacio de rasgos no es muy amplio.
+
+Las representaciones distribuidas mediante \textit{embeddings} aportan una perspectiva diferente. No se utilizaron principalmente como clasificador cerrado, sino como herramienta para analizar similitudes entre obras y autores. En este espacio, la silueta por autor con distancia coseno fue positiva, aunque moderada, con un valor de 0,2436. Esto indica que existe cierta agrupación por autor, pero también solapamiento entre obras. Además, las distancias intraautor fueron sistemáticamente menores que las distancias interautor, lo que sugiere que los embeddings capturan alguna forma de proximidad autoral, aunque mezclada con información semántica, temática y narrativa.
+
+El análisis de cohesión por autor aporta una lectura más detallada de este resultado. En todos los autores, la distancia media entre obras del mismo autor fue menor que la distancia media respecto a obras de otros autores, lo que indica que el espacio de embeddings conserva cierta estructura autoral. Arthur Morrison, Anna Katharine Green, Wilkie Collins y Richard Austin Freeman presentaron márgenes de separación relativamente similares, mientras que Arthur Conan Doyle mostró el margen más bajo. Este último caso puede explicarse por la mayor heterogeneidad genérica de su subcorpus, que incluye textos de misterio, ciencia ficción, terror e historia. Así, los embeddings parecen capturar simultáneamente señales de autoría y de contenido, lo que los hace útiles para explorar proximidades literarias, pero menos transparentes como prueba estrictamente estilométrica.
+
+En el caso del modelo RoBERTa, el rendimiento a nivel de documento fue perfecto, pero el análisis por fragmento muestra una imagen más matizada. La \textit{F1 macro} por fragmento fue de 0,814, lo que indica que no todos los fragmentos breves contienen una señal de autoría igualmente clara. La agregación por documento corrige parte de esta variabilidad: aunque algunos fragmentos puedan clasificarse erróneamente, la tendencia mayoritaria de la obra permite recuperar la autoría correcta. Este comportamiento es esperable en textos largos, donde la señal estilística se acumula a lo largo de múltiples fragmentos.
+
+En definitiva, la comparación muestra que los enfoques clásicos siguen siendo competitivos cuando se apoyan en rasgos adecuados, especialmente palabras funcionales. Los métodos modernos no sustituyen necesariamente a los clásicos, sino que amplían el análisis: los modelos supervisados permiten optimizar la clasificación, los embeddings permiten explorar relaciones de similitud más amplias y los transformers ofrecen una referencia contextual potente. Sin embargo, los mejores resultados interpretables siguen procediendo de representaciones basadas en MFW, lo que confirma la vigencia de los principios estilométricos clásicos dentro de un pipeline computacional moderno.
+
 \section{Interpretabilidad global}
+
+La interpretabilidad global se ha centrado en el modelo supervisado basado en MFW, ya que fue una de las configuraciones con mejor rendimiento y, al mismo tiempo, una de las más adecuadas para el análisis estilométrico. En concreto, se utilizó una regresión logística multiclase entrenada con las 25 palabras funcionales más frecuentes seleccionadas a partir del conjunto de entrenamiento. Esta configuración alcanzó una \textit{F1 macro} de 1,000 en el conjunto de test y permite examinar directamente qué rasgos desplazan la decisión del modelo hacia cada autor.
+
+El análisis se realizó a partir de dos aproximaciones complementarias: los coeficientes del modelo lineal y los valores SHAP. Los coeficientes permiten identificar qué palabras funcionales están asociadas positiva o negativamente con cada autor en el espacio transformado del modelo. SHAP, por su parte, permite estimar la importancia media de cada rasgo sobre las predicciones observadas, teniendo en cuenta su contribución efectiva en las instancias evaluadas.
+
+\subsection*{Coeficientes del modelo lineal}
+
+En una regresión logística multiclase, cada autor dispone de un vector de coeficientes. Un coeficiente positivo indica que, cuando aumenta el valor transformado de ese rasgo, la puntuación asociada a ese autor tiende a aumentar. Un coeficiente negativo indica el efecto contrario. Por tanto, los coeficientes no deben interpretarse como frecuencias absolutas de uso, sino como señales discriminativas dentro del modelo.
+
+La Tabla~\ref{tab:coeficientes-globales-autores} resume algunos de los rasgos con mayor peso positivo y negativo para cada autor.
+
+\begin{longtable}{|p{4cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{Autor} & \textbf{Rasgos que favorecen la clase} & \textbf{Rasgos que alejan de la clase} \\
+\hline
+Anna Katharine Green &
+\textit{not}, \textit{but}, \textit{she}, \textit{her}, \textit{to} &
+\textit{the}, \textit{it}, \textit{is}, \textit{at}, \textit{that} \\
+\hline
+Arthur Conan Doyle &
+\textit{his}, \textit{have}, \textit{it}, \textit{my}, \textit{is} &
+\textit{but}, \textit{as}, \textit{to}, \textit{not}, \textit{she} \\
+\hline
+Arthur Morrison &
+\textit{at}, \textit{as}, \textit{and}, \textit{in}, \textit{but} &
+\textit{with}, \textit{to}, \textit{my}, \textit{that}, \textit{her} \\
+\hline
+Gilbert Keith Chesterton &
+\textit{a}, \textit{but}, \textit{with}, \textit{of}, \textit{in} &
+\textit{at}, \textit{to}, \textit{have}, \textit{my}, \textit{for} \\
+\hline
+Richard Austin Freeman &
+\textit{the}, \textit{to}, \textit{that}, \textit{is}, \textit{i} &
+\textit{in}, \textit{his}, \textit{as}, \textit{had}, \textit{for} \\
+\hline
+Wilkie Collins &
+\textit{to}, \textit{in}, \textit{my}, \textit{at}, \textit{her} &
+\textit{but}, \textit{a}, \textit{that}, \textit{with}, \textit{he} \\
+\hline
+\caption{Principales rasgos positivos y negativos según los coeficientes de la regresión logística.}
+\label{tab:coeficientes-globales-autores}
+\end{longtable}
+
+Los resultados muestran que el modelo no se apoya en una única palabra funcional dominante, sino en combinaciones distintas para cada autor. Por ejemplo, en Arthur Conan Doyle destacan positivamente \textit{his}, \textit{have} e \textit{it}, mientras que en Arthur Morrison aparecen como señales positivas \textit{at}, \textit{as} y \textit{and}. En Richard Austin Freeman, el rasgo \textit{the} presenta un coeficiente positivo elevado, mientras que \textit{in} actúa como una señal claramente negativa para su clase.
+
+Desde una perspectiva estilométrica, esto es relevante porque las palabras funcionales no remiten de forma directa al contenido de las obras, sino a patrones gramaticales y discursivos. El modelo, por tanto, parece estar capturando diferencias en el uso relativo de conectores, pronombres, preposiciones y auxiliares, más que nombres de personajes, escenarios o elementos temáticos.
+
+\subsection*{Importancia global de los rasgos}
+
+Además del análisis por autor, se calculó la importancia global de cada rasgo considerando la magnitud media de sus coeficientes. Las palabras con mayor importancia media fueron \textit{but}, \textit{at}, \textit{to}, \textit{in}, \textit{his}, \textit{with} y \textit{the}. Estos rasgos son especialmente discriminativos porque sus coeficientes varían de forma notable entre autores.
+
+\begin{longtable}{|p{3cm}|r|p{4.5cm}|p{4.5cm}|}
+\hline
+\textbf{Rasgo} & \textbf{Importancia media} & \textbf{Autor con mayor asociación positiva} & \textbf{Autor con mayor asociación negativa} \\
+\hline
+\textit{but} & 0,524 & Anna Katharine Green & Wilkie Collins \\
+\hline
+\textit{at} & 0,480 & Arthur Morrison & Gilbert Keith Chesterton \\
+\hline
+\textit{to} & 0,473 & Wilkie Collins & Gilbert Keith Chesterton \\
+\hline
+\textit{in} & 0,420 & Wilkie Collins & Richard Austin Freeman \\
+\hline
+\textit{his} & 0,396 & Arthur Conan Doyle & Richard Austin Freeman \\
+\hline
+\textit{with} & 0,365 & Gilbert Keith Chesterton & Arthur Morrison \\
+\hline
+\textit{the} & 0,347 & Richard Austin Freeman & Anna Katharine Green \\
+\hline
+\caption{Rasgos más importantes según la magnitud media de los coeficientes.}
+\label{tab:importancia-global-coeficientes}
+\end{longtable}
+
+El análisis de permutación confirmó parcialmente esta lectura. Al alterar los valores de cada rasgo y medir la caída de rendimiento, las variables con mayor impacto fueron \textit{in}, \textit{but}, \textit{at}, \textit{have}, \textit{of}, \textit{the} y \textit{to}. Esto sugiere que las diferencias más útiles para la clasificación se concentran en un subconjunto reducido de palabras funcionales, aunque el modelo utilice el perfil completo de 25 rasgos.
+
+\subsection*{Importancia global mediante SHAP}
+
+El análisis con SHAP ofrece una segunda lectura de la importancia global. En lugar de observar únicamente los coeficientes aprendidos, SHAP estima cuánto contribuye cada rasgo a las predicciones del modelo en las instancias evaluadas. La Tabla~\ref{tab:shap-global-autores} muestra los rasgos con mayor valor absoluto medio de SHAP por autor.
+
+\begin{longtable}{|p{4cm}|p{9.5cm}|}
+\hline
+\textbf{Autor} & \textbf{Rasgos más influyentes según SHAP} \\
+\hline
+Anna Katharine Green & \textit{but}, \textit{not}, \textit{of}, \textit{the}, \textit{it} \\
+\hline
+Arthur Conan Doyle & \textit{but}, \textit{have}, \textit{it}, \textit{his}, \textit{my} \\
+\hline
+Arthur Morrison & \textit{at}, \textit{with}, \textit{as}, \textit{my}, \textit{of} \\
+\hline
+Gilbert Keith Chesterton & \textit{at}, \textit{have}, \textit{but}, \textit{my}, \textit{of} \\
+\hline
+Richard Austin Freeman & \textit{in}, \textit{the}, \textit{his}, \textit{to}, \textit{that} \\
+\hline
+Wilkie Collins & \textit{but}, \textit{in}, \textit{a}, \textit{my}, \textit{to} \\
+\hline
+\caption{Rasgos más influyentes por autor según valores SHAP medios absolutos.}
+\label{tab:shap-global-autores}
+\end{longtable}
+
+La comparación entre coeficientes y SHAP muestra una coherencia general: rasgos como \textit{but}, \textit{at}, \textit{in}, \textit{to}, \textit{his} y \textit{the} aparecen repetidamente como variables relevantes. No obstante, SHAP permite matizar la interpretación, ya que una variable con coeficiente alto puede no tener siempre un impacto elevado si sus valores apenas varían en las obras evaluadas. Por ello, la combinación de ambos enfoques resulta más informativa que el uso aislado de una sola técnica.
+
+La interpretabilidad global confirma que el modelo no basa sus decisiones en elementos temáticos evidentes, sino en patrones de distribución de palabras funcionales. Esto refuerza la validez estilométrica del enfoque, aunque no elimina por completo la necesidad de cautela: las palabras funcionales también pueden verse influidas por el tipo de narrador, el género, la época o la proporción de diálogo. Por tanto, los resultados deben interpretarse como evidencias cuantitativas de diferencias estilísticas, no como descripciones literarias exhaustivas de cada autor.
+
 \section{Interpretabilidad local y análisis de casos}
+
+La interpretabilidad local permite analizar predicciones concretas y observar qué rasgos han contribuido a una decisión individual del modelo. Mientras que la interpretabilidad global resume patrones generales, el análisis local resulta especialmente útil para estudiar casos seguros, casos ambiguos y errores de clasificación. En este trabajo, el análisis se ha centrado principalmente en el modelo basado en MFW y regresión logística, complementado con la revisión de errores en métodos clásicos y modelos menos robustos.
+
+En el conjunto de test del modelo MFW no se observaron errores: las 12 obras evaluadas fueron atribuidas correctamente. No obstante, las predicciones no fueron igualmente seguras en todos los casos. El margen entre la probabilidad asignada al autor predicho y la segunda clase más probable permite distinguir entre aciertos muy claros y aciertos más ambiguos.
+
+\begin{longtable}{|p{4.5cm}|p{4cm}|r|r|r|}
+\hline
+\textbf{Obra} & \textbf{Autor predicho} & \textbf{Prob. pred.} & \textbf{Prob. segunda} & \textbf{Margen} \\
+\hline
+\textit{akg-to\_the\_minute} & Anna Katharine Green & 0,990 & 0,006 & 0,983 \\
+\hline
+\textit{akg-three\_thousand\_dollars} & Anna Katharine Green & 0,982 & 0,006 & 0,975 \\
+\hline
+\textit{gkc-four\_faultless\_felons} & Gilbert Keith Chesterton & 0,976 & 0,008 & 0,968 \\
+\hline
+\textit{am-chronicles\_of\_martin\_hewitt} & Arthur Morrison & 0,971 & 0,010 & 0,962 \\
+\hline
+\textit{wc-the\_law\_and\_the\_lady} & Wilkie Collins & 0,971 & 0,018 & 0,953 \\
+\hline
+\caption{Predicciones correctas con mayor margen de confianza en el modelo MFW.}
+\label{tab:predicciones-mayor-confianza}
+\end{longtable}
+
+Uno de los casos más seguros fue \textit{Three Thousand Dollars}, atribuido correctamente a Anna Katharine Green con una probabilidad de 0,982. En la explicación local mediante SHAP, los rasgos que más apoyaron esta predicción fueron \textit{but}, \textit{of}, \textit{she}, \textit{not}, \textit{the} y \textit{her}. Estos valores no deben leerse como una simple lista de palabras frecuentes, sino como desviaciones respecto al comportamiento aprendido por el modelo para diferenciar a Green del resto de autores.
+
+\begin{longtable}{|p{3cm}|r|p{4cm}|}
+\hline
+\textbf{Rasgo} & \textbf{Valor SHAP} & \textbf{Efecto} \\
+\hline
+\textit{but} & 1,142 & A favor de Anna Katharine Green \\
+\hline
+\textit{of} & 0,667 & A favor de Anna Katharine Green \\
+\hline
+\textit{she} & 0,635 & A favor de Anna Katharine Green \\
+\hline
+\textit{not} & 0,535 & A favor de Anna Katharine Green \\
+\hline
+\textit{the} & 0,452 & A favor de Anna Katharine Green \\
+\hline
+\textit{her} & 0,356 & A favor de Anna Katharine Green \\
+\hline
+\caption{Principales contribuciones locales para \textit{Three Thousand Dollars}.}
+\label{tab:shap-local-green}
+\end{longtable}
+
+Este caso resulta coherente con la interpretación global del modelo, donde \textit{not}, \textit{but}, \textit{she} y \textit{her} aparecían como rasgos asociados positivamente a Anna Katharine Green. La explicación local confirma, por tanto, que la predicción no depende de un único rasgo aislado, sino de una combinación de señales funcionales.
+
+El caso de \textit{The Lost World}, de Arthur Conan Doyle, ofrece una situación más ambigua. La obra fue clasificada correctamente, pero con una probabilidad de 0,696 y un margen de 0,524, claramente inferior al de los casos más seguros. Esta menor confianza puede explicarse en parte porque \textit{The Lost World} no pertenece al ciclo de Sherlock Holmes, sino a la ficción científica y de aventuras, lo que puede alejarla de los patrones más habituales del subcorpus de Doyle.
+
+En la explicación local de esta obra, los rasgos que más favorecieron la atribución a Doyle fueron \textit{but}, \textit{it}, \textit{he}, \textit{to}, \textit{you}, \textit{she} y \textit{have}. En cambio, otros rasgos como \textit{his} o \textit{for} actuaron en sentido contrario. Este comportamiento muestra que la decisión del modelo se apoya en una evidencia mixta: hay señales suficientes para atribuir la obra a Doyle, pero no con la claridad observada en otros textos.
+
+\begin{longtable}{|p{3cm}|r|p{4cm}|}
+\hline
+\textbf{Rasgo} & \textbf{Valor SHAP} & \textbf{Efecto} \\
+\hline
+\textit{but} & 0,743 & A favor de Arthur Conan Doyle \\
+\hline
+\textit{it} & 0,609 & A favor de Arthur Conan Doyle \\
+\hline
+\textit{his} & -0,322 & En contra de Arthur Conan Doyle \\
+\hline
+\textit{he} & 0,234 & A favor de Arthur Conan Doyle \\
+\hline
+\textit{to} & 0,226 & A favor de Arthur Conan Doyle \\
+\hline
+\textit{you} & 0,221 & A favor de Arthur Conan Doyle \\
+\hline
+\caption{Principales contribuciones locales para \textit{The Lost World}.}
+\label{tab:shap-local-doyle}
+\end{longtable}
+
+Aunque el modelo MFW no cometió errores en el conjunto de test, el análisis de otros enfoques sí permite identificar casos problemáticos. En el test de Mendenhall, basado únicamente en la distribución de longitudes de palabra, se observaron tres errores: \textit{The Poet and The Lunatics}, de Gilbert Keith Chesterton, fue atribuido a Arthur Morrison; \textit{The Shadow of the Wolf}, de Richard Austin Freeman, fue atribuido a Wilkie Collins; y \textit{The Hole in the Wall}, de Arthur Morrison, fue atribuido a Arthur Conan Doyle. Estos errores indican que la longitud de palabra por sí sola no proporciona una señal suficientemente específica para distinguir todos los perfiles de autor.
+
+También en el experimento con XGBoost sobre métricas estilométricas agregadas aparecieron confusiones entre autores. En este caso, el modelo obtuvo una \textit{F1 macro} de 0,750, por debajo de la regresión logística con los mismos tipos de rasgos y muy lejos de los modelos basados en MFW. Esto sugiere que los errores no se deben únicamente al clasificador, sino también a la capacidad limitada de las métricas agregadas para capturar diferencias finas de autoría.
+
+De este modo, el análisis local muestra tres ideas importantes. En primer lugar, las predicciones correctas de alta confianza se explican por combinaciones coherentes de palabras funcionales, no por señales temáticas evidentes. En segundo lugar, los casos ambiguos suelen corresponder a obras que se alejan del perfil más característico del autor o que presentan señales mixtas. En tercer lugar, los errores de los métodos más simples ayudan a entender por qué las MFW resultan más robustas: capturan patrones de uso lingüístico más finos que las métricas globales o la longitud de palabra.
+
 \section{Robustez y validez}
 
-\textit{Detallad en este apartado los resultados obtenidos utilizando la metodología descrita en el apartado anterior.}
+La evaluación de robustez y validez permite matizar los resultados obtenidos y evitar una interpretación excesivamente optimista del rendimiento. Aunque varios modelos alcanzan puntuaciones perfectas en el conjunto de test, estas cifras deben analizarse teniendo en cuenta el tamaño limitado del corpus, el desbalance entre autores y la sensibilidad de la tarea a las decisiones de partición, representación y evaluación.
+
+En primer lugar, se evaluó la robustez del número de palabras funcionales utilizadas como rasgos. Para ello, se realizó un barrido sobre distintos valores de \texttt{TOP\_N\_MFW}, desde 5 hasta 150, y sobre varias semillas aleatorias. El objetivo no era seleccionar simplemente el número de rasgos con mejor puntuación puntual, sino identificar el menor vocabulario capaz de mantener un rendimiento estable y próximo al mejor resultado observado.
+
+\begin{longtable}{|r|r|r|r|r|}
+\hline
+\textbf{TOP\_N\_MFW} & \textbf{F1 macro media} & \textbf{Desv. típica} & \textbf{F1 mínima} & \textbf{F1 máxima} \\
+\hline
+5 & 0,633 & 0,000 & 0,633 & 0,633 \\
+\hline
+10 & 0,968 & 0,045 & 0,911 & 1,000 \\
+\hline
+15 & 0,887 & 0,042 & 0,822 & 0,911 \\
+\hline
+25 & 1,000 & 0,000 & 1,000 & 1,000 \\
+\hline
+30 & 1,000 & 0,000 & 1,000 & 1,000 \\
+\hline
+40 & 0,984 & 0,036 & 0,911 & 1,000 \\
+\hline
+50 & 0,992 & 0,027 & 0,911 & 1,000 \\
+\hline
+75 & 1,000 & 0,000 & 1,000 & 1,000 \\
+\hline
+100 & 1,000 & 0,000 & 1,000 & 1,000 \\
+\hline
+125 & 1,000 & 0,000 & 1,000 & 1,000 \\
+\hline
+150 & 1,000 & 0,000 & 1,000 & 1,000 \\
+\hline
+\caption{Robustez del rendimiento en función del número de MFW.}
+\label{tab:robustez-mfw}
+\end{longtable}
+
+Los resultados muestran que un vocabulario demasiado pequeño, como 5 MFW, no contiene información suficiente para separar correctamente a los autores. Con 10 MFW el rendimiento mejora de forma notable, aunque todavía presenta cierta variabilidad entre semillas. El valor 25 constituye el primer punto en el que se alcanza una \textit{F1 macro} media de 1,000 sin variabilidad observada. Por este motivo, se seleccionó como configuración preferente: mantiene el mejor rendimiento con un número reducido de rasgos, lo que favorece tanto la estabilidad como la interpretabilidad.
+
+La robustez también se analizó en los métodos no supervisados. En este caso, los resultados muestran que las representaciones basadas en MFW generan agrupamientos más coherentes por autor que las métricas estilométricas agregadas. El clustering jerárquico con enlace \textit{ward} y distancia euclídea obtuvo los mejores resultados con MFW, alcanzando un ARI de 0,919, un NMI de 0,928 y una \textit{V-measure} de 0,928. Con métricas estilométricas agregadas, el ARI bajó a 0,608, mientras que la representación combinada obtuvo un valor intermedio de 0,831.
+
+\begin{longtable}{|p{3cm}|r|r|r|r|}
+\hline
+\textbf{Representación} & \textbf{Silhouette} & \textbf{ARI} & \textbf{NMI} & \textbf{V-measure} \\
+\hline
+Métricas estilométricas & 0,199 & 0,608 & 0,727 & 0,727 \\
+\hline
+MFW & 0,238 & 0,919 & 0,928 & 0,928 \\
+\hline
+Métricas + MFW & 0,214 & 0,831 & 0,819 & 0,819 \\
+\hline
+\caption{Resultados de clustering jerárquico con seis grupos.}
+\label{tab:robustez-clustering}
+\end{longtable}
+
+Estos resultados refuerzan la validez de las MFW como representación estilométrica. Incluso sin utilizar las etiquetas durante el ajuste del clustering, las obras tienden a organizarse de forma coherente con la autoría real. No obstante, también aparecen casos ambiguos, especialmente en autores con menos obras o con textos de géneros distintos al núcleo principal de misterio. Por tanto, el análisis no supervisado apoya las conclusiones de los modelos supervisados, pero también muestra que la separación entre autores no es absoluta en todos los espacios de rasgos.
+
+En cuanto a las representaciones distribuidas, los embeddings de OpenAI mostraron una separación positiva pero moderada por autor. La silueta con distancia coseno fue de 0,2436, y las distancias medias intraautor fueron menores que las distancias medias interautor en todos los casos. Este resultado indica que los embeddings capturan cierta proximidad entre obras de un mismo autor, pero también reflejan otros factores, como tema, género, personajes o tipo de obra. Por ello, su validez como evidencia estrictamente estilométrica es más limitada que la de las MFW, aunque resultan útiles para explorar relaciones de similitud.
+
+Desde el punto de vista de la validez interna, el diseño experimental incorpora varias medidas para reducir sesgos. Las particiones se realizan a nivel de obra, evitando que fragmentos del mismo texto aparezcan simultáneamente en entrenamiento y prueba. Además, el vocabulario MFW se aprende únicamente sobre el conjunto de entrenamiento y se aplica después al conjunto de test, reduciendo el riesgo de fuga de información. La imputación y el escalado se integran dentro del \textit{pipeline}, de modo que sus parámetros también se estiman solo a partir de los datos de entrenamiento.
+
+La validez externa, en cambio, debe interpretarse con mayor cautela. El corpus está formado por autores concretos, obras en inglés, textos de dominio público y un marco temporal determinado. Por tanto, los resultados no pueden generalizarse automáticamente a otros idiomas, periodos, géneros o escenarios de autoría abierta. El sistema se ha evaluado en un escenario cerrado, donde todos los textos de test pertenecen a alguno de los autores candidatos; esta condición facilita la tarea en comparación con situaciones reales en las que el verdadero autor podría no estar en el conjunto de referencia.
+
+También debe considerarse el tamaño del conjunto de test. Aunque se ha construido de forma equilibrada por autor, contiene un número reducido de obras. Esto hace que una sola predicción errónea tenga un impacto importante en las métricas y que los resultados perfectos deban interpretarse como evidencia fuerte dentro de esta partición, pero no como garantía de generalización absoluta. En este sentido, los análisis de robustez por semillas, número de rasgos y clustering ayudan a reforzar la confianza en las conclusiones, pero no eliminan por completo la incertidumbre asociada al tamaño del corpus.
+
+Podemos decir que los análisis de robustez y validez respaldan la conclusión principal del capítulo: las palabras funcionales constituyen la representación más estable y eficaz para este corpus. Su buen rendimiento se observa en modelos supervisados, métodos clásicos, análisis de robustez y clustering no supervisado. Sin embargo, la validez de estos resultados está condicionada por el diseño cerrado de la tarea, el número limitado de autores y obras, el desbalance del corpus y la posible influencia de género, época o serie narrativa. Estas limitaciones se retoman en el capítulo de discusión y conclusiones.
 
 \chapter{Discusión y conclusiones}
 
