@@ -1178,21 +1178,21 @@ En términos de reproducibilidad, el control de versiones constituye un elemento
 
 \chapter{Materiales y métodos}
 
-Este capítulo describe el procedimiento metodológico seguido para construir y evaluar el sistema de atribución de autoría desarrollado en este trabajo. El objetivo principal no es únicamente entrenar modelos capaces de clasificar textos por autor, sino establecer un flujo de trabajo reproducible que permita transformar un conjunto de obras literarias de dominio público en datos analizables, extraer de ellas rasgos estilométricos relevantes y comparar distintos enfoques de modelado desde una perspectiva tanto predictiva como interpretativa.
+Este capítulo describe el procedimiento metodológico seguido para construir y evaluar el sistema de atribución de autoría desarrollado en este trabajo. El objetivo principal no es únicamente entrenar modelos capaces de clasificar textos por autor, sino establecer un flujo de trabajo reproducible que permita transformar un conjunto de obras literarias de dominio público en datos analizables, extraer de ellas rasgos estilométricos relevantes y comparar distintos enfoques de modelado atendiendo tanto a su rendimiento predictivo como a su interpretabilidad.
 
 La metodología se organiza de forma incremental. En primer lugar, se define el entorno técnico y las herramientas utilizadas para garantizar la trazabilidad de los experimentos. A continuación, se describe el diseño experimental, la construcción y preprocesamiento del corpus, la extracción de rasgos clásicos, el uso de representaciones distribuidas y los modelos de clasificación empleados. Finalmente, se detallan los criterios de ajuste, validación, explicabilidad e implementación del \textit{pipeline}, con especial atención a la reproducibilidad y a la interpretación crítica de los resultados.
 
 \section{Entorno y herramientas}
 
-El desarrollo del proyecto se ha realizado principalmente en Python, utilizando un entorno reproducible gestionado mediante \texttt{uv}. La elección de Python responde a su madurez en el ámbito de la ciencia de datos, el procesamiento del lenguaje natural y el aprendizaje automático, así como a la amplia disponibilidad de bibliotecas especializadas y documentación. El proyecto se ha estructurado como un paquete propio, \texttt{whodunit\_stylometry}, acompañado de cuadernos Jupyter para la experimentación y de una aplicación interactiva desarrollada con \texttt{Streamlit}.
+El desarrollo del proyecto se ha realizado principalmente en Python\cite{PythonOfficialWebsite}, utilizando un entorno reproducible gestionado mediante \texttt{uv}\cite{UvnWeb}. La elección de Python se debe a su madurez en el ámbito de la ciencia de datos, el procesamiento del lenguaje natural y el aprendizaje automático, así como a la gran disponibilidad de bibliotecas especializadas y documentación. El proyecto se ha estructurado como un paquete propio, \texttt{whodunit\_stylometry}, acompañado de Jupyter \textit{notebooks} para la experimentación y de una aplicación interactiva desarrollada con \texttt{Streamlit}\cite{StreamlitWeb}.
 
-La versión de Python definida para el entorno es \texttt{Python 3.11}, fijada en el archivo \texttt{pyproject.toml}. Este archivo centraliza las dependencias del proyecto y permite reconstruir el entorno de trabajo de forma controlada mediante \texttt{uv sync}. Además, el archivo \texttt{uv.lock} garantiza que las versiones concretas de las bibliotecas instaladas puedan reproducirse en ejecuciones posteriores.
+La versión de Python definida para el entorno es \texttt{Python 3.11}, fijada en el \texttt{pyproject.toml}. Este archivo centraliza las dependencias del proyecto y permite reconstruir el entorno de trabajo de forma controlada mediante \texttt{uv sync}. Además, el archivo \texttt{uv.lock} garantiza que las versiones concretas de las bibliotecas instaladas puedan reproducirse en ejecuciones posteriores.
 
-Desde el punto de vista de la organización del código, el repositorio se divide en varios componentes. La carpeta \texttt{src/whodunit\_stylometry} contiene los módulos reutilizables del proyecto, incluyendo funciones para carga de datos, normalización textual, tokenización, análisis exploratorio, métodos estilométricos clásicos, aprendizaje supervisado, aprendizaje no supervisado, representaciones mediante \textit{embeddings} y utilidades de visualización. La carpeta \texttt{notebooks} recoge los experimentos realizados durante el desarrollo, mientras que \texttt{app.py} implementa una interfaz de usuario para ejecutar distintos análisis sobre un corpus organizado por carpetas de autor.
+Desde el punto de vista de la organización del código, el repositorio se divide en varios componentes. La carpeta \texttt{src/whodunit\_stylometry} contiene los módulos reutilizables del proyecto, incluyendo funciones para carga de datos, normalización de textos, tokenización, análisis exploratorio, métodos estilométricos clásicos, aprendizaje supervisado, aprendizaje no supervisado, representaciones mediante \textit{embeddings} y utilidades de visualización. La carpeta \texttt{notebooks} recoge los experimentos realizados durante el desarrollo, mientras que \texttt{app.py} implementa la interfaz de usuario para ejecutar distintos análisis sobre un corpus organizado por carpetas de autor.
 
 Las principales herramientas empleadas se resumen en la Tabla~\ref{tab:herramientas}.
 
-\begin{longtable}{|p{3.2cm}|p{4.2cm}|p{7cm}|}
+\begin{longtable}{|p{3.6cm}|p{4.2cm}|p{7cm}|}
 \hline
 \textbf{Categoría} & \textbf{Herramientas} & \textbf{Uso en el proyecto} \\
 \hline
@@ -1209,7 +1209,7 @@ Manipulación de tablas, cálculo de métricas descriptivas, análisis estadíst
 
 Procesamiento de lenguaje natural &
 \texttt{spaCy}, \texttt{nltk}, \texttt{unidecode} &
-Tokenización, normalización textual, tratamiento de puntuación, extracción de n-gramas y gestión de palabras funcionales. \\
+Tokenización, normalización de textos, tratamiento de puntuación, extracción de n-gramas y gestión de palabras funcionales. \\
 \hline
 
 Aprendizaje automático &
@@ -1217,14 +1217,29 @@ Aprendizaje automático &
 Entrenamiento y evaluación de modelos supervisados y no supervisados, validación cruzada, escalado de variables y cálculo de métricas. \\
 \hline
 
-Representaciones distribuidas &
-\texttt{openai}, \texttt{tiktoken}, \texttt{umap-learn}, \texttt{networkx} &
-Generación de \textit{embeddings}, segmentación de textos por tokens, reducción de dimensionalidad y análisis de redes de similitud entre obras. \\
+Explicabilidad de modelos tabulares &
+\texttt{shap}, coeficientes de modelos lineales, análisis de importancia de variables &
+Interpretación global y local de modelos supervisados basados en rasgos explícitos, identificación de rasgos estilísticos relevantes y análisis de casos concretos. \\
 \hline
 
-Explicabilidad &
-\texttt{shap}, coeficientes de modelos lineales, análisis de importancia de variables &
-Interpretación global y local de los modelos, identificación de rasgos estilísticos relevantes y análisis de casos concretos. \\
+Representaciones distribuidas &
+\texttt{openai}, \texttt{tiktoken}, \texttt{umap-learn}, \texttt{networkx} &
+Generación de \textit{embeddings}, segmentación de textos por tokens, reducción de la dimensionalidad y análisis de redes de similitud entre obras. \\
+\hline
+
+Modelos basados en \textit{transformers} &
+\texttt{transformers}, \texttt{datasets}, \texttt{evaluate}, \texttt{torch}, \texttt{Hugging Face} &
+Ajuste fino y evaluación del modelo RoBERTa, preparación de fragmentos de texto, entrenamiento supervisado y agregado de predicciones a nivel de documento. \\
+\hline
+
+Explicabilidad de \textit{transformers} &
+\texttt{captum}, \texttt{bertviz} &
+Análisis exploratorio de atribuciones a nivel de token y visualización de patrones de atención en el modelo RoBERTa. \\
+\hline
+
+Ejecución en GPU &
+\texttt{Google Colab} &
+Entrenamiento del modelo RoBERTa en un entorno con recursos computacionales adecuados para el ajuste fino de arquitecturas \textit{transformer}. \\
 \hline
 
 Visualización &
@@ -1251,32 +1266,38 @@ Registro de cambios, trazabilidad del desarrollo y organización del trabajo exp
 \label{tab:herramientas}
 \end{longtable}
 
-Para el preprocesamiento lingüístico se ha utilizado \texttt{spaCy}, incorporando un tokenizador personalizado adaptado a textos literarios en inglés. Este tokenizador permite conservar formas con apóstrofes y abreviaturas con puntos, aspectos frecuentes en los textos del corpus y relevantes para evitar divisiones artificiales durante el análisis. Además, se han implementado funciones propias para corregir saltos de línea procedentes de ediciones digitales, normalizar espacios, unificar comillas y tratar determinados signos de puntuación antes de la extracción de rasgos.
+Para el preprocesamiento lingüístico se ha utilizado \texttt{spaCy}, incorporando un tokenizador personalizado adaptado a textos en inglés. Este tokenizador permite conservar formas con apóstrofes y abreviaturas con puntos, aspectos frecuentes en los textos del corpus y relevantes para evitar divisiones artificiales durante el análisis. Además, se han implementado funciones propias para corregir saltos de línea procedentes de ediciones digitales, normalizar espacios, unificar comillas y tratar determinados signos de puntuación antes de la extracción de rasgos.
 
-Los experimentos de aprendizaje automático se han desarrollado principalmente con \texttt{scikit-learn}. Esta biblioteca se ha utilizado para entrenar modelos como regresión logística, máquinas de vectores de soporte, \textit{Random Forest}, KNN y Naive Bayes, así como para realizar escalado de variables, validación cruzada estratificada y cálculo de métricas como \textit{accuracy} y \textit{F1 macro}. En los análisis no supervisados se han empleado métodos como \textit{K-means}, clustering aglomerativo, modelos de mezcla gaussiana y clustering jerárquico.
+Los experimentos de aprendizaje automático se han desarrollado principalmente con la librería \texttt{scikit-learn}. Esta biblioteca se ha utilizado para entrenar modelos como regresión logística, máquinas de vectores de soporte, \textit{Random Forest}, KNN y Naive Bayes, así como para realizar el escalado de variables, validación cruzada estratificada y el cálculo de métricas como \textit{accuracy} y F1 macro. En los análisis no supervisados se han empleado métodos como \textit{K-means}, clustering aglomerativo, modelos de mezcla gaussiana y clustering jerárquico.
 
 La parte de representaciones distribuidas se apoya en \textit{embeddings} generados mediante la API de OpenAI, junto con \texttt{tiktoken} para controlar la segmentación de los textos en fragmentos de tamaño compatible con los modelos utilizados. Posteriormente, se aplican técnicas como PCA y UMAP para proyectar las representaciones en espacios bidimensionales y analizar agrupamientos, similitudes y relaciones entre obras y autores.
 
-Finalmente, el proyecto incorpora una aplicación interactiva en \texttt{Streamlit}. Esta herramienta permite cargar un corpus organizado por autores, ejecutar análisis exploratorios, métodos estilométricos clásicos, modelos supervisados y no supervisados, y visualizar resultados mediante tablas y gráficos interactivos. Su inclusión responde al objetivo de que el trabajo no quede limitado a una serie de cuadernos experimentales, sino que pueda materializarse en un \textit{pipeline} reutilizable y accesible para futuros análisis literarios.
+Además de las representaciones mediante \textit{embeddings}, se ha incorporado un experimento específico con un modelo basado en \textit{transformers}. En concreto, se ha realizado el ajuste fino de RoBERTa para la tarea de atribución de autoría, utilizando fragmentos de texto etiquetados según el autor de la obra original. Para ello se han empleado las bibliotecas del ecosistema de Hugging Face, especialmente \texttt{transformers}, \texttt{datasets} y \texttt{evaluate}, junto con \texttt{PyTorch} como base para el entrenamiento. Este proceso se llevó a cabo en Google Colab, debido a los mayores requisitos computacionales de este tipo de modelos y a la necesidad de disponer de GPU. Para explorar su interpretabilidad se utilizaron además \texttt{Captum}, orientado al análisis de atribuciones a nivel de token, y \texttt{BertViz}, empleado para visualizar patrones de atención entre las capas y las cabezas del modelo.
+
+Finalmente, el proyecto incorpora una aplicación interactiva en \texttt{Streamlit}. Esta herramienta permite cargar un corpus organizado por autores, ejecutar análisis exploratorios, métodos estilométricos clásicos, modelos supervisados y no supervisados y visualizar resultados mediante tablas y gráficos interactivos. Con ello se consigue que el trabajo no quede limitado a una serie de \textit{notebooks} de experimentos, sino que pueda materializarse en un \textit{pipeline} reutilizable y accesible para futuros análisis estilométricos.
 
 \section{Diseño experimental}
 
-El diseño experimental del trabajo se plantea como una tarea de atribución de autoría en un escenario cerrado, es decir, todos los textos evaluados pertenecen a alguno de los autores presentes en el corpus de referencia. La variable objetivo es, por tanto, el autor de cada obra, y las variables predictoras se derivan exclusivamente del contenido textual. No se incorporan al entrenamiento metadatos como el año de publicación, el país, el detective protagonista o el género concreto de la obra, ya que el objetivo es evaluar hasta qué punto el estilo lingüístico permite diferenciar a los autores sin recurrir a información externa.
+El diseño experimental del trabajo se ha planteado como una tarea de atribución de autoría en un escenario cerrado, es decir, todos los textos evaluados pertenecen a alguno de los autores presentes en el corpus de referencia. La variable objetivo es, por tanto, el autor de cada obra, y las variables predictoras se derivan exclusivamente del contenido de los textos. No se incorporan al entrenamiento metadatos como el año de publicación, el país, el detective protagonista o el género concreto de la obra, ya que el objetivo es evaluar hasta qué punto el estilo lingüístico permite diferenciar a los autores sin recurrir a información externa.
 
 La unidad básica de análisis es la obra completa. Cada archivo de texto se considera una observación asociada a un único autor. Esta decisión permite mantener una correspondencia clara entre muestra, obra y autor, aunque implica trabajar con un número relativamente reducido de instancias y con textos de extensión desigual. Por este motivo, el diseño experimental combina métricas globales con análisis por autor, matrices de confusión y pruebas de robustez, evitando basar las conclusiones en un único resultado agregado.
 
-El corpus final está formado por obras de seis autores: Anna Katharine Green, Arthur Conan Doyle, Arthur Morrison, Gilbert Keith Chesterton, Richard Austin Freeman y Wilkie Collins. La distribución de obras no es completamente equilibrada, debido a la disponibilidad desigual de textos de dominio público para cada autor. Esta circunstancia se tiene en cuenta durante la evaluación mediante particiones estratificadas, uso de métricas macro y modelos con ponderación de clases cuando procede.
+El corpus final está formado por obras de seis autores: Anna Katharine Green, Arthur Conan Doyle, Arthur Morrison, Gilbert Keith Chesterton, Richard Austin Freeman y Wilkie Collins. Como se ha comentado, la distribución de las obras no está completamente equilibrada, debido a la disponibilidad desigual de textos de dominio público para cada autor. Esta circunstancia se tiene en cuenta durante la evaluación mediante la creación de particiones estratificadas, el uso de métricas macro y optando por modelos con ponderación de clases cuando es posible.
 
-El flujo experimental se organiza en varias fases. En primer lugar, se realiza un análisis exploratorio del corpus para comprobar la distribución de autores, tamaños de obra, características léxicas, rasgos estructurales y posibles valores atípicos. A continuación, se aplican métodos estilométricos clásicos como línea base interpretable. Posteriormente, se entrenan modelos supervisados con distintos conjuntos de rasgos y se comparan sus resultados. De forma complementaria, se exploran métodos no supervisados y representaciones distribuidas mediante \textit{embeddings}, con el objetivo de analizar si los textos se agrupan de forma coherente por autor sin utilizar directamente las etiquetas durante el ajuste.
+El flujo experimental se organiza en varias fases. En primer lugar, se realiza un análisis exploratorio del corpus para comprobar la distribución de autores, tamaños de obra, características léxicas, rasgos estructurales y posibles valores atípicos. A continuación, se aplican métodos estilométricos clásicos como línea base interpretable. Posteriormente, se entrenan modelos supervisados con distintos conjuntos de rasgos y se comparan sus resultados.
 
-\begin{longtable}{|p{3.6cm}|p{5.2cm}|p{5.8cm}|}
+De forma complementaria, se exploran métodos no supervisados y representaciones distribuidas mediante \textit{embeddings}, con el objetivo de analizar si los textos se agrupan de forma coherente por autor sin utilizar directamente las etiquetas durante el ajuste. Además, se incorpora un experimento con un modelo basado en \textit{transformers} (RoBERTa) para comparar los métodos que usan rasgos definidos manualmente con un modelo contextual entrenado específicamente para atribución de autoría.
+
+\newpage
+
+\begin{longtable}{|p{4.5cm}|p{5.2cm}|p{5.8cm}|}
 \hline
 \textbf{Bloque experimental} & \textbf{Objetivo} & \textbf{Técnicas principales} \\
 \hline
 
 Análisis exploratorio &
 Caracterizar el corpus y detectar posibles problemas de calidad, desbalance o valores atípicos. &
-Métricas de calidad textual, longitud, riqueza léxica, puntuación, estructura oracional, análisis por autor y visualizaciones descriptivas. \\
+Métricas de calidad de los textos, longitud, riqueza léxica, puntuación, estructura, análisis por autor y visualizaciones descriptivas. \\
 \hline
 
 Métodos clásicos &
@@ -1296,7 +1317,12 @@ Comprobar si las obras se agrupan espontáneamente por autor en el espacio de ra
 
 Representaciones distribuidas &
 Comparar los rasgos clásicos con representaciones semánticas modernas. &
-\textit{Embeddings}, agregación por obra, similitud coseno, PCA, UMAP y redes de similitud. \\
+\textit{Embeddings}, agregación por obra, similitud del coseno, PCA, UMAP y redes de similitud. \\
+\hline
+
+Modelo \textit{transformer} &
+Evaluar un enfoque contextual moderno mediante ajuste fino para atribución de autoría. &
+RoBERTa, fragmentación de obras, entrenamiento supervisado con Hugging Face, evaluación por fragmento y agregación de predicciones a nivel de documento. \\
 \hline
 
 Explicabilidad &
@@ -1308,45 +1334,53 @@ Coeficientes de modelos lineales, importancia de variables, SHAP y revisión de 
 \label{tab:diseno_experimental}
 \end{longtable}
 
-En los experimentos supervisados se emplea una partición de entrenamiento y prueba equilibrada por autor. El conjunto de test se construye seleccionando un número fijo de obras por autor, mientras que el resto se utiliza para entrenamiento. Esta estrategia busca evitar que los autores con más obras dominen la evaluación y permite comparar el comportamiento del modelo en todas las clases. Dentro del conjunto de entrenamiento se aplica validación cruzada estratificada de tres particiones para seleccionar el modelo con mejor rendimiento medio. Una vez elegido el mejor modelo, este se ajusta sobre todo el conjunto de entrenamiento y se evalúa sobre el conjunto de test reservado.
+En los métodos estilométricos clásicos se emplea un diseño basado en un corpus de referencia por autor y un conjunto de obras reservadas para prueba. Para cada autor se seleccionan dos obras de test, una perteneciente al género de misterio y otra no perteneciente a dicho género, mientras que el resto de sus obras se agregan para construir el perfil de referencia del autor. Esta configuración permite evaluar la atribución en un escenario controlado y, al mismo tiempo, observar si la distancia estilométrica aumenta cuando la obra evaluada se aleja del género principal del corpus.
+
+En el caso de Mendenhall, los perfiles se construyen a partir de curvas de longitud de palabra calculadas sobre bloques aleatorios y se comparan mediante la distancia de Jensen-Shannon. En los métodos de Kilgariff y Burrows, la comparación se realiza sobre palabras funcionales, utilizando un vocabulario global fijado a partir de los corpus de entrenamiento y atribuyendo cada obra al autor cuya distancia resulte menor.
+
+En los experimentos supervisados se emplea una partición de entrenamiento y prueba equilibrada por autor. El conjunto de test se construye seleccionando un número fijo de obras por autor, mientras que el resto se utiliza para el entrenamiento. Esta estrategia busca evitar que los autores con más obras dominen la evaluación y permite comparar el comportamiento del modelo en todas las clases.
+
+De nuevo, se introduce una restricción adicional en la composición del conjunto de test: para cada autor, al menos una de las obras reservadas no pertenece estrictamente al género de misterio. Dentro del conjunto de entrenamiento se aplica validación cruzada estratificada de tres particiones para seleccionar el modelo con mejor rendimiento medio. Una vez elegido el mejor modelo, este se ajusta sobre todo el conjunto de entrenamiento y se evalúa sobre el conjunto de test reservado.
 
 Para reducir el riesgo de fuga de información, los vocabularios de palabras más frecuentes y palabras funcionales se calculan únicamente a partir del conjunto de entrenamiento. Posteriormente, esos mismos vocabularios se utilizan para transformar el conjunto de test. De este modo, las obras evaluadas no influyen en la selección de rasgos, lo que permite una estimación más realista del rendimiento del sistema.
 
-Los conjuntos de rasgos comparados se agrupan en tres familias. La primera incluye métricas estilométricas agregadas, como longitud media de palabra, riqueza léxica, proporción de palabras largas, frecuencia de signos de puntuación y medidas estructurales de frases y párrafos. La segunda se basa en la frecuencia relativa de las palabras funcionales más frecuentes (\textit{Most Frequent Words}, MFW), un enfoque habitual en estilometría por su menor dependencia temática. La tercera combina ambas familias para evaluar si los rasgos manuales y las frecuencias funcionales aportan información complementaria.
+Los conjuntos de rasgos comparados se agrupan en tres familias. La primera incluye métricas estilométricas agregadas, como longitud media de palabra, riqueza léxica, proporción de palabras largas, frecuencia de signos de puntuación y medidas estructurales de frases y párrafos. La segunda se basa en la frecuencia relativa de las palabras funcionales más frecuentes (\textit{Most Frequent Words}, MFW), un enfoque muy usado en estilometría por su menor dependencia del tema. La tercera combina ambas familias para evaluar si los rasgos manuales y las frecuencias funcionales aportan información complementaria.
 
-La evaluación de los modelos supervisados se realiza mediante \textit{accuracy}, \textit{F1 macro}, informes de clasificación por autor y matrices de confusión. La métrica principal es \textit{F1 macro}, ya que calcula el rendimiento medio otorgando el mismo peso a cada autor, independientemente del número de obras disponibles. Esta elección resulta especialmente importante en un corpus con cierto desbalance entre clases.
+La evaluación de los modelos supervisados se realiza mediante \textit{accuracy}, \textit{F1 macro}, informes de clasificación por autor y matrices de confusión. La métrica principal es \textit{F1 macro}, ya que calcula el rendimiento medio otorgando el mismo peso a cada autor, independientemente del número de obras disponibles. Esta elección resulta especialmente importante en un corpus con cierto desbalanceo entre clases.
 
 Además de la evaluación principal, se incluye un análisis de robustez centrado en el número de palabras funcionales utilizadas como rasgos. Para ello, se prueban distintos valores de \texttt{TOP\_N\_MFW} y distintas semillas aleatorias, observando cómo varía el rendimiento medio y su desviación. El criterio de selección no consiste únicamente en escoger el valor con mejor puntuación absoluta, sino en identificar el menor número de rasgos que mantiene un rendimiento próximo al mejor resultado observado. Esta decisión favorece modelos más simples, menos dependientes de un vocabulario excesivamente amplio y más fáciles de interpretar.
 
-En los experimentos no supervisados, el corpus completo se proyecta en espacios de rasgos sin utilizar la etiqueta de autor para ajustar los modelos. No obstante, las etiquetas sí se emplean posteriormente para evaluar la correspondencia entre los clusters obtenidos y los autores reales. Para ello se utilizan métricas como ARI, NMI, homogeneidad, completitud, \textit{V-measure} y \textit{silhouette}. También se analiza la asignación mayoritaria de clusters a autores, lo que permite identificar obras o autores que tienden a agruparse de forma ambigua.
+En los experimentos no supervisados, el corpus completo se proyecta en un espacio de rasgos sin utilizar la etiqueta de autor para ajustar los modelos. No obstante, las etiquetas sí se emplean posteriormente para evaluar la correspondencia entre los clústeres obtenidos y los autores reales. Para ello se utilizan métricas como ARI, NMI, homogeneidad, completitud, \textit{V-measure} y \textit{silhouette}. También se analiza la asignación de clústeres a autores, lo que permite identificar obras o autores que tienden a agruparse de forma ambigua.
 
 En el caso de las representaciones distribuidas, los textos se dividen en fragmentos de tamaño controlado antes de generar los \textit{embeddings}. Las representaciones de los fragmentos se agregan posteriormente a nivel de obra, permitiendo calcular similitudes entre textos y autores. Este diseño permite comparar una representación más contextual y moderna del texto con los enfoques estilométricos clásicos, aunque se interpreta con cautela por su menor transparencia y por el mayor coste computacional asociado.
+
+Por su parte, el experimento con RoBERTa se plantea como un ajuste fino supervisado de un modelo \textit{transformer} preentrenado. En este caso, las obras también se dividen en fragmentos para adaptarse a la longitud máxima admitida por el modelo, pero cada fragmento se utiliza como una instancia de entrenamiento etiquetada con el autor de la obra de origen. La evaluación se realiza primero a nivel de fragmento y, posteriormente, las predicciones se agregan a nivel de documento para obtener una atribución final por obra. De nuevo, esta estrategia permite incorporar un enfoque contextual moderno dentro del diseño experimental, aunque sus resultados se comparan con cautela con los modelos basados en datos tabulares, ya que emplean una unidad de análisis y un procedimiento de entrenamiento diferentes.
 
 Este diseño experimental combina comparación de modelos, control de fuga de información, evaluación por autor, análisis de robustez e interpretabilidad. Esta combinación permite responder no solo a qué modelo clasifica mejor, sino también qué tipo de rasgos parecen más estables, qué autores resultan más difíciles de distinguir y hasta qué punto los resultados pueden explicarse desde una perspectiva estilométrica.
 
 \section{Preprocesamiento}
 
-El preprocesamiento del corpus se ha diseñado con un criterio conservador: reducir el ruido procedente de las ediciones digitales sin alterar aquellos rasgos formales que pudieran ser estilísticamente relevantes. En un estudio de atribución de autoría, decisiones aparentemente menores, como eliminar signos de puntuación, modificar contracciones o unificar en exceso la estructura del texto, pueden afectar a los recuentos posteriores y, por tanto, a la interpretación de los modelos. Por ello, el objetivo no ha sido ``limpiar'' los textos hasta obtener una versión lingüísticamente simplificada, sino construir una representación homogénea, trazable y adecuada para el análisis estilométrico.
+El preprocesamiento del corpus se ha diseñado con un criterio conservador, es decir, reducir el ruido procedente de las ediciones digitales sin alterar aquellos rasgos formales que pudieran ser estilísticamente relevantes. En un estudio de atribución de autoría, decisiones aparentemente menores, como eliminar signos de puntuación, modificar contracciones o unificar en exceso la estructura del texto, pueden afectar a los recuentos posteriores y, por tanto, a la interpretación de los modelos. Por ello, el objetivo no ha sido ``limpiar'' los textos hasta obtener una versión  simplificada, sino construir una representación homogénea, trazable y adecuada para el análisis estilométrico.
 
 El flujo de preprocesamiento se ha organizado en tres fases principales: limpieza manual, normalización automática y tokenización. La descripción detallada de las operaciones concretas, junto con ejemplos de entrada y salida, se recoge en los Apéndices \hyperref[apx:limpieza-manual]{I}, \hyperref[apx:normalizacion]{II} y \hyperref[apx:tokenizacion]{III}. En esta sección se resumen únicamente las decisiones metodológicas más relevantes y su relación con los experimentos posteriores.
 
-La primera fase consistió en una limpieza manual de las obras descargadas desde los repositorios de origen. Esta revisión permitió eliminar elementos ajenos al texto literario, como cabeceras y licencias de \textit{Project Gutenberg}, notas del digitalizador, índices, información editorial, marcas de ilustraciones o fragmentos que no formaban parte del cuerpo principal de la obra. Esta etapa era necesaria porque dichos elementos no reflejan el estilo del autor y podían introducir señales artificiales en los modelos. Por ejemplo, si varias obras procedentes de una misma fuente conservaran estructuras editoriales semejantes, un clasificador podría aprender patrones del repositorio o de la edición en lugar de patrones de autoría.
+La primera fase consistió en una limpieza manual de las obras descargadas desde los repositorios de origen. Esta revisión permitió eliminar elementos ajenos al texto propio de la obra, como cabeceras y licencias del \textit{Project Gutenberg}, notas del digitalizador, índices, información de la editorial, marcas de ilustraciones o fragmentos que no formaban parte del cuerpo principal de la obra. Esta etapa era necesaria porque dichos elementos no reflejan el estilo del autor y podían introducir señales artificiales en los modelos. Por ejemplo, si varias obras procedentes de una misma fuente conservaran diseños editoriales semejantes, un clasificador podría aprender patrones del repositorio o de la edición en lugar de patrones de autoría.
 
 A diferencia de otros procesos de limpieza más agresivos, no se eliminaron de forma sistemática todos los elementos formales del texto. Se conservaron aquellos componentes que podían tener valor estilométrico, como la puntuación, la organización en párrafos, las comillas, las rayas de diálogo o determinadas marcas internas del discurso. Esta decisión responde a que el uso de signos de puntuación, la longitud de las frases o la estructura de los párrafos forman parte de los rasgos analizados posteriormente.
 
 La segunda fase correspondió a la normalización automática de los textos. Esta etapa se aplicó sobre la versión previamente depurada de cada obra y se implementó mediante el \textit{script} \texttt{corpus\_normalization.py}. Su finalidad fue homogeneizar aspectos formales de los archivos, especialmente saltos de línea, espacios, comillas, apóstrofes, guiones y puntos suspensivos. Así, los textos contenidos en \texttt{corpus/hand\_cleaned} se transformaron en una versión normalizada almacenada en \texttt{corpus/normalized}, manteniendo la misma estructura de carpetas por autor.
 
-Una decisión especialmente importante fue la corrección de los saltos de línea procedentes de algunas ediciones digitales. Muchos textos de \textit{Project Gutenberg} presentan líneas partidas por criterios de maquetación, no por separación real de párrafos. Para evitar que estas divisiones afectaran al análisis estructural, se unieron los saltos simples dentro de un mismo párrafo y se conservaron los saltos dobles como separadores de párrafo. De este modo, se redujo el ruido de formato sin eliminar por completo la estructura textual.
+Una decisión especialmente importante fue la corrección de los saltos de línea procedentes de algunas ediciones digitales. Muchos textos del \textit{Project Gutenberg} presentan líneas partidas por criterios de maquetación, no por separación real de párrafos. Para evitar que estas divisiones afectaran al análisis estructural, se unieron los saltos simples dentro de un mismo párrafo y se conservaron los saltos dobles como separadores de párrafo. De este modo, se redujo el ruido del formato sin eliminar por completo la estructura del texto.
 
 También se aplicó una normalización de caracteres tipográficos frecuentes en las ediciones originales o digitalizadas. Las comillas curvas, apóstrofes tipográficos, rayas largas y elipsis se transformaron en formas más consistentes para facilitar la tokenización posterior. Estas transformaciones no modifican el contenido semántico de las obras, pero permiten que el \textit{pipeline} trate de manera homogénea casos que, de otro modo, podrían aparecer representados con caracteres distintos en función de la fuente.
 
-La tercera fase fue la tokenización, implementada mediante el \textit{script} \texttt{corpus\_tokenization.py}. Para ello se desarrolló un tokenizador personalizado basado en \texttt{spaCy}\cite{spacy2026}, adaptado a las particularidades del corpus literario en inglés. Este tokenizador conserva como unidades completas determinadas contracciones con apóstrofe, como \texttt{don't} o \texttt{you've}, y abreviaturas con puntos internos, como \texttt{e.g.} o \texttt{U.S.A.}. Esta decisión evita segmentaciones artificiales que podrían distorsionar los recuentos de palabras, palabras funcionales o signos de puntuación.
+La tercera fase fue la tokenización, implementada mediante el \textit{script} \texttt{corpus\_tokenization.py}. Para ello se desarrolló un tokenizador personalizado basado en \texttt{spaCy}\cite{spacy2026}, adaptado a las particularidades del corpus en inglés. Este tokenizador conserva como unidades completas determinadas contracciones con apóstrofe, como \texttt{don't} o \texttt{you've}, y abreviaturas con puntos internos, como \texttt{e.g.} o \texttt{U.S.A.}. Esta decisión evita segmentaciones artificiales que podrían distorsionar los recuentos de palabras, palabras funcionales o signos de puntuación.
 
-El proceso genera distintas variantes de tokenización según las necesidades del análisis. La opción \texttt{alpha} conserva únicamente tokens alfabéticos y se utiliza principalmente para rasgos léxicos, palabras funcionales, MFW y métodos clásicos basados en frecuencias. La opción \texttt{non\_alpha} permite aislar puntuación y otros elementos no alfabéticos, útiles para estudiar patrones formales. Por último, la opción \texttt{all} conserva la tokenización completa, incluyendo palabras, signos y separadores estructurales. Esta separación permite reutilizar el mismo corpus en experimentos distintos sin rehacer manualmente el preprocesamiento.
+El proceso genera distintas variantes de tokenización según las necesidades del análisis. La opción \texttt{alpha} conserva únicamente tokens alfabéticos y se utiliza principalmente para rasgos léxicos, palabras funcionales, MFW y métodos clásicos basados en frecuencias. La opción \texttt{non\_alpha} permite aislar la puntuación y otros elementos no alfabéticos, útiles para estudiar patrones formales. Por último, la opción \texttt{all} conserva la tokenización completa, incluyendo palabras, signos y separadores estructurales. Esta separación permite reutilizar el mismo corpus en distintos experimentos sin rehacer manualmente el preprocesamiento.
 
-En los análisis basados en frecuencias se utiliza habitualmente la conversión a minúsculas, ya que permite agrupar variantes como \textit{The} y \textit{the}. Sin embargo, el \textit{pipeline} permite conservar también versiones con capitalización original cuando resulte necesario. Del mismo modo, no se aplican lematización ni stemming de forma general, ya que estas operaciones podrían eliminar información estilística relevante. En estilometría, las formas superficiales de las palabras, las contracciones y ciertos hábitos ortográficos pueden ser informativos, por lo que se ha preferido mantener una representación cercana al texto original.
+En los análisis basados en frecuencias se utiliza habitualmente la conversión a minúsculas, ya que permite agrupar variantes como \texttt{The} y \texttt{the}. Sin embargo, el \textit{pipeline} permite conservar también versiones con la capitalización original cuando resulte necesario. Del mismo modo, no se aplica lematización ni \textit{stemming} de forma general, ya que estas operaciones podrían eliminar información relevante. En estilometría, las formas superficiales de las palabras, las contracciones y ciertos hábitos ortográficos pueden ser informativos, por lo que se ha preferido mantener una representación lo más cercana al texto original.
 
-Por último, el preprocesamiento se ha diseñado para ser reproducible y trazable. Cada fase genera una versión derivada del corpus sin sobrescribir la anterior: textos brutos, textos limpiados manualmente, textos normalizados y salidas tokenizadas. Además, la tabla de metadatos conserva rutas, tamaños y hashes de los archivos, lo que permite verificar qué versión de cada obra se ha utilizado en los experimentos. Esta organización facilita auditar el proceso, repetirlo si cambian los criterios de normalización y reducir el riesgo de inconsistencias entre obras.
+Por último, el preprocesamiento se ha diseñado para ser reproducible y trazable. Cada fase genera una versión derivada del corpus sin sobrescribir la anterior. Además, la tabla de metadatos conserva rutas, tamaños y \textit{hashes} de los archivos, lo que permite verificar qué versión de cada obra se ha utilizado en los experimentos. Esta organización facilita auditar el proceso, repetirlo si cambian los criterios de normalización y reducir el riesgo de inconsistencias entre obras.
 
 \section{Extracción de rasgos clásicos}
 
