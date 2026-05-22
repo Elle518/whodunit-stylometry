@@ -1272,7 +1272,7 @@ Registro de cambios, trazabilidad del desarrollo y organización del trabajo exp
 
 Para el preprocesamiento lingüístico se ha utilizado \texttt{spaCy}, incorporando un tokenizador personalizado adaptado a textos en inglés. Este tokenizador permite conservar formas con apóstrofes y abreviaturas con puntos, aspectos frecuentes en los textos del corpus y relevantes para evitar divisiones artificiales durante el análisis. Además, se han implementado funciones propias para corregir saltos de línea procedentes de ediciones digitales, normalizar espacios, unificar comillas y tratar determinados signos de puntuación antes de la extracción de rasgos.
 
-Los experimentos de aprendizaje automático se han desarrollado principalmente con la librería \texttt{scikit-learn}. Esta biblioteca se ha utilizado para entrenar modelos como regresión logística, máquinas de vectores de soporte, \textit{Random Forest}, KNN y Naive Bayes, así como para realizar el escalado de variables, validación cruzada estratificada y el cálculo de métricas como \textit{accuracy} y F1 macro. En los análisis no supervisados se han empleado métodos como \textit{K-means}, clustering aglomerativo, modelos de mezcla gaussiana y clustering jerárquico.
+Los experimentos de aprendizaje automático se han desarrollado principalmente con la librería \texttt{scikit-learn}. Esta biblioteca se ha utilizado para entrenar modelos como regresión logística, máquinas de vectores de soporte, \textit{Random Forest}, KNN y Naive Bayes, así como para realizar el escalado de variables, validación cruzada estratificada y el cálculo de métricas como \textit{accuracy} y F1 macro. En los análisis no supervisados se han empleado métodos como \textit{K-means}, \textit{clustering} aglomerativo, modelos de mezcla gaussiana y \textit{clustering} jerárquico.
 
 La parte de representaciones distribuidas se apoya en \textit{embeddings} generados mediante la API de OpenAI, junto con \texttt{tiktoken} para controlar la segmentación de los textos en fragmentos de tamaño compatible con los modelos utilizados. Posteriormente, se aplican técnicas como PCA y UMAP para proyectar las representaciones en espacios bidimensionales y analizar agrupamientos, similitudes y relaciones entre obras y autores.
 
@@ -1318,7 +1318,7 @@ Regresión logística, \textit{Linear SVC}, SVC con kernel RBF, \textit{Random F
 
 Modelos no supervisados &
 Comprobar si las obras se agrupan espontáneamente por autor en el espacio de rasgos. &
-\textit{K-means}, clustering aglomerativo, modelos de mezcla gaussiana y clustering jerárquico. \\
+\textit{K-means}, \textit{clustering} aglomerativo, modelos de mezcla gaussiana y \textit{clustering} jerárquico. \\
 \hline
 
 Representaciones distribuidas &
@@ -1616,7 +1616,7 @@ Rasgos estilométricos, MFW o rasgos combinados. &
 Algoritmo particional que permite comprobar si las obras se separan en seis grupos compactos, uno por autor, en el espacio de rasgos. \\
 \hline
 
-Clustering aglomerativo &
+\textit{Clustering} aglomerativo &
 Rasgos estilométricos, MFW o rasgos combinados. &
 Método jerárquico que fusiona progresivamente las obras o grupos más próximos, útil para analizar relaciones de proximidad entre autores y obras. \\
 \hline
@@ -1626,7 +1626,7 @@ Rasgos estilométricos, MFW o rasgos combinados. &
 Modelo probabilístico que representa los datos como una combinación de distribuciones gaussianas y permite capturar grupos con formas más flexibles que \textit{K-means}. \\
 \hline
 
-Clustering jerárquico con dendrograma &
+\textit{Clustering} jerárquico con dendrograma &
 Especialmente MFW y rasgos combinados. &
 Análisis complementario para visualizar la estructura jerárquica del corpus y comparar cómo se agrupan las obras según distintas configuraciones de rasgos y enlace. \\
 \hline
@@ -1712,7 +1712,7 @@ Evalúa la estabilidad de los resultados ante cambios en las semillas y el núme
 \label{tab:ajuste-validacion}
 \end{longtable}
 
-En los experimentos no supervisados, el ajuste se plantea de forma distinta, ya que los modelos no utilizan la etiqueta de autor durante la formación de los grupos. En este caso, las obras se representan mediante los mismos conjuntos de rasgos empleados en los experimentos supervisados, especialmente MFW y combinaciones de rasgos estilométricos, y se aplican algoritmos como \textit{K-means}, clustering aglomerativo y modelos de mezcla gaussiana. Las etiquetas de autor se reservan para la evaluación posterior, comparando los grupos obtenidos con las clases reales mediante métricas como ARI, NMI, homogeneidad, completitud y \textit{V-measure}. Además, se calcula la silueta para estimar la separación interna de los clusters sin depender directamente de las etiquetas.
+En los experimentos no supervisados, el ajuste se plantea de forma distinta, ya que los modelos no utilizan la etiqueta de autor durante la formación de los grupos. En este caso, las obras se representan mediante los mismos conjuntos de rasgos empleados en los experimentos supervisados, especialmente MFW y combinaciones de rasgos estilométricos, y se aplican algoritmos como \textit{K-means}, \textit{clustering} aglomerativo y modelos de mezcla gaussiana. Las etiquetas de autor se reservan para la evaluación posterior, comparando los grupos obtenidos con las clases reales mediante métricas como ARI, NMI, homogeneidad, completitud y \textit{V-measure}. Además, se calcula la silueta para estimar la separación interna de los clusters sin depender directamente de las etiquetas.
 
 La validación no supervisada se interpreta con cautela. Un agrupamiento que no reproduzca exactamente los autores no implica necesariamente que la representación sea inútil, ya que las obras pueden organizarse también por época, subgénero, saga, extensión o proximidad del tema. Por ello, estos métodos se utilizan como análisis complementario y permiten observar si las señales estilométricas generan estructuras coherentes en el espacio de rasgos y ayudan a detectar autores u obras que se comportan de forma ambigua respecto al conjunto.
 
@@ -2243,7 +2243,7 @@ En primer lugar, se evaluó la robustez del número de palabras funcionales util
 
 Los resultados muestran que un vocabulario demasiado pequeño, como 5 MFW, no contiene información suficiente para separar correctamente a los autores. Con 10 MFW el rendimiento mejora de forma notable, aunque todavía presenta cierta variabilidad entre semillas. El valor 25 constituye el primer punto en el que se alcanza una \textit{F1 macro} media de 1,000 sin variabilidad observada. Por este motivo, se seleccionó como configuración preferente: mantiene el mejor rendimiento con un número reducido de rasgos, lo que favorece tanto la estabilidad como la interpretabilidad.
 
-La robustez también se analizó en los métodos no supervisados. En este caso, los resultados muestran que las representaciones basadas en MFW generan agrupamientos más coherentes por autor que las métricas estilométricas agregadas. El clustering jerárquico con enlace \textit{ward} y distancia euclídea obtuvo los mejores resultados con MFW, alcanzando un ARI de 0,919, un NMI de 0,928 y una \textit{V-measure} de 0,928. Con métricas estilométricas agregadas, el ARI bajó a 0,608, mientras que la representación combinada obtuvo un valor intermedio de 0,831.
+La robustez también se analizó en los métodos no supervisados. En este caso, los resultados muestran que las representaciones basadas en MFW generan agrupamientos más coherentes por autor que las métricas estilométricas agregadas. El \textit{clustering} jerárquico con enlace \textit{ward} y distancia euclídea obtuvo los mejores resultados con MFW, alcanzando un ARI de 0,919, un NMI de 0,928 y una \textit{V-measure} de 0,928. Con métricas estilométricas agregadas, el ARI bajó a 0,608, mientras que la representación combinada obtuvo un valor intermedio de 0,831.
 
 \begin{longtable}{|p{3cm}|r|r|r|r|}
 \hline
@@ -2255,11 +2255,11 @@ MFW & 0,238 & 0,919 & 0,928 & 0,928 \\
 \hline
 Métricas + MFW & 0,214 & 0,831 & 0,819 & 0,819 \\
 \hline
-\caption{Resultados de clustering jerárquico con seis grupos.}
+\caption{Resultados de \textit{clustering} jerárquico con seis grupos.}
 \label{tab:robustez-clustering}
 \end{longtable}
 
-Estos resultados refuerzan la validez de las MFW como representación estilométrica. Incluso sin utilizar las etiquetas durante el ajuste del clustering, las obras tienden a organizarse de forma coherente con la autoría real. No obstante, también aparecen casos ambiguos, especialmente en autores con menos obras o con textos de géneros distintos al núcleo principal de misterio. Por tanto, el análisis no supervisado apoya las conclusiones de los modelos supervisados, pero también muestra que la separación entre autores no es absoluta en todos los espacios de rasgos.
+Estos resultados refuerzan la validez de las MFW como representación estilométrica. Incluso sin utilizar las etiquetas durante el ajuste del \textit{clustering}, las obras tienden a organizarse de forma coherente con la autoría real. No obstante, también aparecen casos ambiguos, especialmente en autores con menos obras o con textos de géneros distintos al núcleo principal de misterio. Por tanto, el análisis no supervisado apoya las conclusiones de los modelos supervisados, pero también muestra que la separación entre autores no es absoluta en todos los espacios de rasgos.
 
 En cuanto a las representaciones distribuidas, los embeddings de OpenAI mostraron una separación positiva pero moderada por autor. La silueta con distancia coseno fue de 0,2436, y las distancias medias intraautor fueron menores que las distancias medias interautor en todos los casos. Este resultado indica que los embeddings capturan cierta proximidad entre obras de un mismo autor, pero también reflejan otros factores, como tema, género, personajes o tipo de obra. Por ello, su validez como evidencia estrictamente estilométrica es más limitada que la de las MFW, aunque resultan útiles para explorar relaciones de similitud.
 
@@ -2267,9 +2267,9 @@ Desde el punto de vista de la validez interna, el diseño experimental incorpora
 
 La validez externa, en cambio, debe interpretarse con mayor cautela. El corpus está formado por autores concretos, obras en inglés, textos de dominio público y un marco temporal determinado. Por tanto, los resultados no pueden generalizarse automáticamente a otros idiomas, periodos, géneros o escenarios de autoría abierta. El sistema se ha evaluado en un escenario cerrado, donde todos los textos de test pertenecen a alguno de los autores candidatos; esta condición facilita la tarea en comparación con situaciones reales en las que el verdadero autor podría no estar en el conjunto de referencia.
 
-También debe considerarse el tamaño del conjunto de test. Aunque se ha construido de forma equilibrada por autor, contiene un número reducido de obras. Esto hace que una sola predicción errónea tenga un impacto importante en las métricas y que los resultados perfectos deban interpretarse como evidencia fuerte dentro de esta partición, pero no como garantía de generalización absoluta. En este sentido, los análisis de robustez por semillas, número de rasgos y clustering ayudan a reforzar la confianza en las conclusiones, pero no eliminan por completo la incertidumbre asociada al tamaño del corpus.
+También debe considerarse el tamaño del conjunto de test. Aunque se ha construido de forma equilibrada por autor, contiene un número reducido de obras. Esto hace que una sola predicción errónea tenga un impacto importante en las métricas y que los resultados perfectos deban interpretarse como evidencia fuerte dentro de esta partición, pero no como garantía de generalización absoluta. En este sentido, los análisis de robustez por semillas, número de rasgos y \textit{clustering} ayudan a reforzar la confianza en las conclusiones, pero no eliminan por completo la incertidumbre asociada al tamaño del corpus.
 
-Podemos decir que los análisis de robustez y validez respaldan la conclusión principal del capítulo: las palabras funcionales constituyen la representación más estable y eficaz para este corpus. Su buen rendimiento se observa en modelos supervisados, métodos clásicos, análisis de robustez y clustering no supervisado. Sin embargo, la validez de estos resultados está condicionada por el diseño cerrado de la tarea, el número limitado de autores y obras, el desbalance del corpus y la posible influencia de género, época o serie narrativa. Estas limitaciones se retoman en el capítulo de discusión y conclusiones.
+Podemos decir que los análisis de robustez y validez respaldan la conclusión principal del capítulo: las palabras funcionales constituyen la representación más estable y eficaz para este corpus. Su buen rendimiento se observa en modelos supervisados, métodos clásicos, análisis de robustez y \textit{clustering} no supervisado. Sin embargo, la validez de estos resultados está condicionada por el diseño cerrado de la tarea, el número limitado de autores y obras, el desbalance del corpus y la posible influencia de género, época o serie narrativa. Estas limitaciones se retoman en el capítulo de discusión y conclusiones.
 
 \chapter{Discusión y conclusiones}
 
@@ -2461,12 +2461,12 @@ Clasificación multiclase &
 Tarea de clasificación en la que existen más de dos clases posibles. En este trabajo, cada clase corresponde a un autor. \\
 \hline
 
-Clustering &
+\textit{Clustering} &
 Conjunto de técnicas no supervisadas cuyo objetivo es agrupar observaciones similares entre sí. \\
 \hline
 
 Completitud &
-Métrica de clustering que mide si las observaciones de una misma clase real aparecen agrupadas en un mismo cluster. En este trabajo, indica si las obras de un mismo autor tienden a quedar reunidas en el mismo grupo. \\
+Métrica de \textit{clustering} que mide si las observaciones de una misma clase real aparecen agrupadas en un mismo cluster. En este trabajo, indica si las obras de un mismo autor tienden a quedar reunidas en el mismo grupo. \\
 \hline
 
 Colinealidad &
@@ -2542,7 +2542,7 @@ Palabras que aparecen una sola vez en un texto o corpus. Su proporción puede ut
 \hline
 
 Homogeneidad &
-Métrica de clustering que mide si cada cluster contiene principalmente observaciones de una sola clase real. En este trabajo, indica si las obras agrupadas en un mismo cluster tienden a pertenecer al mismo autor. \\
+Métrica de \textit{clustering} que mide si cada cluster contiene principalmente observaciones de una sola clase real. En este trabajo, indica si las obras agrupadas en un mismo cluster tienden a pertenecer al mismo autor. \\
 \hline
 
 Humanidades digitales &
@@ -2686,7 +2686,7 @@ Procedimiento de evaluación en el que el conjunto de entrenamiento se divide en
 \hline
 
 V-measure &
-Métrica de clustering que combina homogeneidad y completitud para evaluar la relación entre grupos y clases reales. \\
+Métrica de \textit{clustering} que combina homogeneidad y completitud para evaluar la relación entre grupos y clases reales. \\
 \hline
 
 Whodunit &
@@ -3019,11 +3019,11 @@ Desde el punto de vista de la reproducibilidad, la versión tokenizada no necesi
 
 \section*{Apéndice IV - Relación de \textit{notebooks} del proyecto}
 \label{apx:notebooks}
-\addcontentsline{toc}{section}{Apéndice IV - Relación de notebooks del proyecto}
+\addcontentsline{toc}{section}{Apéndice IV - Relación de \textit{notebooks} del proyecto}
 
-Además del código modular incluido en el paquete \texttt{whodunit\_stylometry} y de la aplicación interactiva desarrollada con \texttt{Streamlit}, el proyecto se ha apoyado en una serie de \textit{notebooks} utilizados durante la fase experimental. Estos cuadernos recogen el proceso de exploración, validación y análisis de los distintos enfoques aplicados en el trabajo, desde el análisis exploratorio inicial hasta los modelos supervisados, los métodos clásicos, las representaciones distribuidas, el modelo basado en \textit{transformers} y las técnicas de explicabilidad.
+Además del código modular incluido en el paquete \texttt{whodunit\_stylometry} y de la aplicación interactiva desarrollada con \texttt{Streamlit}, el proyecto se ha apoyado en una serie de \textit{notebooks} utilizados durante la fase experimental. Estos \textit{notebooks} recogen el proceso de exploración, validación y análisis de los distintos enfoques aplicados en el trabajo, desde el análisis exploratorio inicial hasta los modelos supervisados, los métodos clásicos, las representaciones distribuidas, el modelo basado en \textit{transformers} y las técnicas de explicabilidad.
 
-La Tabla \ref{tab:notebooks-proyecto} resume la función principal de cada \textit{notebook} dentro del flujo metodológico. Con ello, se intenta mejorar la trazabilidad entre los experimentos realizados, los resultados presentados en la memoria y los artefactos disponibles en el repositorio del proyecto.
+La Tabla \ref{tab:notebooks-proyecto} resume la función principal de cada \textit{notebook}. Con ello, se intenta mejorar la trazabilidad entre los experimentos realizados, los resultados presentados en la memoria y los artefactos disponibles en el repositorio del proyecto.
 
 \begin{longtable}{|
 >{\raggedright\arraybackslash}p{5cm}|
@@ -3040,12 +3040,12 @@ Caracterización inicial del corpus, distribución de obras por autor, análisis
 
 \notebook{02\_classic\_stylometric\_tests.ipynb} &
 Métodos clásicos &
-Aplicación de los métodos clásicos de atribución estilométrica: curvas de Mendenhall, chi-cuadrado de Kilgariff y Delta de Burrows. Incluye la construcción de corpus de referencia por autor y la evaluación sobre obras reservadas para prueba. \\
+Aplicación de los métodos clásicos de atribución de autoría: curvas de Mendenhall, chi-cuadrado de Kilgariff y Delta de Burrows. Incluye la construcción de un corpus de referencia por autor y la evaluación sobre las obras reservadas para prueba. \\
 \hline
 
 \notebook{03\_supervised\_ml\_methods.ipynb} &
 Modelos supervisados &
-Entrenamiento y comparación de modelos de clasificación de autoría con distintos conjuntos de rasgos, incluyendo métricas estilométricas, palabras funcionales frecuentes y representaciones combinadas. \\
+Entrenamiento y comparación de modelos de clasificación de autoría con distintos conjuntos de rasgos, incluyendo métricas estilométricas, palabras funcionales frecuentes y representaciones combinadas de ambas. \\
 \hline
 
 \notebook{04\_mfw\_robustness\_experiment.ipynb} &
@@ -3055,7 +3055,7 @@ Análisis de la estabilidad del rendimiento al variar el número de palabras má
 
 \notebook{05\_xgboost\_base\_features\_experiment.ipynb} &
 Modelos supervisados &
-Experimento específico con \texttt{xgboost} sobre rasgos estilométricos base, utilizado como comparación adicional frente a otros clasificadores supervisados. \\
+Experimento específico con \texttt{xgboost} sobre rasgos estilométricos básicos, utilizado como comparación adicional frente a otros clasificadores supervisados. \\
 \hline
 
 \notebook{06\_unsupervised\_ml\_methods.ipynb} &
@@ -3075,7 +3075,7 @@ Interpretación global de modelos lineales mediante análisis de coeficientes, c
 
 \notebook{09\_supervised\_ml\_explainability\_shap.ipynb} &
 Explicabilidad &
-Aplicación de SHAP para interpretar modelos supervisados a nivel global y local, identificando la contribución de distintos rasgos a las predicciones de autoría. \\
+Aplicación de SHAP para interpretar modelos supervisados a nivel global y local, identificando la contribución de distintos rasgos a las predicciones. \\
 \hline
 
 \notebook{10\_train\_authorship\_transformer\_colab.ipynb} &
@@ -3085,7 +3085,7 @@ Ajuste fino de RoBERTa para atribución de autoría a partir de fragmentos de te
 
 \notebook{11\_transformer\_explainability\_captum.ipynb} &
 Explicabilidad de \textit{transformers} &
-Análisis de atribuciones a nivel de token mediante I para inspeccionar qué elementos del texto contribuyen a predicciones concretas del modelo RoBERTa. \\
+Análisis de atribuciones a nivel de token mediante \textit{Captum} para inspeccionar qué elementos del texto contribuyen a predicciones concretas del modelo RoBERTa. \\
 \hline
 
 \notebook{12\_transformer\_explainability\_bertviz.ipynb} &
@@ -3093,7 +3093,7 @@ Explicabilidad de \textit{transformers} &
 Visualización de patrones de atención mediante \textit{BertViz} para explorar el comportamiento interno del modelo RoBERTa en distintas capas y cabezas de atención. \\
 \hline
 
-\caption{Relación de notebooks utilizados durante el desarrollo experimental del proyecto.}
+\caption{Relación de \textit{notebooks} utilizados durante el desarrollo experimental del proyecto.}
 \label{tab:notebooks-proyecto}
 \end{longtable}
 
@@ -3219,7 +3219,7 @@ La pestaña \textbf{Evaluación} debe revisarse con especial atención. Un valor
 La opción \textbf{Métodos no supervisados} agrupa análisis de \textit{clustering}, es decir, métodos que forman grupos de obras a partir de sus rasgos sin utilizar las etiquetas de autor durante la construcción de los clústeres. La aplicación permite ejecutar tres flujos:
 
 \begin{itemize}
-    \item \textbf{Experimento de clustering}: compara varios algoritmos no supervisados.
+    \item \textbf{Experimento de \textit{clustering}}: compara varios algoritmos no supervisados.
     \item \textbf{Robustez MFW}: analiza cómo cambia la calidad del \textit{clustering} al variar el número de palabras más frecuentes.
     \item \textbf{\textit{Clustering} jerárquico}: construye agrupaciones jerárquicas y muestra un dendrograma.
 \end{itemize}
