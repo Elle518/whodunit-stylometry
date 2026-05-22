@@ -1274,7 +1274,7 @@ Los experimentos de aprendizaje automático se han desarrollado principalmente c
 
 La parte de representaciones distribuidas se apoya en \textit{embeddings} generados mediante la API de OpenAI, junto con \texttt{tiktoken} para controlar la segmentación de los textos en fragmentos de tamaño compatible con los modelos utilizados. Posteriormente, se aplican técnicas como PCA y UMAP para proyectar las representaciones en espacios bidimensionales y analizar agrupamientos, similitudes y relaciones entre obras y autores.
 
-Además de las representaciones mediante \textit{embeddings}, se ha incorporado un experimento específico con un modelo basado en \textit{transformers}. En concreto, se ha realizado el ajuste fino de RoBERTa para la tarea de atribución de autoría, utilizando fragmentos de texto etiquetados según el autor de la obra original. Para ello se han empleado las bibliotecas del ecosistema de Hugging Face, especialmente \texttt{transformers}, \texttt{datasets} y \texttt{evaluate}, junto con \texttt{PyTorch} como base para el entrenamiento. Este proceso se llevó a cabo en Google Colab, debido a los mayores requisitos computacionales de este tipo de modelos y a la necesidad de disponer de GPU. Para explorar su interpretabilidad se utilizaron además \texttt{Captum}, orientado al análisis de atribuciones a nivel de token, y \texttt{BertViz}, empleado para visualizar patrones de atención entre las capas y las cabezas del modelo.
+Además de las representaciones mediante \textit{embeddings}, se ha incorporado un experimento específico con un modelo basado en \textit{transformers}. En concreto, se ha realizado el ajuste fino de RoBERTa para la tarea de atribución de autoría, utilizando fragmentos de texto etiquetados según el autor de la obra original. Para ello se han empleado las bibliotecas del ecosistema de Hugging Face, especialmente \texttt{transformers}, \texttt{datasets} y \texttt{evaluate}, junto con \texttt{PyTorch} como base para el entrenamiento. Este proceso se llevó a cabo en Google Colab, debido a los mayores requisitos computacionales de este tipo de modelos y a la necesidad de disponer de GPU. Para explorar su interpretabilidad se utilizaron además \textit{Captum}, orientado al análisis de atribuciones a nivel de token, y \textit{BertViz}, empleado para visualizar patrones de atención entre las capas y las cabezas del modelo.
 
 Finalmente, el proyecto incorpora una aplicación interactiva en \texttt{Streamlit}. Esta herramienta permite cargar un corpus organizado por autores, ejecutar análisis exploratorios, métodos estilométricos clásicos, modelos supervisados y no supervisados y visualizar resultados mediante tablas y gráficos interactivos. Con ello se consigue que el trabajo no quede limitado a una serie de \textit{notebooks} de experimentos, sino que pueda materializarse en un \textit{pipeline} reutilizable y accesible para futuros análisis estilométricos.
 
@@ -1331,7 +1331,7 @@ RoBERTa, fragmentación de obras, entrenamiento supervisado con Hugging Face, ev
 
 Explicabilidad &
 Interpretar qué rasgos contribuyen a las predicciones y analizar errores concretos. &
-Coeficientes de modelos lineales, importancia de variables, SHAP y revisión de casos mal clasificados. Captum y BertViz para el \textit{transformer}. \\
+Coeficientes de modelos lineales, importancia de variables, SHAP y revisión de casos mal clasificados. \textit{Captum} y \textit{BertViz} para el \textit{transformer}. \\
 \hline
 
 \caption{Bloques principales del diseño experimental.}
@@ -1547,7 +1547,7 @@ Finalmente, se construyen redes de similitud entre obras mediante \texttt{Networ
 
 Estas representaciones distribuidas tienen una función complementaria dentro del diseño experimental. Por un lado, permiten comparar los enfoques clásicos con modelos capaces de capturar información de contexto más rica. Por otro, introducen una representación menos transparente, por lo que sus resultados deben contrastarse con los obtenidos mediante rasgos explícitos e interpretables. En este sentido, los \textit{embeddings} no sustituyen a la estilometría clásica, sino que amplían el análisis y permiten valorar si la información de contexto aporta una mejora real en la atribución de autoría.
 
-\section{Modelos de clasificación}
+\section{Modelos de clasificación y \textit{clustering}}
 
 La atribución de autoría se formula en este trabajo como un problema de clasificación multiclase, donde cada clase corresponde a uno de los autores del corpus. Cada obra debe ser asignada a uno de los seis autores candidatos a partir de la información extraída del texto. En los modelos clásicos de aprendizaje automático, esta información se representa mediante matrices de rasgos estilométricos, MFW o combinaciones de ambos conjuntos. En el modelo basado en \textit{transformers}, en cambio, la entrada es el propio texto segmentado en fragmentos.
 
@@ -1602,6 +1602,39 @@ Modelo \textit{transformer} entrenado para clasificación de autoría a partir d
 \label{tab:modelos-clasificacion}
 \end{longtable}
 
+Además de los modelos supervisados, el trabajo incorpora modelos no supervisados para analizar si las obras se agrupan de forma coherente por autor sin utilizar las etiquetas durante el ajuste. Estos modelos no se emplean para entrenar un clasificador de autoría en sentido estricto, sino como herramienta exploratoria y de validación complementaria del espacio de rasgos.
+
+\begin{longtable}{|p{4cm}|p{4.6cm}|p{6.3cm}|}
+\hline
+\textbf{Modelo} & \textbf{Entrada principal} & \textbf{Motivación} \\
+\hline
+
+\textit{K-means} &
+Rasgos estilométricos, MFW o rasgos combinados. &
+Algoritmo particional que permite comprobar si las obras se separan en seis grupos compactos, uno por autor, en el espacio de rasgos. \\
+\hline
+
+Clustering aglomerativo &
+Rasgos estilométricos, MFW o rasgos combinados. &
+Método jerárquico que fusiona progresivamente las obras o grupos más próximos, útil para analizar relaciones de proximidad entre autores y obras. \\
+\hline
+
+Modelo de mezcla gaussiana &
+Rasgos estilométricos, MFW o rasgos combinados. &
+Modelo probabilístico que representa los datos como una combinación de distribuciones gaussianas y permite capturar grupos con formas más flexibles que \textit{K-means}. \\
+\hline
+
+Clustering jerárquico con dendrograma &
+Especialmente MFW y rasgos combinados. &
+Análisis complementario para visualizar la estructura jerárquica del corpus y comparar cómo se agrupan las obras según distintas configuraciones de rasgos y enlace. \\
+\hline
+
+\caption{Modelos no supervisados utilizados en los experimentos de agrupamiento.}
+\label{tab:modelos-no-supervisados}
+\end{longtable}
+
+En todos los casos, el número de grupos se fija en seis, coincidiendo con el número de autores del corpus. Las etiquetas de autor no intervienen en el ajuste de los modelos, pero sí se utilizan posteriormente para evaluar la correspondencia entre los clústeres obtenidos y las clases reales mediante métricas como ARI, NMI, homogeneidad, completitud, \textit{V-measure} y \textit{silhouette}. De este modo, los modelos no supervisados permiten comprobar si las representaciones empleadas contienen una señal de autor suficientemente clara incluso sin aprendizaje supervisado.
+
 En los modelos tabulares, el entrenamiento se realiza mediante \textit{pipelines} de \texttt{scikit-learn}. Antes de ajustar el clasificador, se aplica un escalado robusto de las variables. Este preprocesamiento interno resulta necesario porque los rasgos estilométricos pueden estar en escalas muy distintas y algunos modelos, especialmente SVM, regresión logística o KNN, son sensibles a esas diferencias. En los modelos que lo permiten, como la regresión logística, SVM y \textit{Random Forest}, se utiliza ponderación de clases mediante \texttt{class\_weight="balanced"} para reducir el efecto del desbalance entre autores.
 
 La regresión logística se incluye como modelo lineal principal. Su interés no reside únicamente en el rendimiento, sino también en su interpretabilidad, ya que los coeficientes permiten analizar qué rasgos contribuyen más a la identificación de cada autor. Por este motivo, este modelo resulta especialmente útil para conectar la salida del modelo con una lectura estilométrica de los rasgos.
@@ -1626,7 +1659,7 @@ El ajuste y la validación de los modelos se han diseñado con el objetivo de ob
 
 En los modelos clásicos de aprendizaje automático, el flujo general consta de tres fases. En primer lugar, el corpus se divide en un conjunto de entrenamiento y un conjunto de prueba, manteniendo una representación equilibrada por autor en la medida de lo posible. En segundo lugar, dentro del conjunto de entrenamiento se aplica validación cruzada estratificada para comparar los modelos candidatos. Finalmente, el mejor modelo se ajusta sobre todo el conjunto de entrenamiento y se evalúa sobre el conjunto de test reservado.
 
-La partición principal se realiza a nivel de obra, no a nivel de fragmento. Esta decisión evita que partes de una misma obra aparezcan simultáneamente en entrenamiento y prueba, lo que produciría una estimación artificialmente optimista del rendimiento. En los experimentos tabulares, el conjunto de test se construye seleccionando un número fijo de obras por autor, controlado mediante el parámetro \texttt{n\_test\_per\_author}. El resto de obras se utiliza para entrenamiento.
+La partición principal se realiza a nivel de obra, no a nivel de fragmento. Esta decisión evita que partes de una misma obra aparezcan simultáneamente en entrenamiento y prueba, lo que produciría una estimación artificialmente optimista del rendimiento. En los experimentos tabulares, el conjunto de test se construye seleccionando un número fijo de obras por autor, dos por defecto. El resto de obras se utiliza para entrenamiento.
 
 Además del equilibrio por autor, en la composición del conjunto de test se introduce un criterio relacionado con el género literario. Siempre que la disponibilidad del corpus lo permite, se reserva para cada autor al menos una obra que no pertenece estrictamente al género de misterio. Esta decisión permite comprobar si los modelos mantienen la atribución correcta cuando el texto evaluado se aleja del dominio principal del corpus, y ayuda a detectar si parte del rendimiento puede estar influida por señales del género o tema, además de por rasgos propiamente de estilo del autor.
 
@@ -1695,11 +1728,11 @@ El ajuste y la validación buscan equilibrar rendimiento, estabilidad e interpre
 
 \section{Explicabilidad del sistema}
 
-La explicabilidad se ha incorporado como una parte central del sistema, no como una fase accesoria posterior al entrenamiento. En un trabajo de atribución de autoría literaria, obtener una predicción correcta no resulta suficiente: también es necesario analizar qué rasgos han contribuido a esa decisión, si dichos rasgos pueden relacionarse con patrones estilísticos reconocibles y en qué casos el modelo puede estar aprendiendo señales ajenas al estilo, como tema, género, edición o longitud de las obras.
+La explicabilidad se ha incorporado como una parte central del sistema, no como una fase accesoria posterior al entrenamiento. En un trabajo de atribución de autoría literaria, obtener una predicción correcta no resulta suficiente: también es necesario analizar qué rasgos han contribuido a esa decisión, si dichos rasgos pueden relacionarse con patrones estilísticos reconocibles y en qué casos el modelo puede estar aprendiendo señales ajenas al estilo, como el tema o el género, la edición o la longitud de las obras.
 
 El enfoque adoptado combina explicabilidad global y local. La explicabilidad global busca identificar qué variables son importantes para el comportamiento general del modelo, mientras que la explicabilidad local se centra en casos concretos, especialmente en predicciones correctas con alta confianza, predicciones dudosas y errores de clasificación. Esta combinación permite estudiar tanto los patrones generales del sistema como sus decisiones particulares.
 
-\begin{longtable}{|p{3.8cm}|p{4.8cm}|p{5.9cm}|}
+\begin{longtable}{|p{3.8cm}|p{5cm}|p{5.9cm}|}
 \hline
 \textbf{Nivel} & \textbf{Técnica} & \textbf{Uso principal} \\
 \hline
@@ -1714,8 +1747,13 @@ Coeficientes de modelos lineales. &
 Analizar qué rasgos empujan la predicción hacia cada autor o la alejan de él. \\
 \hline
 
+Global &
+\textit{Permutation importance}. &
+Evaluar cuánto disminuye el rendimiento del modelo al permutar cada rasgo, identificando variables relevantes para la predicción de forma independiente del signo de los coeficientes. \\
+\hline
+
 Global y local &
-SHAP. &
+SHAP &
 Estimar la contribución de cada rasgo a las predicciones del modelo, tanto en promedio como para una obra concreta. \\
 \hline
 
@@ -1724,8 +1762,8 @@ Contribuciones lineales por instancia. &
 Explicar una predicción individual multiplicando el valor transformado del rasgo por su coeficiente. \\
 \hline
 
-Transformer &
-Captum y visualización de atención con BertViz. &
+\textit{Transformer} &
+\textit{Captum} y visualización de atención con \textit{BertViz}. &
 Inspeccionar qué tokens o relaciones de atención influyen en predicciones concretas del modelo RoBERTa. \\
 \hline
 
@@ -1733,54 +1771,70 @@ Inspeccionar qué tokens o relaciones de atención influyen en predicciones conc
 \label{tab:explicabilidad}
 \end{longtable}
 
-En los métodos estilométricos clásicos, la explicabilidad se obtiene de forma directa a partir de la propia definición de las distancias. En el chi-cuadrado de Kilgariff, se calculan las contribuciones individuales de cada término a la distancia total entre la obra evaluada y el perfil de cada autor. En la Delta de Burrows, se analizan las diferencias absolutas entre las puntuaciones z de cada término en el texto de prueba y en el corpus de referencia. De este modo, es posible identificar qué palabras funcionales o términos frecuentes explican que una obra se acerque o se aleje de un autor candidato.
+En los métodos estilométricos clásicos, la explicabilidad se obtiene de forma directa a partir de la propia definición de las distancias. En el chi-cuadrado de Kilgariff, se calculan las contribuciones individuales de cada término a la distancia total entre la obra evaluada y el perfil de cada autor. En la Delta de Burrows, se analizan las diferencias absolutas entre las puntuaciones $z$ de cada término en el texto de prueba y en el corpus de referencia. De este modo, es posible identificar qué palabras funcionales o términos frecuentes explican que una obra se acerque o se aleje de un autor candidato.
 
 En los modelos lineales, especialmente la regresión logística, se analizan los coeficientes aprendidos para cada clase. Un coeficiente positivo indica que, cuando el valor del rasgo aumenta en el espacio transformado del modelo, la puntuación de esa clase tiende a aumentar. Un coeficiente negativo indica el efecto contrario. Esta lectura permite construir perfiles por autor y observar, por ejemplo, qué palabras funcionales o qué métricas estilométricas son más características de cada clase según el modelo.
 
 Para el análisis local de modelos lineales se calcula la contribución de cada rasgo como el producto entre su valor transformado y el coeficiente correspondiente a la clase explicada. Esta operación permite descomponer la puntuación de una predicción concreta y ordenar los rasgos según su contribución absoluta. Así, para una obra individual, el sistema puede mostrar qué variables han empujado la decisión hacia el autor predicho y cuáles han actuado en sentido contrario.
 
-Además, se utiliza SHAP como técnica de explicabilidad independiente del razonamiento manual sobre coeficientes. En este trabajo, SHAP se aplica principalmente sobre el modelo basado en MFW y regresión logística, ya que combina buen rendimiento, estabilidad e interpretabilidad. A nivel global, se calculan los valores medios absolutos de SHAP por autor para identificar las palabras funcionales más influyentes. A nivel local, se generan tablas y visualizaciones como gráficos de barras, \textit{waterfall plots}, \textit{force plots} y \textit{decision plots}, que permiten seguir cómo cada rasgo modifica la salida del modelo para una obra concreta.
+Como complemento a los coeficientes, se calcula también la \textit{permutation importance} sobre el modelo entrenado. Esta técnica estima la importancia de cada rasgo midiendo cuánto empeora el rendimiento cuando sus valores se permutan aleatoriamente, manteniendo el resto de variables intactas. A diferencia de los coeficientes, no indica si un rasgo favorece a un autor concreto ni el sentido de su efecto, pero permite comprobar qué variables tienen mayor impacto efectivo sobre la capacidad predictiva del modelo. Sus resultados se interpretan con cautela, especialmente por el tamaño reducido del conjunto de test.
 
-La explicabilidad local se utiliza también como herramienta de análisis de errores. Cuando una obra se clasifica incorrectamente, se revisan las señales que han favorecido al autor predicho y las que habrían apoyado al autor real. Este análisis permite distinguir entre errores poco informativos, debidos quizá a baja confianza o escasa separación entre clases, y errores estilométricamente interesantes, donde una obra presenta patrones cercanos a otro autor o se comporta como un caso atípico dentro de su propia clase.
+Además, se utiliza SHAP como técnica de explicabilidad independiente del razonamiento sobre coeficientes. En este trabajo, SHAP se aplica principalmente sobre el modelo basado en MFW y regresión logística, ya que combina buen rendimiento, estabilidad e interpretabilidad. A nivel global, se calculan los valores medios absolutos de SHAP por autor para identificar las palabras funcionales más influyentes. A nivel local, se generan tablas y visualizaciones como gráficos de barras, \textit{waterfall plots}, \textit{force plots} y \textit{decision plots}, que permiten seguir cómo cada rasgo modifica la salida del modelo para una obra concreta.
 
-En el caso del modelo \textit{transformer}, la explicabilidad presenta más limitaciones. Al tratarse de un modelo contextual profundo, sus representaciones internas no se corresponden con rasgos directamente interpretables como una frecuencia de palabra o una longitud media de oración. Por ello, se han utilizado técnicas complementarias. Por un lado, Captum permite estimar atribuciones a nivel de token para una predicción concreta. Por otro, BertViz permite visualizar patrones de atención entre tokens, capas y cabezas del modelo RoBERTa. Estas visualizaciones ayudan a inspeccionar el comportamiento interno del modelo, aunque no se interpretan como explicaciones causales completas.
+La explicabilidad local se utiliza también como herramienta de análisis de errores. Cuando una obra se clasifica incorrectamente, se revisan las señales que han favorecido al autor predicho y las que habrían apoyado al autor real. Este análisis permite distinguir entre errores poco informativos, debidos quizá a unq baja confianza o escasa separación entre clases, y errores estilométricamente interesantes, donde una obra presenta patrones cercanos a otro autor o se comporta como un caso atípico dentro de su propia clase.
 
-De este modo, la explicabilidad del sistema persigue tres objetivos. El primero es técnico: comprobar que los modelos se apoyan en señales coherentes y no en artefactos evidentes del corpus. El segundo es metodológico: comparar el grado de transparencia de los enfoques clásicos, tabulares y basados en \textit{transformers}. El tercero es interpretativo: relacionar, con cautela, las decisiones del sistema con rasgos estilísticos que puedan ser discutidos desde una perspectiva literaria. Así, la explicabilidad actúa como puente entre el rendimiento predictivo y el análisis crítico de los resultados.
+En el caso del modelo \textit{transformer}, la explicabilidad presenta más limitaciones. Al tratarse de un modelo de aprendizaje profundo, sus representaciones internas no se corresponden con rasgos directamente interpretables como una frecuencia de palabra o una longitud media de oración. Por ello, se han utilizado técnicas complementarias. Por un lado, \textit{Captum} permite estimar atribuciones a nivel de token para una predicción concreta. Por otro, \textit{BertViz} permite visualizar patrones de atención entre tokens, capas y cabezas del modelo RoBERTa. Estas visualizaciones ayudan a inspeccionar el comportamiento interno del modelo, aunque no se interpretan como evidencias causales directas.
+
+De este modo, la explicabilidad del sistema persigue tres objetivos. El primero es técnico y consiste en comprobar que los modelos se apoyan en señales coherentes y no en artefactos del corpus. El segundo es metodológico, comparar el grado de transparencia de los enfoques clásicos, tabulares y basados en \textit{transformers}. El tercero es interpretativo, y trata de relacionar, con cautela, las decisiones del sistema con rasgos estilísticos que puedan ser discutidos desde una perspectiva literaria. Así, la explicabilidad actúa como puente entre el rendimiento predictivo de los modelos y el análisis crítico de los resultados.
 
 \section{Implementación del \textit{pipeline}/herramienta}
 
-Además de los cuadernos empleados para la experimentación, el proyecto se ha implementado como un pipeline reutilizable en Python y como una herramienta interactiva desarrollada con Streamlit. Esta doble organización permite, por una parte, conservar la flexibilidad exploratoria propia de los notebooks y, por otra, disponer de una aplicación capaz de ejecutar los principales análisis de forma controlada y reproducible. El manual de uso de la aplicación se recoge con mayor detalle en el \hyperref[apx:manual-usuario]{Apéndice V}.
+Además de los \textit{notebooks} empleados para los experimentos, el proyecto se ha implementado como un \textit{pipeline} reutilizable en Python y como una herramienta interactiva desarrollada con \texttt{Streamlit}. Esta doble organización permite, por una parte, conservar la flexibilidad exploratoria propia de los notebooks y, por otra, disponer de una aplicación capaz de ejecutar los principales análisis de forma controlada y reproducible. El manual de uso de la aplicación se recoge con mayor detalle en el \hyperref[apx:manual-usuario]{Apéndice V}.
 
-La implementación se estructura en torno al paquete \texttt{whodunit\_stylometry}, que agrupa la lógica de carga de datos, preprocesamiento, extracción de rasgos, entrenamiento de modelos, análisis no supervisado, generación de embeddings y visualización. La interfaz \texttt{app.py} actúa como capa de presentación y orquestación, evitando que la lógica metodológica quede acoplada exclusivamente a los notebooks.
+La implementación se estructura en torno al paquete \texttt{whodunit\_stylometry}, que agrupa la lógica de carga de datos, preprocesamiento, extracción de rasgos, entrenamiento de modelos, análisis no supervisado, generación de \textit{embeddings} y visualización. La interfaz \texttt{app.py} actúa como capa de presentación y orquestación, evitando que la lógica con la metodología quede acoplada exclusivamente a los \textit{notebooks}.
 
-\begin{table}[H]
-\centering
-\begin{tabular}{p{0.28\textwidth}p{0.62\textwidth}}
-\toprule
+\begin{longtable}{|p{4.5cm}|p{10cm}|}
+\hline
 \textbf{Componente} & \textbf{Función principal} \\
-\midrule
-\texttt{utils.data\_utils} & Descubrimiento y carga del corpus a partir de una estructura de carpetas por autor. Genera una tabla con autor, obra, ruta, texto y estadísticas básicas. \\
-\texttt{utils.nlp\_utils} & Funciones auxiliares de tokenización, normalización operativa y cálculo de elementos lingüísticos reutilizados por distintos análisis. \\
-\texttt{analysis.eda} & Cálculo de métricas exploratorias sobre longitud, vocabulario, estructura textual, puntuación y distribución por autor. \\
+\hline
+
+\texttt{utils.data\_utils} & Carga del corpus a partir de una estructura de carpetas por autor. Genera una tabla con autor, obra, ruta, texto y estadísticas básicas. \\
+\hline
+
+\texttt{utils.nlp\_utils} & Funciones auxiliares de tokenización, normalización y cálculo de elementos lingüísticos reutilizados por distintos análisis. \\
+\hline
+
+\texttt{analysis.eda} & Cálculo de métricas exploratorias sobre longitud, vocabulario, estructura del texto, puntuación y distribución por autor. \\
+\hline
+
 \texttt{analysis.classical} & Implementación de los métodos clásicos de atribución: Mendenhall, Kilgariff y Burrows. \\
+\hline
+
 \texttt{analysis.supervised} & Construcción de matrices de rasgos, entrenamiento de clasificadores, validación cruzada, evaluación y predicción de textos externos. \\
-\texttt{analysis.unsupervised} & Experimentos de agrupamiento, análisis jerárquico y evaluación de la robustez de representaciones basadas en palabras frecuentes. \\
-\texttt{analysis.embeddings} & División de textos en fragmentos, obtención de embeddings, agregación por obra y cálculo de similitudes, vecinos y proyecciones. \\
+\hline
+
+\texttt{analysis.unsupervised} & Experimentos de agrupamiento, análisis jerárquico y evaluación de la robustez de las representaciones basadas en palabras frecuentes. \\
+\hline
+
+\texttt{analysis.embeddings} & División de textos en fragmentos, obtención de \textit{embeddings}, agregación por obra y cálculo de similitudes, vecinos y proyecciones. \\
+\hline
+
 \texttt{utils.plot\_utils} & Generación de visualizaciones empleadas tanto en notebooks como en la aplicación. \\
-\texttt{utils.st\_utils} & Funciones auxiliares de Streamlit, gestión de caché y claves de configuración para evitar recomputaciones innecesarias. \\
-\bottomrule
-\end{tabular}
+\hline
+
+\texttt{utils.st\_utils} & Funciones auxiliares de \texttt{Streamlit}, gestión de la caché y la configuración para evitar cálculos innecesarios. \\
+\hline
 \caption{Componentes principales de la implementación del pipeline.}
 \label{tab:pipeline_componentes}
-\end{table}
+\end{longtable}
 
-El punto de entrada del flujo interactivo es la aplicación Streamlit, que permite seleccionar el directorio del corpus, activar o desactivar la conversión a minúsculas y escoger entre distintas familias de análisis: exploratorio, métodos clásicos, modelos supervisados, métodos no supervisados y embeddings de OpenAI. La aplicación espera una organización sencilla del corpus, basada en subdirectorios por autor y ficheros de texto plano, de forma que el nombre de la carpeta actúa como etiqueta de clase.
+El punto de entrada del flujo interactivo es la aplicación \texttt{Streamlit}, que permite seleccionar el directorio del corpus, activar o desactivar la conversión a minúsculas y escoger entre distintas familias de análisis: exploratorio, métodos clásicos, modelos supervisados, métodos no supervisados y \textit{embeddings} de OpenAI. La aplicación espera una organización sencilla del corpus, basada en subdirectorios por autor y ficheros de texto plano, de forma que el nombre de la carpeta actúa como etiqueta de clase.
 
-Una parte relevante de la implementación es la separación entre datos de entrada, configuración experimental y resultados cacheados. Para ello se emplean mecanismos de caché de Streamlit basados tanto en los parámetros del experimento como en una huella del corpus. Esta huella resume la forma del conjunto de datos y el contenido esencial de cada obra, lo que permite reutilizar resultados cuando no ha cambiado la configuración y, al mismo tiempo, evita conservar resultados obsoletos cuando se modifica el corpus.
+Una parte relevante de la implementación es la separación entre datos de entrada, configuración del experimento y resultados cacheados. Para ello se emplean mecanismos de caché de \texttt{Streamlit} basados tanto en los parámetros del experimento como en una huella del corpus. Esta huella resume la forma del conjunto de datos y el contenido esencial de cada obra, lo que permite reutilizar resultados cuando no ha cambiado la configuración y, al mismo tiempo, evita conservar resultados obsoletos cuando se modifica el corpus.
 
-La herramienta incorpora también la posibilidad de analizar textos externos no incluidos en el corpus. En los métodos clásicos, el texto cargado puede compararse con los perfiles de autor mediante las distancias o puntuaciones correspondientes. En los modelos supervisados, la aplicación aplica el mismo preprocesamiento y la misma extracción de rasgos que en el entrenamiento antes de producir una atribución probable. Esta funcionalidad resulta especialmente útil para convertir el pipeline experimental en una herramienta de consulta y validación cualitativa.
+La herramienta incorpora también la posibilidad de analizar textos externos no incluidos en el corpus. En los métodos clásicos, el texto cargado puede compararse con los perfiles de autor mediante las distancias o puntuaciones correspondientes. En los modelos supervisados, la aplicación aplica el mismo preprocesamiento y la misma extracción de rasgos que en el entrenamiento antes de dar una atribución probable. Esta funcionalidad resulta especialmente útil para convertir el \textit{pipeline} experimental en una herramienta de consulta y validación.
 
-Los experimentos con embeddings se integran en la aplicación mediante un flujo específico que permite configurar el modelo, el tamaño de los fragmentos, el solapamiento, la dimensionalidad y distintos parámetros de proyección o construcción de redes de similitud. La clave de la API se introduce desde la propia interfaz y los resultados se mantienen en caché durante la sesión, reduciendo el coste de llamadas repetidas. En cambio, el modelo basado en transformer se entrenó en Google Colab debido a sus requisitos computacionales y a la conveniencia de disponer de GPU; por ello se mantiene como un flujo experimental independiente, documentado en su cuaderno correspondiente.
+Los experimentos con \textit{embeddings} se integran en la aplicación mediante un flujo específico que permite configurar el modelo, el tamaño de los fragmentos, el solapamiento, la dimensionalidad y distintos parámetros de proyección o construcción de las redes de similitud. La clave de la API se introduce desde la propia interfaz y los resultados se mantienen en caché durante la sesión, reduciendo el coste de las llamadas repetidas. En cambio, el modelo basado en \textit{transformer} que se entrenó en Google Colab debido a sus requisitos computacionales y a la conveniencia de disponer de GPU, se mantiene como un flujo experimental independiente, documentado en su \textit{notebook} correspondiente.
 
 Con todo ello, la implementación persigue tres objetivos: reproducibilidad, modularidad y usabilidad. La reproducibilidad se apoya en la definición explícita del entorno mediante \texttt{pyproject.toml} y \texttt{uv.lock}, así como en el uso de semillas y particiones controladas en los experimentos. La modularidad se consigue separando las funciones analíticas de la interfaz de usuario. Finalmente, la usabilidad se concreta en una herramienta que permite recorrer el ciclo completo de análisis estilométrico, desde la carga del corpus hasta la comparación de autores, la evaluación de modelos y la inspección de casos concretos.
 
@@ -2273,7 +2327,7 @@ La comparación entre modelos tampoco es completamente homogénea. Los modelos t
 
 Desde el punto de vista de los rasgos, el trabajo se ha centrado principalmente en métricas estilométricas agregadas y palabras funcionales. No se han incorporado de forma sistemática otros rasgos potencialmente útiles, como n-gramas de caracteres, etiquetas morfosintácticas, patrones sintácticos o medidas específicas de diálogo. Esta decisión ha permitido mantener el análisis en un marco interpretable y controlado, pero limita la exploración de otras señales que podrían mejorar el rendimiento o aportar perspectivas estilísticas adicionales.
 
-En relación con los modelos basados en embeddings y transformers, una limitación relevante es su menor interpretabilidad. Aunque se han aplicado técnicas como Captum, BertViz y SHAP en las partes correspondientes del sistema, las representaciones internas de estos modelos no son tan transparentes como las frecuencias de palabras funcionales o los coeficientes de una regresión logística. Por ello, aunque pueden ofrecer buen rendimiento, sus predicciones deben interpretarse con mayor cautela, especialmente si se pretende relacionarlas con rasgos literarios concretos.
+En relación con los modelos basados en embeddings y transformers, una limitación relevante es su menor interpretabilidad. Aunque se han aplicado técnicas como \textit{Captum}, \textit{BertViz} y SHAP en las partes correspondientes del sistema, las representaciones internas de estos modelos no son tan transparentes como las frecuencias de palabras funcionales o los coeficientes de una regresión logística. Por ello, aunque pueden ofrecer buen rendimiento, sus predicciones deben interpretarse con mayor cautela, especialmente si se pretende relacionarlas con rasgos literarios concretos.
 
 También existe una posible influencia de factores externos al estilo individual, como la época, el país, la edición digital, el género o los personajes recurrentes. Aunque se ha realizado una limpieza cuidadosa del corpus y se han evitado metadatos externos en los modelos, no es posible garantizar que todas las señales aprendidas sean puramente autorales. En particular, las obras pertenecientes a una misma serie o protagonizadas por un mismo detective pueden compartir convenciones narrativas que el modelo podría utilizar indirectamente.
 
@@ -3029,12 +3083,12 @@ Ajuste fino de RoBERTa para atribución de autoría a partir de fragmentos de te
 
 \notebook{11\_transformer\_explainability\_captum.ipynb} &
 Explicabilidad de \textit{transformers} &
-Análisis de atribuciones a nivel de token mediante Captum para inspeccionar qué elementos del texto contribuyen a predicciones concretas del modelo RoBERTa. \\
+Análisis de atribuciones a nivel de token mediante I para inspeccionar qué elementos del texto contribuyen a predicciones concretas del modelo RoBERTa. \\
 \hline
 
 \notebook{12\_transformer\_explainability\_bertviz.ipynb} &
 Explicabilidad de \textit{transformers} &
-Visualización de patrones de atención mediante BertViz para explorar el comportamiento interno del modelo RoBERTa en distintas capas y cabezas de atención. \\
+Visualización de patrones de atención mediante \textit{BertViz} para explorar el comportamiento interno del modelo RoBERTa en distintas capas y cabezas de atención. \\
 \hline
 
 \caption{Relación de notebooks utilizados durante el desarrollo experimental del proyecto.}
