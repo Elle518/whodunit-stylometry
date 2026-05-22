@@ -2433,12 +2433,12 @@ En conjunto, la planificación se ha seguido de forma satisfactoria, aunque con 
 \textbf{Término} & \textbf{Definición} \\
 \hline
 
-Accuracy &
-Exactitud. Proporción de predicciones correctas sobre el total de ejemplos evaluados. \\
+\textit{Accuracy} &
+Exactitud. Proporción de predicciones correctas sobre el total de muestras evaluadas. \\
 \hline
 
 API &
-\textit{Application Programming Interface}. Interfaz que permite a un programa comunicarse con otro servicio o sistema. En este trabajo se utiliza, entre otros casos, para generar embeddings mediante OpenAI. \\
+\textit{Application Programming Interface}. Interfaz que permite a un programa comunicarse con otro servicio o sistema. En este trabajo se utiliza, entre otros casos, para generar \textit{embeddings} mediante OpenAI. \\
 \hline
 
 Aprendizaje no supervisado &
@@ -2466,11 +2466,11 @@ Conjunto de técnicas no supervisadas cuyo objetivo es agrupar observaciones sim
 \hline
 
 Completitud &
-Métrica de \textit{clustering} que mide si las observaciones de una misma clase real aparecen agrupadas en un mismo cluster. En este trabajo, indica si las obras de un mismo autor tienden a quedar reunidas en el mismo grupo. \\
+Métrica de \textit{clustering} que mide si las observaciones de una misma clase real aparecen agrupadas en un mismo clúster. En este trabajo, indica si las obras de un mismo autor tienden a quedar reunidas en el mismo grupo. \\
 \hline
 
 Colinealidad &
-Presencia de alta correlación entre variables predictoras. Puede dificultar la interpretación de los modelos y motivar la eliminación de rasgos redundantes. \\
+Presencia de alta correlación entre variables predictoras. Puede dificultar la interpretación de los modelos y necesitar la eliminación de rasgos redundantes. \\
 \hline
 
 Corpus &
@@ -2485,8 +2485,8 @@ Desbalance de clases &
 Situación en la que algunas clases tienen muchas más muestras que otras. En este trabajo ocurre porque la disponibilidad de obras no es igual para todos los autores. \\
 \hline
 
-Distancia coseno &
-Medida de distancia basada en el ángulo entre dos vectores. Es habitual para comparar embeddings y otras representaciones vectoriales de textos. \\
+Distancia del coseno &
+Medida de distancia basada en el ángulo entre dos vectores. Es habitual para comparar \textit{embeddings} y otras representaciones vectoriales de los textos. \\
 \hline
 
 Dominio público &
@@ -2526,27 +2526,27 @@ Media del F1 calculado de forma independiente para cada clase. Es especialmente 
 \hline
 
 \textit{Fine-tuning} &
-Proceso de ajuste de un modelo preentrenado sobre una tarea específica, como la clasificación de autoría. \\
+Proceso de ajuste de un modelo preentrenado para una tarea específica, como la clasificación de autoría. \\
 \hline
 
 Fuga de información &
-Situación en la que información del conjunto de prueba influye directa o indirectamente en el entrenamiento del modelo, generando una estimación demasiado optimista del rendimiento. \\
+\textit{Data leakage}. Situación en la que información del conjunto de prueba influye directa o indirectamente en el entrenamiento del modelo, generando una estimación demasiado optimista del rendimiento. \\
 \hline
 
 Google Colab &
-Entorno de ejecución en la nube utilizado para entrenar el modelo basado en RoBERTa con acceso a recursos computacionales más adecuados que los disponibles localmente. \\
+Entorno de ejecución en la nube utilizado para entrenar el modelo basado en RoBERTa con acceso a recursos computacionales basados en GPUs. \\
 \hline
 
-Hapax legomena &
+\textit{Hapax legomena} &
 Palabras que aparecen una sola vez en un texto o corpus. Su proporción puede utilizarse como indicador de riqueza o dispersión léxica. \\
 \hline
 
 Homogeneidad &
-Métrica de \textit{clustering} que mide si cada cluster contiene principalmente observaciones de una sola clase real. En este trabajo, indica si las obras agrupadas en un mismo cluster tienden a pertenecer al mismo autor. \\
+Métrica de \textit{clustering} que mide si cada clúster contiene principalmente observaciones de una sola clase real. En este trabajo, indica si las obras agrupadas en un mismo clúster tienden a pertenecer al mismo autor. \\
 \hline
 
 Humanidades digitales &
-Campo interdisciplinar que aplica métodos computacionales al estudio de objetos culturales, históricos y literarios. En este trabajo sirve de marco para conectar ciencia de datos y análisis literario. \\
+Campo interdisciplinar que aplica métodos computacionales al estudio de objetos culturales, históricos y literarios. \\
 \hline
 
 Interpretabilidad &
@@ -2578,11 +2578,11 @@ MFW &
 \hline
 
 NMI &
-\textit{Normalized Mutual Information}. Métrica que mide la correspondencia entre clusters y etiquetas reales a partir de la información compartida entre ambas particiones. \\
+\textit{Normalized Mutual Information}. Métrica que mide la correspondencia entre clústeres y etiquetas reales a partir de la información compartida entre ambas particiones. \\
 \hline
 
 Norma euclídea &
-Medida de la longitud de un vector en el espacio euclídeo. En este trabajo aparece, por ejemplo, en el cálculo de la similitud del coseno entre vectores de \textit{embeddings}. \\
+Calcula la longitud de un vector como la raíz cuadrada de la suma de los cuadrados de sus componentes. \\
 \hline
 
 Normalización &
@@ -2617,7 +2617,7 @@ Preprocesamiento &
 Conjunto de operaciones aplicadas a los textos antes del análisis, como limpieza, normalización, tokenización y preparación de los datos para los modelos. \\
 \hline
 
-Puntuación z &
+Puntuación $z$ &
 Valor estandarizado que indica cuántas desviaciones típicas se aleja una observación de la media. Se utiliza, por ejemplo, en la Delta de Burrows. \\
 \hline
 
@@ -2626,7 +2626,7 @@ Variable numérica utilizada para representar una obra en un modelo. Puede ser, 
 \hline
 
 \textit{Recall} &
-Sensibilidad. Métrica que indica qué proporción de los ejemplos reales de una clase han sido identificados correctamente. También se denomina exhaustividad. \\
+Sensibilidad. Métrica que indica qué proporción de las muestas reales de una clase han sido identificados correctamente. También se denomina exhaustividad. \\
 \hline
 
 Riqueza léxica &
@@ -2634,11 +2634,11 @@ Conjunto de medidas que describen la variedad del vocabulario de un texto, como 
 \hline
 
 RoBERTa &
-Modelo de lenguaje basado en la arquitectura Transformer y derivado de BERT. En este trabajo se utiliza para entrenar un clasificador contextual de autoría. \\
+Modelo de lenguaje basado en la arquitectura \textit{transformer} y derivado de BERT. En este trabajo se utiliza para entrenar un clasificador de autoría basado en contexto. \\
 \hline
 
 Robustez &
-Grado en que los resultados se mantienen estables ante cambios razonables en la configuración experimental, como la semilla aleatoria, el número de rasgos o la partición de datos. \\
+Grado en que los resultados se mantienen estables ante cambios razonables en la configuración del experimento, como la semilla aleatoria, el número de rasgos o la partición de los datos. \\
 \hline
 
 SHAP &
@@ -2649,11 +2649,11 @@ Semilla aleatoria &
 Valor utilizado para inicializar procesos pseudoaleatorios y hacer reproducibles operaciones como particiones de datos, entrenamiento de modelos o experimentos de robustez. \\
 \hline
 
-Silhouette &
-Métrica que evalúa la cohesión interna de los clusters y su separación respecto a otros grupos. Valores más altos indican agrupamientos más definidos. \\
+\textit{Silhouette score} &
+Métrica que evalúa la cohesión interna de los clústeres y su separación respecto a otros grupos. Valores más altos indican agrupamientos más definidos. \\
 \hline
 
-Similitud coseno &
+Similitud del coseno &
 Medida de similitud entre dos vectores basada en el coseno del ángulo que forman. Valores más altos indican mayor proximidad en el espacio vectorial. \\
 \hline
 
@@ -2661,7 +2661,7 @@ Medida de similitud entre dos vectores basada en el coseno del ángulo que forma
 Proceso de reducción de las palabras a una raíz o forma truncada mediante reglas automáticas. Es más simple que la lematización y puede generar formas que no son palabras completas. \\
 \hline
 
-Streamlit &
+\texttt{Streamlit} &
 Biblioteca de Python utilizada para construir aplicaciones web interactivas de análisis de datos. En este trabajo se emplea para desarrollar la herramienta del proyecto. \\
 \hline
 
@@ -2690,18 +2690,18 @@ TTR &
 \hline
 
 UMAP &
-\textit{Uniform Manifold Approximation and Projection}. Técnica de reducción de dimensionalidad utilizada para visualizar datos complejos en dos o tres dimensiones. \\
+\textit{Uniform Manifold Approximation and Projection}. Técnica de reducción de la dimensionalidad utilizada para visualizar datos complejos en dos o tres dimensiones. \\
 \hline
 
 Validación cruzada &
-Procedimiento de evaluación en el que el conjunto de entrenamiento se divide en varios pliegues para estimar el rendimiento del modelo de forma más estable. \\
+Procedimiento de evaluación en el que el conjunto de entrenamiento se divide en varios pliegues (\textit{folds}) para estimar el rendimiento del modelo de forma más estable. \\
 \hline
 
-V-measure &
+\textit{V-measure} &
 Métrica de \textit{clustering} que combina homogeneidad y completitud para evaluar la relación entre grupos y clases reales. \\
 \hline
 
-Whodunit &
+\textit{Whodunit} &
 Subgénero de la narrativa de misterio centrado en descubrir quién ha cometido un crimen. El término procede de la expresión inglesa \textit{Who did it?}. \\
 \hline
 
