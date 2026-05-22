@@ -96,3 +96,22 @@ La interfaz de Streamlit permite ejecutar diferentes métodos de análisis estil
 ```bash
 > uv run streamlit run app.py
 ```
+
+## Notebooks experimentales
+
+El directorio `notebooks/` contiene los cuadernos utilizados durante la fase experimental del proyecto. Estos notebooks documentan el proceso de exploración, entrenamiento, evaluación e interpretación de los distintos enfoques aplicados en la memoria.
+
+| Notebook | Objetivo | Entradas principales | Salidas o resultados |
+| --- | --- | --- | --- |
+| `01_eda_corpus.ipynb` | Realizar el análisis exploratorio inicial del corpus. | Corpus limpio y metadatos. | Estadísticas descriptivas, análisis por autor, métricas de calidad, longitud, riqueza léxica, puntuación y visualizaciones exploratorias. |
+| `02_classic_stylometric_tests.ipynb` | Aplicar métodos clásicos de estilometría. | Corpus por autor y obras reservadas para prueba. | Resultados de Mendenhall, Kilgariff y Burrows, distancias por autor y análisis de atribución. |
+| `03_supervised_ml_methods.ipynb` | Entrenar y comparar modelos supervisados de atribución. | Rasgos estilométricos, MFW y etiquetas de autor. | Métricas de clasificación, matrices de confusión y comparación entre modelos. |
+| `04_mfw_robustness_experiment.ipynb` | Evaluar la robustez del número de palabras funcionales. | Rasgos MFW con distintas configuraciones. | Resultados por número de rasgos, semillas aleatorias y estabilidad del rendimiento. |
+| `05_xgboost_base_features_experiment.ipynb` | Probar XGBoost sobre rasgos estilométricos base. | Métricas estilométricas agregadas. | Evaluación adicional de un modelo basado en boosting. |
+| `06_unsupervised_ml_methods.ipynb` | Analizar agrupamientos no supervisados. | Rasgos estilométricos, MFW y etiquetas solo para evaluación. | Resultados de clustering, ARI, NMI, homogeneidad, completitud, V-measure, silhouette y visualizaciones. |
+| `07_openai_embeddings_models.ipynb` | Generar y analizar embeddings. | Textos fragmentados y API de OpenAI. | Embeddings por fragmento y obra, similitudes, proyecciones y redes de proximidad. |
+| `08_supervised_ml_explainability_lr_coef.ipynb` | Interpretar modelos lineales mediante coeficientes. | Modelo supervisado entrenado y rasgos MFW. | Rasgos más asociados a cada autor y análisis global de coeficientes. |
+| `09_supervised_ml_explainability_shap.ipynb` | Aplicar SHAP a modelos supervisados. | Modelo entrenado, datos de test y rasgos del modelo. | Explicaciones globales y locales de predicciones concretas. |
+| `10_train_authorship_transformer_colab.ipynb` | Ajustar RoBERTa para atribución de autoría. | Fragmentos de texto etiquetados por autor. | Modelo RoBERTa ajustado, métricas por fragmento y evaluación agregada por documento. |
+| `11_transformer_explainability_captum.ipynb` | Analizar atribuciones del transformer con Captum. | Modelo RoBERTa ajustado y fragmentos de texto. | Atribuciones a nivel de token para predicciones concretas. |
+| `12_transformer_explainability_bertviz.ipynb` | Visualizar atención del transformer con BertViz. | Modelo RoBERTa ajustado y ejemplos de texto. | Visualizaciones de atención por capas y cabezas del modelo. |
