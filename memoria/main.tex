@@ -67,6 +67,7 @@ It is concluded that authorship attribution through quantitative methods is feas
 \listoftables
 
 \chapter*{Agradecimientos}
+\addcontentsline{toc}{chapter}{Agradecimientos}
 
 Quiero comenzar estos agradecimientos dando las gracias a mi familia, por ser siempre una piña y por creer en mí a pesar de los baches del camino. En especial, quiero recordar a mi padre, que sé que habría vivido con enorme ilusión este momento y disfrutado como nadie de mi graduación.
 
@@ -1289,6 +1290,8 @@ El flujo experimental se organiza en varias fases. En primer lugar, se realiza u
 
 De forma complementaria, se exploran métodos no supervisados y representaciones distribuidas mediante \textit{embeddings}, con el objetivo de analizar si los textos se agrupan de forma coherente por autor sin utilizar directamente las etiquetas durante el ajuste. Además, se incorpora un experimento con un modelo basado en \textit{transformers} (RoBERTa) para comparar los métodos que usan rasgos definidos manualmente con un modelo contextual entrenado específicamente para atribución de autoría.
 
+La relación completa de notebooks experimentales y su función dentro del proyecto se recoge en el Apéndice \hyperref[apx:notebooks]{IV}.
+
 \newpage
 
 \begin{longtable}{|p{4.5cm}|p{5.2cm}|p{5.8cm}|}
@@ -1680,7 +1683,7 @@ En los modelos basados en rasgos estilométricos agregados, se contempla además
 
 El modelo \textit{transformer} entrenado en Google Colab sigue un procedimiento de validación específico. En este caso, el corpus se divide por documento en tres subconjuntos: entrenamiento, validación y test, con proporciones aproximadas de 70 \%, 15 \% y 15 \%. La división se realiza por autor para que todos los autores estén representados en cada subconjunto. Posteriormente, cada documento se divide en fragmentos, pero la partición se mantiene a nivel de obra, evitando que fragmentos de un mismo texto aparezcan en distintos subconjuntos.
 
-Durante el entrenamiento de RoBERTa, la evaluación se realiza al final de cada época sobre el conjunto de validación. El mejor modelo se selecciona según \textit{macro-F1}, y se aplica \textit{early stopping} con paciencia de dos evaluaciones para detener el entrenamiento si no se observa mejora. Una vez seleccionado el mejor punto de entrenamiento, el modelo se evalúa sobre el conjunto de test. Las predicciones se obtienen primero a nivel de fragmento y posteriormente se agregan a nivel de documento para producir la atribución final de cada obra.
+Durante el entrenamiento de RoBERTa, la evaluación se realiza al final de cada época sobre el conjunto de validación. El mejor modelo se selecciona según \textit{F1 macro}, y se aplica \textit{early stopping} con paciencia de dos evaluaciones para detener el entrenamiento si no se observa mejora. Una vez seleccionado el mejor punto de entrenamiento, el modelo se evalúa sobre el conjunto de test. Las predicciones se obtienen primero a nivel de fragmento y posteriormente se agregan a nivel de documento para producir la atribución final de cada obra.
 
 El ajuste y la validación buscan equilibrar rendimiento, estabilidad e interpretabilidad. La validación cruzada permite comparar modelos sin tocar el conjunto de prueba, el test reservado ofrece una evaluación final sobre obras no vistas, y los análisis de robustez ayudan a comprobar que los resultados no dependan de una única semilla o de una configuración concreta de rasgos. Esta combinación resulta especialmente importante en un corpus literario de tamaño limitado, donde una única partición podría llevar a conclusiones poco estables.
 
@@ -1740,7 +1743,7 @@ De este modo, la explicabilidad del sistema persigue tres objetivos. El primero 
 
 \section{Implementación del \textit{pipeline}/herramienta}
 
-Además de los cuadernos empleados para la experimentación, el proyecto se ha implementado como un pipeline reutilizable en Python y como una herramienta interactiva desarrollada con Streamlit. Esta doble organización permite, por una parte, conservar la flexibilidad exploratoria propia de los notebooks y, por otra, disponer de una aplicación capaz de ejecutar los principales análisis de forma controlada y reproducible. El manual de uso de la aplicación se recoge con mayor detalle en el \hyperref[apx:manual-usuario]{Apéndice IV}.
+Además de los cuadernos empleados para la experimentación, el proyecto se ha implementado como un pipeline reutilizable en Python y como una herramienta interactiva desarrollada con Streamlit. Esta doble organización permite, por una parte, conservar la flexibilidad exploratoria propia de los notebooks y, por otra, disponer de una aplicación capaz de ejecutar los principales análisis de forma controlada y reproducible. El manual de uso de la aplicación se recoge con mayor detalle en el \hyperref[apx:manual-usuario]{Apéndice V}.
 
 La implementación se estructura en torno al paquete \texttt{whodunit\_stylometry}, que agrupa la lógica de carga de datos, preprocesamiento, extracción de rasgos, entrenamiento de modelos, análisis no supervisado, generación de embeddings y visualización. La interfaz \texttt{app.py} actúa como capa de presentación y orquestación, evitando que la lógica metodológica quede acoplada exclusivamente a los notebooks.
 
@@ -2360,7 +2363,8 @@ En cuanto a la herramienta interactiva, su desarrollo permitió consolidar el c�
 
 En conjunto, la planificación se ha seguido de forma satisfactoria, aunque con ajustes razonables derivados de las necesidades reales del proyecto. Los principales cambios no supusieron una desviación del objetivo inicial, sino una adaptación para reforzar la calidad de los datos, la interpretabilidad de los modelos y la viabilidad técnica del sistema. La metodología elegida ha resultado adecuada porque permitió avanzar desde técnicas simples e interpretables hacia enfoques más complejos, manteniendo en todo momento una relación clara entre corpus, rasgos, modelos, evaluación y explicación.
 
-\chapter{Glosario}
+\chapter*{Glosario}
+\addcontentsline{toc}{chapter}{Glosario}
 
 \begin{longtable}{|p{5cm}|p{10.5cm}|}
 \hline
@@ -2631,10 +2635,12 @@ Subgénero de la narrativa de misterio centrado en descubrir quién ha cometido 
 \label{tab:glosario}
 \end{longtable}
 
-\chapter{Apéndices}
+\chapter*{Apéndices}
+\addcontentsline{toc}{chapter}{Apéndices}
 
-\section{Apéndice I - Limpieza manual del corpus}
+\section*{Apéndice I - Limpieza manual del corpus}
 \label{apx:limpieza-manual}
+\addcontentsline{toc}{section}{Apéndice I - Limpieza manual del corpus}
 
 Antes de incorporar las obras al corpus definitivo, se ha llevado a cabo una fase de limpieza manual de los textos descargados de los repositorios de origen. El objetivo de esta revisión ha sido eliminar aquellos elementos ajenos al texto principal que pudieran interferir en el análisis estilométrico posterior.
 
@@ -2817,8 +2823,9 @@ A door swinging on its hinges at the right of this woman at once attracted my
 attention. Advancing with small ceremony, I threw it open.
 \end{verbatim}
 
-\section{Apéndice II - Normalización de los textos}
+\section*{Apéndice II - Normalización de los textos}
 \label{apx:normalizacion}
+\addcontentsline{toc}{section}{Apéndice II - Normalización de los textos}
 
 Una vez completada la fase de limpieza manual descrita en el Apéndice I, los textos del corpus se han sometido a un proceso de normalización automática. Esta etapa tiene como objetivo principal homogeneizar determinados aspectos formales de los documentos antes de su tokenización y de la posterior extracción de rasgos estilométricos.
 
@@ -2875,8 +2882,9 @@ Esta fase constituye, por tanto, un paso intermedio entre la limpieza manual y l
 
 Desde el punto de vista de la reproducibilidad, resulta importante destacar que la versión normalizada no necesita editarse manualmente. Al generarse de forma automática a partir de \texttt{corpus/hand\_cleaned} y del código del \textit{script}, cualquier cambio en los criterios de normalización puede reproducirse de manera sistemática sobre todo el corpus. Esto evita inconsistencias entre documentos, reduce el riesgo de realizar modificaciones manuales que no estén documentadas y permite mantener una separación clara entre los datos de origen depurados y los datos derivados utilizados por el \textit{pipeline} de análisis.
 
-\section{Apéndice III - Tokenización de los textos}
+\section*{Apéndice III - Tokenización de los textos}
 \label{apx:tokenizacion}
+\addcontentsline{toc}{section}{Apéndice III - Tokenización de los textos}
 
 Tras obtener la versión normalizada del corpus, el siguiente paso del preprocesamiento consiste en transformar cada obra en una secuencia de unidades lingüísticas o \textit{tokens}. La tokenización constituye una fase especialmente importante en este trabajo, ya que muchos de los análisis estilométricos posteriores dependen directamente de los recuentos de palabras, signos de puntuación, abreviaturas, contracciones y otros elementos del texto. Por tanto, una segmentación poco coherente podría introducir diferencias artificiales entre los textos y afectar a la hora de comparar las obras.
 
@@ -2947,8 +2955,89 @@ También se observa que ciertos elementos estructurales, como los saltos dobles 
 
 Desde el punto de vista de la reproducibilidad, la versión tokenizada no necesita editarse manualmente. Al generarse de forma automática a partir de \texttt{corpus/normalized} y del código del \textit{script}, cualquier cambio en los criterios de tokenización puede aplicarse de forma sistemática a todo el corpus. Esto reduce el riesgo de inconsistencias entre obras, permite comparar distintas configuraciones de tokenización y mantiene la trazabilidad entre los textos originales, las versiones depuradas, las versiones normalizadas y los archivos finales utilizados en los experimentos estilométricos.
 
-\section{Apéndice IV - Manual de uso de la aplicación}
+\section*{Apéndice IV - Relación de \textit{notebooks} del proyecto}
+\label{apx:notebooks}
+\addcontentsline{toc}{section}{Apéndice IV - Relación de notebooks del proyecto}
+
+Además del código modular incluido en el paquete \texttt{whodunit\_stylometry} y de la aplicación interactiva desarrollada con \texttt{Streamlit}, el proyecto se ha apoyado en una serie de \textit{notebooks} utilizados durante la fase experimental. Estos cuadernos recogen el proceso de exploración, validación y análisis de los distintos enfoques aplicados en el trabajo, desde el análisis exploratorio inicial hasta los modelos supervisados, los métodos clásicos, las representaciones distribuidas, el modelo basado en \textit{transformers} y las técnicas de explicabilidad.
+
+La Tabla \ref{tab:notebooks-proyecto} resume la función principal de cada \textit{notebook} dentro del flujo metodológico. Con ello, se intenta mejorar la trazabilidad entre los experimentos realizados, los resultados presentados en la memoria y los artefactos disponibles en el repositorio del proyecto.
+
+\begin{longtable}{|
+>{\raggedright\arraybackslash}p{5cm}|
+>{\raggedright\arraybackslash}p{4cm}|
+p{6.6cm}|}
+\hline
+\textbf{\textit{Notebook}} & \textbf{Bloque metodológico} & \textbf{Contenido principal} \\
+\hline
+
+\notebook{01\_eda\_corpus.ipynb} &
+Análisis exploratorio &
+Caracterización inicial del corpus, distribución de obras por autor, análisis de longitud, calidad superficial, métricas léxicas, puntuación, estructura de los textos y detección de posibles valores atípicos. \\
+\hline
+
+\notebook{02\_classic\_stylometric\_tests.ipynb} &
+Métodos clásicos &
+Aplicación de los métodos clásicos de atribución estilométrica: curvas de Mendenhall, chi-cuadrado de Kilgariff y Delta de Burrows. Incluye la construcción de corpus de referencia por autor y la evaluación sobre obras reservadas para prueba. \\
+\hline
+
+\notebook{03\_supervised\_ml\_methods.ipynb} &
+Modelos supervisados &
+Entrenamiento y comparación de modelos de clasificación de autoría con distintos conjuntos de rasgos, incluyendo métricas estilométricas, palabras funcionales frecuentes y representaciones combinadas. \\
+\hline
+
+\notebook{04\_mfw\_robustness\_experiment.ipynb} &
+Robustez &
+Análisis de la estabilidad del rendimiento al variar el número de palabras más frecuentes utilizadas como rasgos y las semillas aleatorias del experimento. \\
+\hline
+
+\notebook{05\_xgboost\_base\_features\_experiment.ipynb} &
+Modelos supervisados &
+Experimento específico con \texttt{xgboost} sobre rasgos estilométricos base, utilizado como comparación adicional frente a otros clasificadores supervisados. \\
+\hline
+
+\notebook{06\_unsupervised\_ml\_methods.ipynb} &
+Métodos no supervisados &
+Aplicación de técnicas de \textit{clustering} y reducción de dimensionalidad para analizar si las obras se agrupan de forma coherente por autor sin utilizar las etiquetas durante el ajuste. \\
+\hline
+
+\notebook{07\_openai\_embeddings\_models.ipynb} &
+Representaciones distribuidas &
+Generación y análisis de \textit{embeddings} mediante modelos de OpenAI, agregación por obra, cálculo de similitudes, proyecciones y redes de proximidad entre textos y autores. \\
+\hline
+
+\notebook{08\_supervised\_ml\_explainability\_lr\_coef.ipynb} &
+Explicabilidad &
+Interpretación global de modelos lineales mediante análisis de coeficientes, con especial atención a las palabras funcionales y a los rasgos más asociados a cada autor. \\
+\hline
+
+\notebook{09\_supervised\_ml\_explainability\_shap.ipynb} &
+Explicabilidad &
+Aplicación de SHAP para interpretar modelos supervisados a nivel global y local, identificando la contribución de distintos rasgos a las predicciones de autoría. \\
+\hline
+
+\notebook{10\_train\_authorship\_transformer\_colab.ipynb} &
+Modelo \textit{transformer} &
+Ajuste fino de RoBERTa para atribución de autoría a partir de fragmentos de texto, entrenamiento en Google Colab y evaluación a nivel de fragmento y de documento. \\
+\hline
+
+\notebook{11\_transformer\_explainability\_captum.ipynb} &
+Explicabilidad de \textit{transformers} &
+Análisis de atribuciones a nivel de token mediante Captum para inspeccionar qué elementos del texto contribuyen a predicciones concretas del modelo RoBERTa. \\
+\hline
+
+\notebook{12\_transformer\_explainability\_bertviz.ipynb} &
+Explicabilidad de \textit{transformers} &
+Visualización de patrones de atención mediante BertViz para explorar el comportamiento interno del modelo RoBERTa en distintas capas y cabezas de atención. \\
+\hline
+
+\caption{Relación de notebooks utilizados durante el desarrollo experimental del proyecto.}
+\label{tab:notebooks-proyecto}
+\end{longtable}
+
+\section*{Apéndice V - Manual de uso de la aplicación}
 \label{apx:manual-usuario}
+\addcontentsline{toc}{section}{Apéndice V - Manual de uso de la aplicación}
 
 Este apéndice recoge una guía básica de uso de la aplicación \textit{Whodunit Stylometry} desde la perspectiva de una persona usuaria que desea analizar un corpus literario. No se describen aquí los detalles técnicos de implementación de la herramienta, sino los pasos necesarios para cargar un corpus, seleccionar un tipo de análisis, interpretar las principales salidas y utilizar las opciones de atribución de autoría.
 

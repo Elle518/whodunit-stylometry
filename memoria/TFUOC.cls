@@ -10,6 +10,7 @@
 \RequirePackage{fancyhdr}
 \RequirePackage{color}
 \RequirePackage{array}
+\RequirePackage{seqsplit}
 \RequirePackage{colortbl}
 \RequirePackage[usenames,dvipsnames]{xcolor}
 \RequirePackage{array, multirow, multicol}
@@ -616,6 +617,8 @@ All rights reserved. Reproduction in whole or in part of this work by any means 
   \setlength{\arrayrulewidth}{0.4pt}%
   \arrayrulecolor{black}%
 }
+
+\newcommand{\notebook}[1]{\texttt{\seqsplit{#1}}}
 
 
 %%% https://es.overleaf.com/learn/latex/How_to_Write_a_Thesis_in_LaTeX_(Part_5)%3A_Customising_Your_Title_Page_and_Abstract
