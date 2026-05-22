@@ -575,7 +575,7 @@ En el contexto de este TFG, los enfoques modernos resultan especialmente relevan
 
 \section{Evaluación en atribución de autoría}
 
-La evaluación es un aspecto central en cualquier sistema de atribución de autoría, ya que no basta con construir un modelo capaz de asignar textos a autores candidatos, es necesario comprobar si esa asignación se realiza de forma fiable, generalizable y metodológicamente válida. En este tipo de tareas, una evaluación poco cuidadosa puede producir resultados aparentemente muy altos, pero poco representativos del comportamiento real del sistema. Esto puede ocurrir, por ejemplo, si el corpus es muy pequeño, si las particiones de entrenamiento y prueba no están bien definidas, si existe desbalanceo entre autores o si el modelo aprende señales ajenas al estilo, como marcas editoriales, nombres de personajes o artefactos procedentes del preprocesamiento.
+La evaluación es un aspecto central en cualquier sistema de atribución de autoría, ya que no basta con construir un modelo capaz de asignar textos a autores candidatos, es necesario comprobar si esa asignación se realiza de forma fiable, generalizable y metodológicamente válida. En este tipo de tareas, una evaluación poco cuidadosa puede producir resultados aparentemente muy altos, pero poco representativos del comportamiento real del sistema. Esto puede ocurrir, por ejemplo, si el corpus es muy pequeño, si las particiones de entrenamiento y prueba no están bien definidas, si existe desbalance entre autores o si el modelo aprende señales ajenas al estilo, como marcas editoriales, nombres de personajes o artefactos procedentes del preprocesamiento.
 
 Desde el punto de vista del aprendizaje automático, y como se ha comentado anteriormente, la atribución de autoría suele formularse como una tarea de clasificación multiclase, donde cada autor representa una clase y cada texto debe asignarse a una de ellas\cite{stamatatos2009survey}. Por tanto, buena parte de las métricas utilizadas proceden de la evaluación de clasificadores. Sin embargo, la atribución de autoría presenta particularidades propias que deben tenerse en cuenta, y es que los textos pueden ser muy largos o muy cortos, el número de muestras por autor puede ser desigual, los autores pueden compartir género o época y los rasgos de estilo pueden mezclarse con señales relacionadas con el tema. Por ello, la evaluación debe considerar tanto el rendimiento global como el comportamiento por autor y la robustez de los resultados.
 
@@ -817,7 +817,7 @@ El corpus final está formado por 95 obras correspondientes a 6 autores canónic
      \label{fig:publication-year-distribution}
 \end{figure}
 
-Como vemos en la Figura \ref{fig:works-by-author}, el corpus presenta un importante desbalanceo en la distribución de obras por autor, tanto en el número de textos como en la extensión total disponible. Este hecho debe tenerse en cuenta, ya que puede influir en los análisis posteriores y hacer que los autores con mayor número de obras o con textos más extensos puedan quedar mejor representados en el espacio de características, mientras que aquellos con menor presencia puedan ofrecer perfiles estilísticos peor caracterizados.
+Como vemos en la Figura \ref{fig:works-by-author}, el corpus presenta un importante desbalance en la distribución de obras por autor, tanto en el número de textos como en la extensión total disponible. Este hecho debe tenerse en cuenta, ya que puede influir en los análisis posteriores y hacer que los autores con mayor número de obras o con textos más extensos puedan quedar mejor representados en el espacio de características, mientras que aquellos con menor presencia puedan ofrecer perfiles estilísticos peor caracterizados.
 
 \begin{figure}[H]
 	 \centering
@@ -1300,7 +1300,7 @@ La relación completa de notebooks experimentales y su función dentro del proye
 \hline
 
 Análisis exploratorio &
-Caracterizar el corpus y detectar posibles problemas de calidad, desbalanceo o valores atípicos. &
+Caracterizar el corpus y detectar posibles problemas de calidad, desbalance o valores atípicos. &
 Métricas de calidad de los textos, longitud, riqueza léxica, puntuación, estructura, análisis por autor y visualizaciones descriptivas. \\
 \hline
 
@@ -1344,13 +1344,13 @@ En el caso de Mendenhall, los perfiles se construyen a partir de curvas de longi
 
 En los experimentos supervisados se emplea una partición de entrenamiento y prueba equilibrada por autor. El conjunto de test se construye seleccionando un número fijo de obras por autor, mientras que el resto se utiliza para el entrenamiento. Esta estrategia busca evitar que los autores con más obras dominen la evaluación y permite comparar el comportamiento del modelo en todas las clases.
 
-De nuevo, se introduce una restricción adicional en la composición del conjunto de test: para cada autor, al menos una de las obras reservadas no pertenece estrictamente al género de misterio. Dentro del conjunto de entrenamiento se aplica validación cruzada estratificada de tres particiones para seleccionar el modelo con mejor rendimiento medio. Una vez elegido el mejor modelo, este se ajusta sobre todo el conjunto de entrenamiento y se evalúa sobre el conjunto de test reservado.
+De nuevo, se introduce una restricción adicional en la composición del conjunto de test: para cada autor, al menos una de las obras reservadas no pertenece estrictamente al género de misterio. Dentro del conjunto de entrenamiento se aplica validación cruzada estratificada de tres particiones (\textit{folds}) para seleccionar el modelo con mejor rendimiento medio. Una vez elegido el mejor modelo, este se ajusta sobre todo el conjunto de entrenamiento y se evalúa sobre el conjunto de test reservado.
 
 Para reducir el riesgo de fuga de información, los vocabularios de palabras más frecuentes y palabras funcionales se calculan únicamente a partir del conjunto de entrenamiento. Posteriormente, esos mismos vocabularios se utilizan para transformar el conjunto de test. De este modo, las obras evaluadas no influyen en la selección de rasgos, lo que permite una estimación más realista del rendimiento del sistema.
 
 Los conjuntos de rasgos comparados se agrupan en tres familias. La primera incluye métricas estilométricas agregadas, como longitud media de palabra, riqueza léxica, proporción de palabras largas, frecuencia de signos de puntuación y medidas estructurales de frases y párrafos. La segunda se basa en la frecuencia relativa de las palabras funcionales más frecuentes (\textit{Most Frequent Words}, MFW), un enfoque muy usado en estilometría por su menor dependencia del tema. La tercera combina ambas familias para evaluar si los rasgos manuales y las frecuencias funcionales aportan información complementaria.
 
-La evaluación de los modelos supervisados se realiza mediante \textit{accuracy}, \textit{F1 macro}, informes de clasificación por autor y matrices de confusión. La métrica principal es \textit{F1 macro}, ya que calcula el rendimiento medio otorgando el mismo peso a cada autor, independientemente del número de obras disponibles. Esta elección resulta especialmente importante en un corpus con cierto desbalanceo entre clases.
+La evaluación de los modelos supervisados se realiza mediante \textit{accuracy}, \textit{F1 macro}, informes de clasificación por autor y matrices de confusión. La métrica principal es \textit{F1 macro}, ya que calcula el rendimiento medio otorgando el mismo peso a cada autor, independientemente del número de obras disponibles. Esta elección resulta especialmente importante en un corpus con cierto desbalance entre clases.
 
 Además de la evaluación principal, se incluye un análisis de robustez centrado en el número de palabras funcionales utilizadas como rasgos. Para ello, se prueban distintos valores de \texttt{TOP\_N\_MFW} y distintas semillas aleatorias, observando cómo varía el rendimiento medio y su desviación. El criterio de selección no consiste únicamente en escoger el valor con mejor puntuación absoluta, sino en identificar el menor número de rasgos que mantiene un rendimiento próximo al mejor resultado observado. Esta decisión favorece modelos más simples, menos dependientes de un vocabulario excesivamente amplio y más fáciles de interpretar.
 
@@ -1602,7 +1602,7 @@ Modelo \textit{transformer} entrenado para clasificación de autoría a partir d
 \label{tab:modelos-clasificacion}
 \end{longtable}
 
-En los modelos tabulares, el entrenamiento se realiza mediante \textit{pipelines} de \texttt{scikit-learn}. Antes de ajustar el clasificador, se aplica un escalado robusto de las variables. Este preprocesamiento interno resulta necesario porque los rasgos estilométricos pueden estar en escalas muy distintas y algunos modelos, especialmente SVM, regresión logística o KNN, son sensibles a esas diferencias. En los modelos que lo permiten, como la regresión logística, SVM y \textit{Random Forest}, se utiliza ponderación de clases mediante \texttt{class\_weight="balanced"} para reducir el efecto del desbalanceo entre autores.
+En los modelos tabulares, el entrenamiento se realiza mediante \textit{pipelines} de \texttt{scikit-learn}. Antes de ajustar el clasificador, se aplica un escalado robusto de las variables. Este preprocesamiento interno resulta necesario porque los rasgos estilométricos pueden estar en escalas muy distintas y algunos modelos, especialmente SVM, regresión logística o KNN, son sensibles a esas diferencias. En los modelos que lo permiten, como la regresión logística, SVM y \textit{Random Forest}, se utiliza ponderación de clases mediante \texttt{class\_weight="balanced"} para reducir el efecto del desbalance entre autores.
 
 La regresión logística se incluye como modelo lineal principal. Su interés no reside únicamente en el rendimiento, sino también en su interpretabilidad, ya que los coeficientes permiten analizar qué rasgos contribuyen más a la identificación de cada autor. Por este motivo, este modelo resulta especialmente útil para conectar la salida del modelo con una lectura estilométrica de los rasgos.
 
@@ -1622,19 +1622,21 @@ La inclusión del modelo RoBERTa permite comparar los enfoques clásicos y expli
 
 \section{Ajuste y validación}
 
-El ajuste y la validación de los modelos se han diseñado con el objetivo de obtener una estimación lo más fiable posible del rendimiento, teniendo en cuenta las limitaciones del corpus: número reducido de obras, desbalance entre autores y diferencias de extensión entre textos. Por este motivo, la evaluación no se basa únicamente en una métrica global, sino que combina validación cruzada, conjunto de prueba reservado, métricas por autor, matrices de confusión y análisis de robustez.
+El ajuste y la validación de los modelos se han diseñado con el objetivo de obtener una estimación lo más fiable posible del rendimiento, teniendo en cuenta las limitaciones del corpus: número reducido de obras, desbalance entre autores y diferencias de extensión entre textos. Por este motivo, la evaluación no se basa únicamente en una métrica global, sino que combina validación cruzada, un conjunto de prueba reservado, métricas por autor, matrices de confusión y análisis de robustez.
 
 En los modelos clásicos de aprendizaje automático, el flujo general consta de tres fases. En primer lugar, el corpus se divide en un conjunto de entrenamiento y un conjunto de prueba, manteniendo una representación equilibrada por autor en la medida de lo posible. En segundo lugar, dentro del conjunto de entrenamiento se aplica validación cruzada estratificada para comparar los modelos candidatos. Finalmente, el mejor modelo se ajusta sobre todo el conjunto de entrenamiento y se evalúa sobre el conjunto de test reservado.
 
 La partición principal se realiza a nivel de obra, no a nivel de fragmento. Esta decisión evita que partes de una misma obra aparezcan simultáneamente en entrenamiento y prueba, lo que produciría una estimación artificialmente optimista del rendimiento. En los experimentos tabulares, el conjunto de test se construye seleccionando un número fijo de obras por autor, controlado mediante el parámetro \texttt{n\_test\_per\_author}. El resto de obras se utiliza para entrenamiento.
 
-Durante la fase de selección de modelos se emplea validación cruzada estratificada de tres particiones sobre el conjunto de entrenamiento. La estratificación permite conservar la distribución de autores en cada partición, reduciendo el riesgo de que alguna clase quede mal representada en una de las divisiones. Para cada modelo se calcula la media y la desviación típica de la métrica de validación, y se selecciona como mejor modelo aquel que obtiene el mayor valor medio.
+Además del equilibrio por autor, en la composición del conjunto de test se introduce un criterio relacionado con el género literario. Siempre que la disponibilidad del corpus lo permite, se reserva para cada autor al menos una obra que no pertenece estrictamente al género de misterio. Esta decisión permite comprobar si los modelos mantienen la atribución correcta cuando el texto evaluado se aleja del dominio principal del corpus, y ayuda a detectar si parte del rendimiento puede estar influida por señales del género o tema, además de por rasgos propiamente de estilo del autor.
 
-La métrica principal utilizada para seleccionar modelos es \textit{F1 macro}. Esta métrica calcula el F1 de cada clase y después promedia los resultados dando el mismo peso a todos los autores. Su uso resulta especialmente adecuado en este trabajo porque el corpus no está equilibrado: algunos autores, como Anna Katharine Green, tienen muchas más obras disponibles que otros, como Arthur Morrison. Si se utilizara únicamente \textit{accuracy}, un modelo podría obtener una puntuación aparentemente alta favoreciendo a los autores mayoritarios.
+Durante la fase de selección de modelos se emplea validación cruzada estratificada de tres particiones (\textit{folds}) sobre el conjunto de entrenamiento. La estratificación permite conservar la distribución de autores en cada partición, reduciendo el riesgo de que alguna clase quede mal representada en una de las divisiones. Para cada modelo se calcula la media y la desviación típica de la métrica de validación, y se selecciona como mejor modelo aquel que obtiene el mayor valor medio.
+
+La métrica principal utilizada para seleccionar modelos es \textit{F1 macro}. Esta métrica calcula el F1 de cada clase y después promedia los resultados dando el mismo peso a todos los autores. Su uso resulta especialmente adecuado en este trabajo porque el corpus no está equilibrado ya que algunos autores, como Anna Katharine Green, tienen muchas más obras disponibles que otros, como Arthur Morrison. Si se utilizara únicamente \textit{accuracy}, un modelo podría obtener una puntuación aparentemente alta favoreciendo a los autores mayoritarios.
 
 Además de \textit{F1 macro}, se calcula la exactitud o \textit{accuracy}, el informe de clasificación por autor y la matriz de confusión. El informe de clasificación permite revisar precisión, exhaustividad y F1 para cada autor, mientras que la matriz de confusión facilita identificar pares de autores que el modelo tiende a confundir. Este análisis es importante porque, en atribución de autoría, los errores no son solo fallos técnicos, sino indicios de proximidad estilística, problemas de representación o posibles efectos del género y del tema.
 
-\begin{longtable}{|p{4cm}|p{10.5cm}|}
+\begin{longtable}{|p{4.7cm}|p{10.5cm}|}
 \hline
 \textbf{Elemento de validación} & \textbf{Función dentro del experimento} \\
 \hline
@@ -1647,6 +1649,10 @@ Test equilibrado por autor &
 Reduce el efecto del desbalance en la evaluación final. \\
 \hline
 
+Control parcial de género en test &
+Reserva, cuando es posible, al menos una obra no estrictamente de misterio por autor para observar si el género influye en la atribución. \\
+\hline
+
 Validación cruzada estratificada &
 Permite seleccionar el modelo usando solo el conjunto de entrenamiento. \\
 \hline
@@ -1656,7 +1662,7 @@ Métrica principal, adecuada cuando las clases no tienen el mismo número de mue
 \hline
 
 \textit{Accuracy} &
-Métrica global complementaria, fácil de interpretar pero menos robusta ante desbalance. \\
+Métrica global complementaria, fácil de interpretar pero menos robusta ante desbalance de clases. \\
 \hline
 
 Matriz de confusión &
@@ -1664,7 +1670,7 @@ Permite estudiar errores sistemáticos y pares de autores confundidos. \\
 \hline
 
 Análisis de robustez &
-Evalúa la estabilidad de los resultados ante cambios en semillas y número de rasgos MFW. \\
+Evalúa la estabilidad de los resultados ante cambios en las semillas y el número de rasgos MFW. \\
 \hline
 
 \caption{Elementos principales del proceso de ajuste y validación.}
@@ -1673,19 +1679,19 @@ Evalúa la estabilidad de los resultados ante cambios en semillas y número de r
 
 En los experimentos no supervisados, el ajuste se plantea de forma distinta, ya que los modelos no utilizan la etiqueta de autor durante la formación de los grupos. En este caso, las obras se representan mediante los mismos conjuntos de rasgos empleados en los experimentos supervisados, especialmente MFW y combinaciones de rasgos estilométricos, y se aplican algoritmos como \textit{K-means}, clustering aglomerativo y modelos de mezcla gaussiana. Las etiquetas de autor se reservan para la evaluación posterior, comparando los grupos obtenidos con las clases reales mediante métricas como ARI, NMI, homogeneidad, completitud y \textit{V-measure}. Además, se calcula la silueta para estimar la separación interna de los clusters sin depender directamente de las etiquetas.
 
-La validación no supervisada se interpreta con cautela. Un agrupamiento que no reproduzca exactamente los autores no implica necesariamente que la representación sea inútil, ya que las obras pueden organizarse también por época, subgénero, serie narrativa, extensión o proximidad temática. Por ello, estos métodos se utilizan como análisis complementario: permiten observar si las señales estilométricas generan estructuras coherentes en el espacio de rasgos y ayudan a detectar autores u obras que se comportan de forma ambigua respecto al conjunto.
+La validación no supervisada se interpreta con cautela. Un agrupamiento que no reproduzca exactamente los autores no implica necesariamente que la representación sea inútil, ya que las obras pueden organizarse también por época, subgénero, saga, extensión o proximidad del tema. Por ello, estos métodos se utilizan como análisis complementario y permiten observar si las señales estilométricas generan estructuras coherentes en el espacio de rasgos y ayudan a detectar autores u obras que se comportan de forma ambigua respecto al conjunto.
 
-En los experimentos con MFW, el ajuste incluye además la selección del número de palabras funcionales utilizadas como rasgos. Para ello se realiza un barrido sobre distintos valores de \texttt{TOP\_N\_MFW} y distintas semillas aleatorias. El objetivo no es escoger necesariamente el mayor vocabulario ni el resultado puntual más alto, sino identificar el menor número de rasgos que mantiene un rendimiento próximo al mejor promedio observado. Esta estrategia favorece modelos más simples, menos dependientes de un conjunto excesivamente amplio de variables y más fáciles de interpretar.
+En los experimentos con MFW, el ajuste incluye además la selección del número de palabras funcionales utilizadas como rasgos. Para ello se realiza un barrido sobre distintos valores de \texttt{TOP\_N\_MFW} y distintas semillas aleatorias. El objetivo no es escoger necesariamente el mayor vocabulario ni el resultado con la métrica más alta, sino identificar el menor número de rasgos que mantiene un rendimiento próximo al mejor promedio observado. Esta estrategia favorece modelos más simples, menos dependientes de un conjunto excesivamente amplio de variables y más fáciles de interpretar.
 
-También se controla la posible fuga de información durante la construcción de rasgos. En particular, el vocabulario MFW se aprende únicamente a partir del conjunto de entrenamiento y después se aplica al conjunto de test. Del mismo modo, la imputación de valores ausentes y el escalado robusto se incluyen dentro del \textit{pipeline} de entrenamiento, de forma que sus parámetros se estiman sobre los datos de entrenamiento y no sobre el conjunto de prueba.
+También se controla la posible fuga de información durante la construcción de los rasgos. En particular, el vocabulario MFW se aprende únicamente a partir del conjunto de entrenamiento y después se aplica al conjunto de test. Del mismo modo, el escalado robusto se incluye dentro del \textit{pipeline} de entrenamiento, de forma que sus parámetros se estiman sobre los datos de entrenamiento y no sobre el conjunto de prueba.
 
-En los modelos basados en rasgos estilométricos agregados, se contempla además la eliminación opcional de variables altamente correlacionadas. Esta decisión se controla mediante un umbral de correlación, fijado por defecto en 0,85. El objetivo es reducir redundancia entre métricas muy similares, especialmente en familias de rasgos estructurales y léxicos, sin eliminar información relevante de forma indiscriminada.
+En los modelos basados en rasgos estilométricos agregados, se contempla además la posibilidad de eliminar variables altamente correlacionadas. Esta decisión se controla mediante un umbral de correlación, fijado por defecto en 0,85. El objetivo es reducir la redundancia entre métricas muy similares, especialmente en familias de rasgos estructurales y léxicos, sin eliminar información relevante.
 
 El modelo \textit{transformer} entrenado en Google Colab sigue un procedimiento de validación específico. En este caso, el corpus se divide por documento en tres subconjuntos: entrenamiento, validación y test, con proporciones aproximadas de 70 \%, 15 \% y 15 \%. La división se realiza por autor para que todos los autores estén representados en cada subconjunto. Posteriormente, cada documento se divide en fragmentos, pero la partición se mantiene a nivel de obra, evitando que fragmentos de un mismo texto aparezcan en distintos subconjuntos.
 
-Durante el entrenamiento de RoBERTa, la evaluación se realiza al final de cada época sobre el conjunto de validación. El mejor modelo se selecciona según \textit{F1 macro}, y se aplica \textit{early stopping} con paciencia de dos evaluaciones para detener el entrenamiento si no se observa mejora. Una vez seleccionado el mejor punto de entrenamiento, el modelo se evalúa sobre el conjunto de test. Las predicciones se obtienen primero a nivel de fragmento y posteriormente se agregan a nivel de documento para producir la atribución final de cada obra.
+Durante el entrenamiento de RoBERTa, la evaluación se realiza al final de cada época sobre el conjunto de validación. El mejor modelo se selecciona según \textit{F1 macro}, y se aplica \textit{early stopping} con paciencia de dos evaluaciones para detener el entrenamiento si no se observa mejora. Una vez seleccionado el mejor \textit{checkpoint} del entrenamiento, el modelo se evalúa sobre el conjunto de test. Las predicciones se obtienen primero a nivel de fragmento y posteriormente se agregan a nivel de documento para generar la atribución final de cada obra.
 
-El ajuste y la validación buscan equilibrar rendimiento, estabilidad e interpretabilidad. La validación cruzada permite comparar modelos sin tocar el conjunto de prueba, el test reservado ofrece una evaluación final sobre obras no vistas, y los análisis de robustez ayudan a comprobar que los resultados no dependan de una única semilla o de una configuración concreta de rasgos. Esta combinación resulta especialmente importante en un corpus literario de tamaño limitado, donde una única partición podría llevar a conclusiones poco estables.
+El ajuste y la validación buscan equilibrar rendimiento, estabilidad e interpretabilidad. La validación cruzada permite comparar modelos sin tocar el conjunto de prueba, el test que se ha reservado ofrece una evaluación final sobre obras no vistas, y los análisis de robustez ayudan a comprobar que los resultados no dependan de una única semilla o de una configuración concreta de rasgos. Esta combinación resulta especialmente importante en un corpus literario de tamaño limitado, donde una única partición podría llevar a conclusiones poco estables.
 
 \section{Explicabilidad del sistema}
 
