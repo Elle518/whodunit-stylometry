@@ -1296,7 +1296,7 @@ De forma complementaria, se exploran métodos no supervisados y representaciones
 \hline
 
 Análisis exploratorio &
-Caracterizar el corpus y detectar posibles problemas de calidad, desbalance o valores atípicos. &
+Caracterizar el corpus y detectar posibles problemas de calidad, desbalanceo o valores atípicos. &
 Métricas de calidad de los textos, longitud, riqueza léxica, puntuación, estructura, análisis por autor y visualizaciones descriptivas. \\
 \hline
 
@@ -1327,7 +1327,7 @@ RoBERTa, fragmentación de obras, entrenamiento supervisado con Hugging Face, ev
 
 Explicabilidad &
 Interpretar qué rasgos contribuyen a las predicciones y analizar errores concretos. &
-Coeficientes de modelos lineales, importancia de variables, SHAP y revisión de casos mal clasificados. \\
+Coeficientes de modelos lineales, importancia de variables, SHAP y revisión de casos mal clasificados. Captum y BertViz para el \textit{transformer}. \\
 \hline
 
 \caption{Bloques principales del diseño experimental.}
@@ -1354,7 +1354,7 @@ En los experimentos no supervisados, el corpus completo se proyecta en un espaci
 
 En el caso de las representaciones distribuidas, los textos se dividen en fragmentos de tamaño controlado antes de generar los \textit{embeddings}. Las representaciones de los fragmentos se agregan posteriormente a nivel de obra, permitiendo calcular similitudes entre textos y autores. Este diseño permite comparar una representación más contextual y moderna del texto con los enfoques estilométricos clásicos, aunque se interpreta con cautela por su menor transparencia y por el mayor coste computacional asociado.
 
-Por su parte, el experimento con RoBERTa se plantea como un ajuste fino supervisado de un modelo \textit{transformer} preentrenado. En este caso, las obras también se dividen en fragmentos para adaptarse a la longitud máxima admitida por el modelo, pero cada fragmento se utiliza como una instancia de entrenamiento etiquetada con el autor de la obra de origen. La evaluación se realiza primero a nivel de fragmento y, posteriormente, las predicciones se agregan a nivel de documento para obtener una atribución final por obra. De nuevo, esta estrategia permite incorporar un enfoque contextual moderno dentro del diseño experimental, aunque sus resultados se comparan con cautela con los modelos basados en datos tabulares, ya que emplean una unidad de análisis y un procedimiento de entrenamiento diferentes.
+Por su parte, el experimento con RoBERTa se plantea como un ajuste fino supervisado de un modelo \textit{transformer} preentrenado. En este caso, las obras también se dividen en fragmentos para adaptarse a la longitud máxima admitida por el modelo, pero cada fragmento se utiliza como una instancia de entrenamiento etiquetada con el autor de la obra de origen. La evaluación se realiza primero a nivel de fragmento y, posteriormente, las predicciones se agregan a nivel de documento para obtener una atribución final por obra. De nuevo, esta estrategia permite incorporar un enfoque contextual moderno dentro del diseño experimental, aunque sus resultados se comparan con prudencia con los modelos basados en datos tabulares, ya que emplean una unidad de análisis y un procedimiento de entrenamiento diferentes.
 
 Este diseño experimental combina comparación de modelos, control de fuga de información, evaluación por autor, análisis de robustez e interpretabilidad. Esta combinación permite responder no solo a qué modelo clasifica mejor, sino también qué tipo de rasgos parecen más estables, qué autores resultan más difíciles de distinguir y hasta qué punto los resultados pueden explicarse desde una perspectiva estilométrica.
 
