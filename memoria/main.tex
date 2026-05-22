@@ -1550,7 +1550,7 @@ La atribución de autoría se formula en este trabajo como un problema de clasif
 
 Los modelos supervisados se han seleccionado con el objetivo de cubrir distintos niveles de complejidad e interpretabilidad. Se incluyen modelos lineales, métodos basados en márgenes, clasificadores de vecinos, modelos probabilísticos, árboles y un modelo neuronal basado en arquitectura \textit{transformer}. Esta variedad permite comparar no solo el rendimiento predictivo, sino también el grado de transparencia de cada enfoque.
 
-\begin{longtable}{|p{3.7cm}|p{4.6cm}|p{6.3cm}|}
+\begin{longtable}{|p{4cm}|p{4.6cm}|p{6.3cm}|}
 \hline
 \textbf{Modelo} & \textbf{Entrada principal} & \textbf{Motivación} \\
 \hline
@@ -1587,35 +1587,35 @@ Clasificador basado en proximidad, útil para comprobar si las obras de un mismo
 
 Gaussian Naive Bayes &
 Rasgos estilométricos, MFW o rasgos combinados. &
-Modelo probabilístico simple que funciona como línea base ligera. \\
+Modelo probabilístico simple que funciona como línea base. \\
 \hline
 
 RoBERTa ajustado &
 Fragmentos de texto tokenizados. &
-Modelo \textit{transformer} entrenado para clasificación directa de autoría a partir del texto. \\
+Modelo \textit{transformer} entrenado para clasificación de autoría a partir del texto. \\
 \hline
 
 \caption{Modelos de clasificación utilizados en los experimentos supervisados.}
 \label{tab:modelos-clasificacion}
 \end{longtable}
 
-En los modelos tabulares, el entrenamiento se realiza mediante \textit{pipelines} de \texttt{scikit-learn}. Antes de ajustar el clasificador, se aplica imputación de valores ausentes mediante la mediana y escalado robusto de las variables. Este preprocesamiento interno resulta necesario porque los rasgos estilométricos pueden estar en escalas muy distintas y algunos modelos, especialmente SVM, regresión logística o KNN, son sensibles a esas diferencias. En los modelos que lo permiten, como regresión logística, SVM y \textit{Random Forest}, se utiliza ponderación de clases mediante \texttt{class\_weight="balanced"} para reducir el efecto del desbalance entre autores.
+En los modelos tabulares, el entrenamiento se realiza mediante \textit{pipelines} de \texttt{scikit-learn}. Antes de ajustar el clasificador, se aplica un escalado robusto de las variables. Este preprocesamiento interno resulta necesario porque los rasgos estilométricos pueden estar en escalas muy distintas y algunos modelos, especialmente SVM, regresión logística o KNN, son sensibles a esas diferencias. En los modelos que lo permiten, como la regresión logística, SVM y \textit{Random Forest}, se utiliza ponderación de clases mediante \texttt{class\_weight="balanced"} para reducir el efecto del desbalanceo entre autores.
 
-La regresión logística se incluye como modelo lineal principal. Su interés no reside únicamente en el rendimiento, sino también en su interpretabilidad: los coeficientes permiten analizar qué rasgos contribuyen más a la identificación de cada autor. Por este motivo, este modelo resulta especialmente útil para conectar el resultado computacional con una lectura estilométrica de los rasgos.
+La regresión logística se incluye como modelo lineal principal. Su interés no reside únicamente en el rendimiento, sino también en su interpretabilidad, ya que los coeficientes permiten analizar qué rasgos contribuyen más a la identificación de cada autor. Por este motivo, este modelo resulta especialmente útil para conectar la salida del modelo con una lectura estilométrica de los rasgos.
 
 Las máquinas de vectores de soporte se evalúan en dos variantes. \textit{Linear SVC} permite trabajar con una frontera lineal en espacios de rasgos potencialmente amplios, como los generados por las MFW. Por su parte, SVC con kernel RBF introduce una frontera no lineal, lo que puede resultar útil si las diferencias entre autores no son separables linealmente. Esta mayor flexibilidad, sin embargo, reduce la interpretabilidad directa del modelo.
 
-Los modelos basados en árboles se incorporan mediante \textit{Random Forest} y XGBoost. El primero combina múltiples árboles de decisión entrenados sobre subconjuntos de datos y variables, mientras que XGBoost utiliza \textit{gradient boosting} para construir un ensamble secuencial de árboles. Ambos modelos pueden capturar relaciones no lineales e interacciones entre variables, aunque su interpretación requiere técnicas adicionales de importancia de rasgos o explicabilidad.
+Los modelos basados en árboles se incorporan mediante \textit{Random Forest} y XGBoost. El primero combina múltiples árboles de decisión entrenados sobre subconjuntos de datos y variables, mientras que XGBoost utiliza \textit{gradient boosting} para construir un \textit{ensemble} secuencial de árboles. Ambos modelos pueden capturar relaciones no lineales e interacciones entre variables, aunque su interpretación requiere técnicas adicionales de importancia de característica o explicabilidad.
 
-KNN se utiliza como modelo basado en distancia. Su comportamiento permite comprobar si las obras de un mismo autor quedan próximas en el espacio definido por los rasgos seleccionados. Aunque puede ser sensible a la escala y a la dimensionalidad, resulta conceptualmente interesante porque conecta con la idea estilométrica de proximidad entre textos. Gaussian Naive Bayes se incluye como clasificador probabilístico simple, útil como línea base de baja complejidad.
+KNN se utiliza como modelo basado en distancia. Su comportamiento permite comprobar si las obras de un mismo autor quedan próximas en el espacio definido por los rasgos seleccionados. Aunque puede ser sensible a la escala y a la dimensionalidad, resulta conceptualmente interesante porque conecta con la idea en estilometría de proximidad entre textos. Gaussian Naive Bayes se incluye como clasificador probabilístico simple, útil como línea base de baja complejidad.
 
-Además de estos modelos clásicos, se entrenó un modelo basado en \textit{transformers} en Google Colab, debido a las limitaciones de hardware del entorno local. En concreto, se utilizó \texttt{roberta-base} con una cabeza de clasificación multiclase mediante \texttt{AutoModelForSequenceClassification}. El corpus normalizado se subió a Google Drive y se organizó con una carpeta por autor. Cada documento se dividió en fragmentos tokenizados de longitud máxima 256, con un solapamiento de 64 tokens entre fragmentos consecutivos.
+Además de estos modelos clásicos, se entrenó un modelo basado en \textit{transformers} en Google Colab, debido a las limitaciones de hardware del entorno local. En concreto, se utilizó \texttt{roberta-base} con una cabeza de clasificación multiclase utilizando la clase de la librería \texttt{transformer} de Hugging Face \texttt{AutoModelForSequenceClassification}. El corpus normalizado se subió a Google Drive y se organizó con una carpeta por autor. Cada documento se dividió en fragmentos tokenizados de longitud máxima 256, con un solapamiento de 64 tokens entre fragmentos consecutivos.
 
-El modelo RoBERTa se entrenó a nivel de fragmento, asignando a cada fragmento la etiqueta del autor de la obra de origen. Posteriormente, las predicciones de los fragmentos se agregaron a nivel de documento para obtener una predicción final por obra. Esta estrategia permite adaptar obras largas a la longitud máxima admitida por el modelo, evitando truncar el texto completo y aprovechando múltiples evidencias internas de cada obra.
+El modelo RoBERTa se entrenó a nivel de fragmento, asignando a cada fragmento la etiqueta del autor de la obra de origen. Posteriormente, las predicciones de los fragmentos se agregaron a nivel de documento para obtener una predicción final por obra. Esta estrategia permite adaptar obras largas a la longitud máxima admitida por el modelo, evitando truncar el texto completo y aprovechando múltiples evidencias de cada obra.
 
-La partición utilizada para el transformer se realizó por documento y por autor, con proporciones aproximadas de 70 \% para entrenamiento, 15 \% para validación y 15 \% para test. El entrenamiento se configuró con una tasa de aprendizaje de $2 \cdot 10^{-5}$, \textit{batch size} de 8, decaimiento de pesos de 0,01 y un máximo de 10 épocas. Se aplicó \textit{early stopping} con paciencia de 2 evaluaciones, utilizando \textit{macro-F1} como métrica para seleccionar el mejor modelo.
+La partición utilizada para el \textit{transformer} se realizó por documento y por autor, con proporciones aproximadas de 70 \% para entrenamiento, 15 \% para validación y 15 \% para test. El entrenamiento se configuró con una tasa de aprendizaje de $2 \cdot 10^{-5}$, \textit{batch size} de 8, decaimiento de pesos de 0,01 y un máximo de 10 épocas. Se aplicó \textit{early stopping} con paciencia de 2 evaluaciones, utilizando \textit{F1 macro} como métrica para seleccionar el mejor modelo.
 
-La inclusión del modelo RoBERTa permite comparar los enfoques clásicos y explicables con un modelo contextual moderno. No obstante, sus resultados se interpretan con cautela, ya que el mayor rendimiento potencial puede venir acompañado de menor transparencia y de una mayor sensibilidad a señales temáticas, personajes, series narrativas o fragmentos concretos del contenido. Por ello, el transformer se considera una referencia moderna dentro del diseño experimental, pero no sustituye al análisis basado en rasgos estilométricos explícitos.
+La inclusión del modelo RoBERTa permite comparar los enfoques clásicos y explicables con un modelo de contexto moderno. No obstante, sus resultados se interpretan con cautela, ya que un mayor rendimiento potencial puede venir acompañado de menor transparencia y de una mayor sensibilidad a señales relacionadas con el tema, los personajes o fragmentos concretos del contenido. Por ello, el \textit{transformer} se considera una aproximación más moderna dentro del diseño experimental, pero no sustituye al análisis clásico basado en rasgos estilométricos explícitos.
 
 \section{Ajuste y validación}
 
