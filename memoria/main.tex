@@ -1192,7 +1192,8 @@ Desde el punto de vista de la organización del código, el repositorio se divid
 
 Las principales herramientas empleadas se resumen en la Tabla~\ref{tab:herramientas}.
 
-\begin{longtable}{|p{3.6cm}|p{4.2cm}|p{7cm}|}
+
+\begin{longtable}{|p{3.6cm}|>{\raggedright\arraybackslash}p{4.2cm}|p{7cm}|}
 \hline
 \textbf{Categoría} & \textbf{Herramientas} & \textbf{Uso en el proyecto} \\
 \hline
@@ -1384,75 +1385,123 @@ Por último, el preprocesamiento se ha diseñado para ser reproducible y trazabl
 
 \section{Extracción de rasgos clásicos}
 
-Tras el preprocesamiento, cada obra se transforma en una representación numérica formada por rasgos estilométricos clásicos. Estos rasgos se han seleccionado porque son interpretables, tienen una tradición consolidada en atribución de autoría y permiten establecer una línea base con la que comparar posteriormente los enfoques basados en aprendizaje automático y representaciones distribuidas. A diferencia de los \textit{embeddings}, estas variables describen propiedades explícitas del texto: longitud de palabras, riqueza léxica, estructura de frases y párrafos, frecuencia de palabras funcionales o uso de signos de puntuación.
+Tras el preprocesamiento, cada obra se transforma en una representación numérica formada por rasgos estilométricos clásicos. Estos rasgos se han seleccionado porque son interpretables, su uso está muy extendido y bien documentado en atribución de autoría y permiten establecer una línea base con la que comparar posteriormente los enfoques basados en aprendizaje automático y representaciones distribuidas. A diferencia de los \textit{embeddings}, estas variables describen propiedades explícitas del texto, como la longitud de las palabras, la riqueza léxica, la estructura de frases y párrafos, la frecuencia de palabras funcionales o el uso de signos de puntuación.
 
-La extracción de rasgos se realiza a nivel de obra. Cada archivo del corpus se representa como una fila en una tabla de características, manteniendo como metadatos el autor, el título de la obra y el nombre del archivo. A partir del texto normalizado y de sus tokens se calculan métricas agrupadas en varias familias: calidad superficial, estructura textual, léxico, palabras funcionales y puntuación. Esta organización permite analizar por separado qué tipo de información aporta cada grupo de variables y facilita la interpretación posterior de los modelos.
+La extracción de rasgos se realiza a nivel de obra. Cada archivo del corpus se representa como una fila en una tabla de características, manteniendo como metadatos el autor, el título de la obra y el nombre del archivo. A partir del texto normalizado y de sus tokens se calculan métricas agrupadas en varias familias: calidad superficial, estructura del texto, léxico, palabras funcionales y puntuación. Esta organización permite analizar por separado qué tipo de información aporta cada grupo de variables y facilita la interpretación posterior de los modelos.
 
-\begin{longtable}{|p{3.5cm}|p{5.2cm}|p{5.8cm}|}
+\begin{longtable}{|p{3.8cm}|p{5.5cm}|p{5.8cm}|}
 \hline
 \textbf{Familia de rasgos} & \textbf{Ejemplos de variables} & \textbf{Interpretación estilométrica} \\
 \hline
 
 Calidad superficial &
 Número de caracteres, proporción de caracteres no alfabéticos, proporción de dígitos, proporción de espacios. &
-Permite detectar artefactos de digitalización o diferencias de formato que podrían afectar al análisis. \\
+Permiten detectar artefactos de digitalización o diferencias de formato que podrían afectar al análisis. \\
 \hline
 
-Estructura textual &
+Estructura del texto &
 Número de oraciones y párrafos, longitud media y mediana de oración, desviación típica de longitud de oración, párrafos por cada 1.000 tokens. &
-Describe la organización interna del discurso y el ritmo narrativo. \\
+Describen la organización interna del discurso y el ritmo narrativo. \\
 \hline
 
 Léxico &
 Número de tipos, TTR, \textit{hapax ratio}, longitud media de palabra, proporción de palabras largas, MATTR-100. &
-Resume la diversidad léxica y la complejidad superficial del vocabulario. \\
+Resumen la diversidad léxica y la complejidad superficial del vocabulario. \\
 \hline
 
 Palabras funcionales &
 Proporción de \textit{stopwords}, frecuencias relativas de las MFW. &
-Captura hábitos lingüísticos frecuentes y menos dependientes del tema. \\
+Capturan hábitos lingüísticos frecuentes y menos dependientes del tema. \\
 \hline
 
 Puntuación &
 Comas, puntos, punto y coma, dos puntos, interrogaciones, exclamaciones, comillas, guiones y paréntesis por cada 1.000 tokens. &
-Refleja patrones de segmentación, diálogo, ritmo y estilo formal. \\
+Reflejan patrones de segmentación, diálogo, ritmo y estilo formal. \\
 \hline
 
 \caption{Principales familias de rasgos estilométricos clásicos extraídos del corpus.}
 \label{tab:rasgos-clasicos}
 \end{longtable}
 
-En primer lugar, se calculan métricas de calidad superficial del texto. Aunque estas variables no se utilizan como evidencia directa de autoría, resultan útiles para comprobar que los textos no contienen anomalías graves tras la limpieza y normalización. Por ejemplo, una proporción inusualmente alta de dígitos o caracteres no alfabéticos podría indicar la presencia de índices, numeraciones, errores de OCR o restos editoriales no eliminados. Por tanto, estas métricas funcionan principalmente como mecanismo de control del corpus.
+La Tabla~\ref{tab:rasgos-clasicos} recoge el conjunto definitivo de rasgos estilométricos clásicos utilizados como variables predictoras en los experimentos supervisados y no supervisados. Estos rasgos se calculan a nivel de obra y describen propiedades superficiales, estructurales, léxicas, funcionales y de puntuación del texto.
+
+\begin{longtable}{|p{5cm}|>{\raggedright\arraybackslash}p{10.8cm}|}
+\hline
+\textbf{Familia de rasgos} & \textbf{Rasgos incluidos} \\
+\hline
+
+Calidad y composición superficial &
+\texttt{non\_alpha\_ratio}, \texttt{digit\_ratio}, \texttt{whitespace\_ratio}, \texttt{non\_alpha\_token\_ratio} \\
+\hline
+
+Estructura de las oraciones &
+\texttt{avg\_sentence\_len}, \texttt{median\_sentence\_len}, \texttt{std\_sentence\_len}, \texttt{sentences\_per\_1000\_tokens}, \texttt{short\_sentence\_ratio}, \texttt{long\_sentence\_ratio} \\
+\hline
+
+Estructura de los párrafos &
+\texttt{avg\_paragraph\_len}, \texttt{median\_paragraph\_len}, \texttt{std\_paragraph\_len}, \texttt{paragraphs\_per\_1000\_tokens}, \texttt{avg\_sentences\_per\_paragraph}, \texttt{median\_sentences\_per\_paragraph} \\
+\hline
+
+Riqueza y longitud léxica &
+\texttt{hapax\_ratio}, \texttt{avg\_word\_len}, \texttt{long\_word\_ratio}, \texttt{mattr\_100} \\
+\hline
+
+Palabras funcionales &
+\texttt{stopword\_ratio} \\
+\hline
+
+Puntuación y marcas gráficas &
+\texttt{comma\_count\_per\_1000}, \texttt{period\_count\_per\_1000}, \texttt{semicolon\_count\_per\_1000}, \texttt{colon\_count\_per\_1000}, \texttt{exclam\_count\_per\_1000}, \texttt{question\_count\_per\_1000}, \texttt{ellipsis\_count\_per\_1000}, \texttt{quote\_count\_per\_1000}, \texttt{dialog\_dash\_count\_per\_1000}, \texttt{hyphen\_count\_per\_1000}, \texttt{parenthesis\_count\_per\_1000} \\
+\hline
+
+\caption{Rasgos estilométricos clásicos utilizados en los modelos.}
+\label{tab:rasgos-clasicos}
+\end{longtable}
+
+En primer lugar, se calculan métricas de calidad superficial del texto. Aunque estas variables no se utilizan como evidencia directa en atribución de autoría, resultan útiles para comprobar que los textos no contienen anomalías graves tras la limpieza y la normalización. Por ejemplo, una proporción inusualmente alta de dígitos o caracteres no alfabéticos podría indicar la presencia de índices, numeraciones, errores de OCR o restos de la edición de la editorial que no han sido eliminados. Por tanto, estas métricas funcionan principalmente como mecanismo de control del corpus.
 
 El segundo grupo está formado por rasgos estructurales. Para cada obra se estima el número de oraciones y párrafos, la longitud media, mediana y desviación típica de las oraciones, la proporción de oraciones cortas y largas, la longitud de los párrafos y el número de oraciones por párrafo. Además, algunas variables se normalizan por cada 1.000 tokens para reducir el efecto de la extensión total de la obra. Estas métricas permiten aproximarse a aspectos como la densidad sintáctica, el ritmo narrativo o la tendencia de un autor a utilizar frases más breves o párrafos más extensos.
 
-El tercer grupo corresponde a rasgos léxicos. Se calculan medidas clásicas como el número de tipos distintos, el \textit{Type-Token Ratio} (TTR), el número y proporción de \textit{hapax legomena}, la longitud media y mediana de palabra y la proporción de palabras largas. Dado que algunas de estas métricas son sensibles a la longitud del texto, se incorpora también MATTR-100, que calcula la riqueza léxica mediante una ventana móvil de 100 tokens. Esta medida permite comparar de forma más estable obras de extensión desigual.
+El tercer grupo corresponde a rasgos léxicos. Se calculan medidas clásicas como el número de tipos distintos, el \textit{Type-Token Ratio} (TTR), el número y proporción de \textit{hapax legomena}, la longitud media y mediana de palabra y la proporción de palabras largas. Dado que algunas de estas métricas son sensibles a la longitud del texto, se incorpora también MATTR-100, que calcula la riqueza léxica mediante una ventana móvil de 100 tokens. Esta medida permite comparar de forma más estable obras de distinta extensión.
 
-Especial atención merece el uso de palabras funcionales. En el proyecto se trabaja con una lista de \textit{stopwords} en inglés utilizada como aproximación operativa a las palabras funcionales. Estas palabras, como artículos, preposiciones, pronombres, conjunciones o verbos auxiliares, suelen ser frecuentes, poco conscientes y menos dependientes del contenido temático que los sustantivos o verbos léxicos. Por ello, se calcula tanto la proporción general de \textit{stopwords} como la frecuencia relativa de las palabras funcionales más frecuentes del corpus.
+Especial atención merece el uso de palabras funcionales. En el proyecto se trabaja con una lista de \textit{stopwords} en inglés utilizada como aproximación operativa a las palabras funcionales. Estas palabras, como artículos, preposiciones, pronombres, conjunciones o verbos auxiliares, suelen ser frecuentes, poco conscientes y menos dependientes del contenido temático que los sustantivos o verbos con mayor carga semántica. Entre ellas se incluyen formas como \textit{the}, \textit{and}, \textit{of}, \textit{to}, \textit{in}, \textit{that}, \textit{he}, \textit{she}, \textit{was}, \textit{had}, \textit{but} o \textit{not}, que no describen por sí solas el tema de una obra, pero pueden reflejar hábitos recurrentes de uso del lenguaje. Por ello, se calcula tanto la proporción general de \textit{stopwords} como la frecuencia relativa de las palabras funcionales más frecuentes del corpus.
 
-Para los experimentos basados en MFW (\textit{Most Frequent Words}), el vocabulario se construye exclusivamente a partir del conjunto de entrenamiento. En concreto, se seleccionan las palabras funcionales más frecuentes y cada obra se representa mediante la frecuencia relativa de cada una de ellas. Esta decisión evita fuga de información desde el conjunto de test y garantiza que todos los textos se proyecten sobre el mismo espacio de características. El número de palabras funcionales seleccionadas se trata como un parámetro experimental, evaluado posteriormente mediante análisis de robustez.
+Para los experimentos basados en MFW (\textit{Most Frequent Words}), el vocabulario se construye exclusivamente a partir del conjunto de entrenamiento. En concreto, se seleccionan las palabras funcionales más frecuentes y cada obra se representa mediante la frecuencia relativa de cada una de ellas. Los ejemplos anteriores tienen únicamente carácter ilustrativo, el vocabulario final utilizado por cada experimento se determina automáticamente a partir del conjunto de entrenamiento. Esta decisión evita fuga de información desde el conjunto de test y garantiza que todos los textos se proyecten sobre el mismo espacio de características. El número de palabras funcionales seleccionadas se trata como un parámetro experimental, evaluado posteriormente mediante un análisis de robustez.
 
-En este trabajo, la lista de \textit{stopwords} se utiliza como una aproximación operativa al conjunto de palabras funcionales. Aunque ambos conceptos no son completamente equivalentes, existe un solapamiento importante entre ellos: artículos, preposiciones, conjunciones, pronombres, auxiliares y otras formas frecuentes de baja carga temática. A diferencia de otros enfoques de PLN, donde las \textit{stopwords} suelen eliminarse por considerarse poco informativas, en estilometría estas palabras se conservan precisamente porque pueden reflejar hábitos de escritura relativamente estables y menos dependientes del contenido narrativo. Por ello, las MFW empleadas en los experimentos se seleccionan a partir de esta lista y se expresan como frecuencias relativas por obra.
+Como se ha comentado, en este trabajo, la lista de \textit{stopwords} se utiliza como una aproximación operativa al conjunto de palabras funcionales. Aunque ambos conceptos no son completamente equivalentes, existe un solapamiento importante entre ellos consistente en artículos, preposiciones, conjunciones, pronombres, verbos auxiliares y otras formas frecuentes de baja carga semántica. A diferencia de otros enfoques de PLN, donde las \textit{stopwords} suelen eliminarse por considerarse poco informativas, en estilometría estas palabras se conservan precisamente porque pueden reflejar hábitos de escritura relativamente estables y menos dependientes del contenido narrativo. Por ello, las MFW empleadas en los experimentos se seleccionan a partir de esta lista y se expresan como frecuencias relativas por obra.
 
-El último grupo de rasgos clásicos recoge patrones de puntuación. Se contabilizan signos como comas, puntos, punto y coma, dos puntos, interrogaciones, exclamaciones, puntos suspensivos, comillas, guiones de diálogo, guiones simples y paréntesis. Para hacer comparables obras de distinta longitud, estos recuentos se expresan también por cada 1.000 tokens. Estos rasgos son relevantes porque la puntuación puede reflejar hábitos de segmentación, densidad de diálogo, ritmo narrativo o preferencia por determinadas estructuras expresivas.
+El último grupo de rasgos clásicos recoge patrones de puntuación. Se contabilizan signos como comas, puntos, punto y coma, dos puntos, interrogaciones, exclamaciones, puntos suspensivos, comillas, guiones de diálogo, guiones simples y paréntesis. Para hacer comparables obras de distinta longitud, estos recuentos se expresan también por cada 1.000 tokens. Estos rasgos son relevantes porque la puntuación puede reflejar hábitos de segmentación, densidad de diálogo, ritmo narrativo o la preferencia por determinados patrones de escritura.
 
-Aunque los n-gramas de caracteres constituyen una familia de rasgos habitual en atribución de autoría, no se han incorporado como representación principal en los experimentos supervisados de este trabajo. Esta decisión responde a dos motivos. En primer lugar, el objetivo metodológico ha sido priorizar rasgos directamente interpretables, como métricas léxicas, estructurales, de puntuación y frecuencias de palabras funcionales. En segundo lugar, los n-gramas de caracteres generan espacios de alta dimensionalidad que, aunque pueden ofrecer buen rendimiento predictivo, dificultan la interpretación estilométrica de los resultados y aumentan el riesgo de capturar señales ortográficas, editoriales o temáticas específicas del corpus. Por ello, se consideran dentro del marco teórico como una técnica relevante, pero se dejan fuera del flujo experimental principal para mantener la comparación centrada en rasgos clásicos interpretables, MFW, modelos supervisados y representaciones distribuidas.
+Aunque los n-gramas de caracteres constituyen una familia de rasgos habitual en atribución de autoría, no se han incorporado como representación en los experimentos de este trabajo. Esta decisión responde a dos motivos. En primer lugar, el objetivo metodológico ha sido priorizar rasgos directamente interpretables, como métricas léxicas, estructurales, de puntuación y frecuencias de palabras funcionales. En segundo lugar, los n-gramas de caracteres generan espacios de alta dimensionalidad que, aunque pueden ofrecer un buen rendimiento predictivo, dificultan la interpretación estilométrica de los resultados. Por ello, aunque se consideran dentro del marco teórico como una técnica relevante, se dejan fuera del flujo experimental de este trabajo para centrar la comparación en rasgos clásicos interpretables y MFW.
 
-Además de estas variables agregadas, el trabajo incorpora métodos estilométricos clásicos como procedimientos de comparación directa entre autores. En concreto, se utilizan el test de Mendenhall, el chi-cuadrado de Kilgariff y la Delta de Burrows. En el primer caso, se construyen distribuciones de longitud de palabra por bloques y se comparan mediante distancia de Jensen-Shannon. En los métodos de Kilgariff y Burrows, se construye un vocabulario común de términos frecuentes, opcionalmente limitado a palabras funcionales, y se calcula la distancia entre una obra y los perfiles de autor del corpus de referencia.
+Además de estas variables agregadas, este TFG incorpora métodos estilométricos clásicos como procedimientos de comparación directa entre autores. En concreto, se utilizan el test de Mendenhall, el chi-cuadrado de Kilgariff y la Delta de Burrows. En el primer caso, se construyen distribuciones de longitud de palabra por bloques y se comparan mediante distancia de Jensen-Shannon. En los métodos de Kilgariff y Burrows, se construye un vocabulario común de términos frecuentes, limitado a palabras funcionales, y se calcula la distancia entre una obra y los perfiles de autor del corpus de referencia.
 
-Estos métodos cumplen una doble función. Por un lado, actúan como línea base interpretable frente a modelos supervisados más flexibles. Por otro, permiten obtener contribuciones por palabra, especialmente en Kilgariff y Burrows, lo que facilita analizar qué términos explican la proximidad o distancia entre una obra y cada autor candidato. De este modo, la extracción de rasgos clásicos no se limita a preparar datos para clasificadores, sino que también proporciona una primera capa de interpretación estilométrica del corpus.
+Estos métodos cumplen una doble función. Por un lado, actúan como línea base interpretable frente al resto de modelos. Por otro, permiten obtener contribuciones a nivel de palabra funcional, especialmente en Kilgariff y Burrows, lo que facilita analizar qué términos explican la proximidad o distancia entre una obra y cada autor candidato. De este modo, la extracción de rasgos clásicos no se limita solo a preparar datos para los clasificadores, sino que también proporciona una primera capa de interpretación estilométrica del corpus.
 
 \section{Representaciones distribuidas}
 
-Además de los rasgos estilométricos clásicos, el proyecto incorpora representaciones distribuidas del lenguaje mediante \textit{embeddings}. A diferencia de las variables explícitas descritas en la sección anterior, los \textit{embeddings} representan textos o fragmentos textuales como vectores densos en un espacio continuo. En este espacio, la proximidad entre vectores se interpreta como una medida de similitud lingüística o semántica entre los textos representados.
+Además de los rasgos estilométricos clásicos, el proyecto incorpora representaciones distribuidas del lenguaje mediante \textit{embeddings}. A diferencia de las variables explícitas descritas en la sección anterior, los \textit{embeddings} representan textos o fragmentos de texto como vectores densos en un espacio continuo. En este espacio, la proximidad entre vectores se interpreta como una medida de similitud lingüística o semántica entre los textos representados.
 
-El uso de \textit{embeddings} permite explorar si las obras de un mismo autor tienden a situarse cerca entre sí cuando se representan mediante modelos modernos de lenguaje. Esta aproximación resulta útil como complemento a los rasgos clásicos, ya que puede capturar relaciones contextuales o patrones de uso que no quedan reflejados directamente en variables como la longitud de oración, la frecuencia de puntuación o las palabras funcionales. Sin embargo, su interpretación debe ser más cautelosa, ya que las dimensiones del vector no se corresponden con rasgos lingüísticos directamente observables.
+El uso de \textit{embeddings} permite explorar si las obras de un mismo autor tienden a situarse cerca entre sí cuando se representan mediante modelos modernos de lenguaje. Esta aproximación resulta útil como complemento a los rasgos clásicos, ya que puede capturar relaciones de contexto o patrones de uso que no quedan reflejados directamente en variables como la longitud de oración, la frecuencia de puntuación o las palabras funcionales. Sin embargo, su interpretación debe ser más cautelosa, ya que las dimensiones del vector no se corresponden con rasgos lingüísticos directamente observables.
 
-En este trabajo, las representaciones distribuidas se han generado mediante modelos de \textit{embeddings} de OpenAI, concretamente \texttt{text-embedding-3-large} y \texttt{text-embedding-3-small}. Para controlar la longitud de entrada de los modelos, cada obra se divide previamente en fragmentos de tamaño fijo medido en tokens. Esta segmentación se realiza con \texttt{tiktoken}, utilizando ventanas de 1.200 tokens, un solapamiento de 150 tokens y descartando fragmentos demasiado pequeños, por debajo de 120 tokens. El solapamiento entre fragmentos reduce el riesgo de cortar abruptamente unidades narrativas o contextuales relevantes.
+En este trabajo, las representaciones distribuidas se han generado mediante modelos de \textit{embeddings} de OpenAI, concretamente \texttt{text-embedding-3-large} y \texttt{text-embedding-3-small}\cite{OpenAIEmbeddingsGuide}. La elección de estos modelos responde a varios criterios metodológicos y prácticos. En primer lugar, se trata de modelos modernos de propósito general, entrenados sobre grandes volúmenes de datos y capaces de generar representaciones en contexto a nivel de fragmentos de texto completos, no únicamente a nivel de palabra. Esto resulta especialmente adecuado para el análisis de obras literarias, donde interesa capturar relaciones semánticas y del discurso más amplias que las que ofrecen representaciones estáticas como Word2Vec, GloVe o FastText. En segundo lugar, su uso permite obtener vectores comparables entre fragmentos y obras sin necesidad de entrenar un modelo específico sobre el corpus del proyecto, algo poco recomendable dado el tamaño limitado del conjunto de textos. Finalmente, la disponibilidad de dos variantes, una más grande y otra más ligera, permite comparar el comportamiento de dos representaciones con distinto coste computacional y dimensionalidad.
 
-Una vez generados los \textit{embeddings} de los fragmentos, estos se agregan para obtener una representación a nivel de obra. La agregación se realiza mediante una media ponderada por el número de tokens de cada fragmento, de forma que los fragmentos más largos tengan un peso proporcionalmente mayor en la representación final. Después, los vectores resultantes se normalizan para facilitar el cálculo de similitudes mediante distancia o similitud coseno. De forma análoga, también pueden obtenerse representaciones agregadas por autor a partir de las obras correspondientes.
+Frente a esta opción, modelos clásicos como Word2Vec, GloVe o FastText habrían requerido una estrategia adicional de agregación de vectores de palabra para representar obras completas, normalmente mediante medias u otros mecanismos de composición. Además, al tratarse de representaciones esencialmente estáticas, una misma palabra recibe una representación similar con independencia del contexto en el que aparece, lo que limita su capacidad para captar matices del discurso más complejos. Aunque estos modelos siguen siendo útiles como líneas base y presentan ventajas en cuanto a simplicidad e interpretabilidad, en este trabajo se ha priorizado una representación del contexto más moderna que funcionara como complemento a los rasgos estilométricos explícitos y a los métodos clásicos.
 
-\begin{longtable}{|p{4cm}|p{10.5cm}|}
+Para controlar la longitud de entrada de los modelos seleccionados, cada obra se divide previamente en fragmentos de tamaño fijo medido en tokens. Esta segmentación se realiza con \texttt{tiktoken}, utilizando ventanas de 1.200 tokens, un solapamiento de 150 tokens y descartando fragmentos demasiado pequeños, por debajo de 120 tokens. El solapamiento entre fragmentos reduce el riesgo de cortar de manera artificial unidades narrativas o de contexto relevantes.
+
+Una vez generados los \textit{embeddings} de los fragmentos, estos se agregan para obtener una representación a nivel de obra. La agregación se realiza mediante una media ponderada por el número de tokens de cada fragmento, de forma que los fragmentos más largos tengan un peso proporcionalmente mayor en la representación final. Después, los vectores resultantes se normalizan para facilitar el cálculo de similitudes mediante similitud del coseno. De forma análoga, también pueden obtenerse representaciones agregadas por autor a partir de las obras correspondientes.
+
+La similitud del coseno entre dos vectores de \textit{embedding}, $\mathbf{x}$ e $\mathbf{y}$, se calcula como:
+
+\[
+\operatorname{sim}_{\cos}(\mathbf{x}, \mathbf{y}) =
+\frac{\mathbf{x} \cdot \mathbf{y}}{\|\mathbf{x}\| \, \|\mathbf{y}\|}
+\]
+
+donde $\mathbf{x} \cdot \mathbf{y}$ representa el producto escalar entre ambos vectores y $\|\mathbf{x}\|$ y $\|\mathbf{y}\|$ sus normas euclídeas. Esta medida toma valores más altos cuanto menor es el ángulo entre los vectores, por lo que resulta adecuada para comparar textos en espacios de \textit{embeddings}, donde interesa más la orientación relativa de las representaciones que su magnitud absoluta.
+
+\begin{longtable}{|p{4.4cm}|p{11cm}|}
 \hline
 \textbf{Etapa} & \textbf{Descripción} \\
 \hline
@@ -1466,11 +1515,11 @@ Cada fragmento se envía al modelo seleccionado y se representa como un vector d
 \hline
 
 Agregación por obra &
-Los vectores de los fragmentos se combinan mediante media ponderada por número de tokens. \\
+Los vectores de los fragmentos se combinan mediante una media ponderada por número de tokens. \\
 \hline
 
 Normalización &
-Los vectores agregados se normalizan para trabajar de forma estable con similitud coseno. \\
+Los vectores agregados se normalizan para trabajar de forma estable con similitud del coseno. \\
 \hline
 
 Análisis de similitud &
@@ -1478,22 +1527,22 @@ Se calculan matrices de similitud, vecinos más próximos, distancias intraautor
 \hline
 
 Visualización &
-Se aplican PCA y UMAP para proyectar los vectores en dos o tres dimensiones y explorar agrupamientos. \\
+Se aplican PCA y UMAP para proyectar los vectores en dos o tres dimensiones y explorar los agrupamientos. \\
 \hline
 
 \caption{Flujo de generación y análisis de representaciones distribuidas.}
 \label{tab:representaciones-distribuidas}
 \end{longtable}
 
-El análisis de estas representaciones se lleva a cabo principalmente mediante similitud coseno. En primer lugar, se calcula una matriz de similitud entre obras, que permite observar si los textos de un mismo autor forman bloques de alta similitud. En segundo lugar, se construyen tablas de vecinos más próximos, donde para cada obra se identifican las obras más cercanas en el espacio vectorial y se comprueba si pertenecen al mismo autor. En tercer lugar, se comparan las distancias intraautor e interautor: si los \textit{embeddings} capturan una señal relacionada con la autoría, las distancias entre obras del mismo autor deberían tender a ser menores que las distancias entre obras de autores distintos.
+Así, el análisis de estas representaciones se lleva a cabo principalmente mediante similitud del coseno. En primer lugar, se calcula una matriz de similitud entre obras, que permite observar si los textos de un mismo autor forman bloques de alta similitud. En segundo lugar, se construyen las tablas de vecinos más próximos, donde para cada obra se identifican las obras más cercanas en el espacio vectorial y se comprueba si pertenecen al mismo autor. En tercer lugar, se comparan las distancias intraautor e interautor, de forma que si los \textit{embeddings} capturan una señal relacionada con la autoría, las distancias entre obras del mismo autor deberían tender a ser menores que las distancias entre obras de autores distintos.
 
-También se calculan métricas agregadas por autor, como la distancia media intraautor, la distancia media interautor y el margen de separación entre ambas. Estas medidas permiten evaluar de forma más cuantitativa si las representaciones distribuidas generan agrupamientos coherentes con las etiquetas de autor. Además, se utiliza el \textit{silhouette score} con distancia coseno como indicador general de separación entre autores en el espacio de \textit{embeddings}.
+También se calculan métricas agregadas por autor, como la distancia media intraautor, la distancia media interautor y el margen de separación entre ambas. Estas medidas permiten evaluar de forma más cuantitativa si las representaciones distribuidas generan agrupamientos coherentes con las etiquetas de autor. Además, se utiliza el \textit{silhouette score} con distancia del coseno como indicador general de separación entre autores en el espacio de \textit{embeddings}.
 
 Para facilitar la exploración visual, se aplican técnicas de reducción de dimensionalidad como PCA y UMAP. PCA proporciona una proyección lineal útil como referencia estable e interpretable en términos de varianza explicada, mientras que UMAP permite representar relaciones no lineales y suele ser más adecuado para visualizar agrupamientos locales. No obstante, estas visualizaciones se interpretan únicamente como apoyo exploratorio, ya que una proyección bidimensional puede simplificar en exceso la estructura real del espacio vectorial.
 
-Finalmente, se construyen redes de similitud entre obras mediante \texttt{NetworkX}. En estas redes, cada nodo representa una obra y cada arista conecta una obra con sus vecinos más cercanos según similitud coseno. Esta representación permite inspeccionar de manera intuitiva qué textos actúan como puentes entre autores, qué obras quedan aisladas y si las conexiones más fuertes tienden a producirse dentro del mismo autor.
+Finalmente, se construyen redes de similitud entre obras mediante \texttt{NetworkX}\cite{NetworkXWebsite}. En estas redes, cada nodo representa una obra y cada arista conecta una obra con sus vecinos más cercanos según similitud del coseno. Esta representación permite inspeccionar de manera intuitiva qué textos actúan como puentes entre autores, qué obras quedan aisladas y si las conexiones más fuertes tienden a producirse dentro del mismo autor.
 
-Estas representaciones distribuidas cumplen una función complementaria dentro del diseño experimental. Por un lado, permiten comparar los enfoques clásicos con modelos capaces de capturar información contextual más rica. Por otro, introducen una representación menos transparente, por lo que sus resultados deben contrastarse con los obtenidos mediante rasgos explícitos e interpretables. En este sentido, los \textit{embeddings} no sustituyen a la estilometría clásica, sino que amplían el análisis y permiten valorar si la información contextual aporta una mejora real en la atribución de autoría.
+Estas representaciones distribuidas tienen una función complementaria dentro del diseño experimental. Por un lado, permiten comparar los enfoques clásicos con modelos capaces de capturar información de contexto más rica. Por otro, introducen una representación menos transparente, por lo que sus resultados deben contrastarse con los obtenidos mediante rasgos explícitos e interpretables. En este sentido, los \textit{embeddings} no sustituyen a la estilometría clásica, sino que amplían el análisis y permiten valorar si la información de contexto aporta una mejora real en la atribución de autoría.
 
 \section{Modelos de clasificación}
 
