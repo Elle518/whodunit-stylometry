@@ -1971,7 +1971,7 @@ Para cuantificar estas relaciones, se calculó la distancia de Jensen-Shannon en
 
 La matriz muestra que los perfiles más próximos son los de Arthur Morrison y Arthur Conan Doyle, con una distancia de 0,0127. También se observa cierta proximidad entre Arthur Conan Doyle y Anna Katharine Green, así como entre Arthur Morrison y Gilbert Keith Chesterton. Por otra parte, Richard Austin Freeman y Wilkie Collins forman otro par relativamente cercano, con una distancia de 0,0261, aunque ambos aparecen más alejados del grupo formado por Doyle, Morrison y Green.
 
-Estas relaciones ayudan a interpretar los resultados posteriores del test de atribución basado en Mendenhall. Algunos de los errores cometidos por este método se producen precisamente entre autores cuyas curvas medias son próximas. Por ejemplo, una obra de Arthur Morrison se atribuye a Arthur Conan Doyle, lo que resulta coherente con la baja distancia entre sus perfiles medios. Del mismo modo, la confusión entre Richard Austin Freeman y Wilkie Collins puede entenderse a partir de la relativa proximidad entre ambos en la matriz de distancias.
+Estas relaciones ayudan a interpretar los resultados posteriores del test de atribución basado en Mendenhall. Algunos de los errores cometidos por este método se producen precisamente entre autores cuyas curvas medias están próximas. Por ejemplo, una obra de Arthur Morrison se atribuye a Arthur Conan Doyle, lo que resulta coherente con la baja distancia entre sus perfiles medios. Del mismo modo, la confusión entre Richard Austin Freeman y Wilkie Collins puede entenderse a partir de la relativa proximidad entre ambos en la matriz de distancias.
 
 Estos resultados indican que las curvas de Mendenhall capturan una señal estilométrica real, pero limitada. La distribución de longitudes de palabra permite observar diferencias de estabilidad interna, identificar afinidades globales entre autores y anticipar algunos errores de atribución. Sin embargo, estas diferencias son sutiles y no generan una separación clara entre todos los perfiles. Por esta razón, Mendenhall resulta más útil como herramienta exploratoria y descriptiva que como clasificador.
 
@@ -2035,7 +2035,7 @@ En Kilgariff, cada palabra del vocabulario aporta una contribución parcial al v
 
 En Burrows, la interpretación se basa en las diferencias entre puntuaciones $z$. Para cada palabra funcional se compara cuánto se aleja su frecuencia relativa en la obra de prueba respecto al comportamiento normalizado del corpus del autor. De este modo, una distancia Delta baja puede coexistir con desviaciones fuertes en algunas palabras concretas, siempre que el perfil global siga siendo próximo. Por ejemplo, en \textit{The White Company}, de Arthur Conan Doyle, aparecen desviaciones destacadas en términos como \textit{their}, \textit{them}, \textit{either}, \textit{won} y \textit{while}. En \textit{The Hole in the Wall}, de Arthur Morrison, destacan \textit{o}, \textit{an}, \textit{beyond}, \textit{be} y \textit{neither}. Estos casos muestran que una obra puede ser correctamente atribuida a su autor y, al mismo tiempo, contener rasgos locales que se apartan del perfil medio de ese autor. De nuevo, las palabras más influyentes son aquellas cuyos valores normalizados muestran las mayores desviaciones, por lo que indican diferencias relativas de uso.
 
-Como vemos en las Figuras \ref{fig:kilgariff-contributions-example} y \ref{fig:delta-contributions-example}, los métodos clásicos no destacan siempre las mismas palabras porque no miden la distancia estilométrica del mismo modo. El Chi-cuadrado de Kilgarriff se basa en conteos observados y esperados, por lo que suele dar más peso a palabras muy frecuentes cuya desviación absoluta es grande. El Delta de Burrows Delta, en cambio, trabaja con frecuencias estandarizadas mediante \textit{z-scores}, de modo que resalta las palabras en las que la obra se aleja más del perfil normalizado del autor, aunque no sean las más frecuentes.
+Como vemos en las Figuras \ref{fig:kilgariff-contributions-example} y \ref{fig:delta-contributions-example}, los métodos clásicos no destacan siempre las mismas palabras porque no miden la distancia estilométrica del mismo modo. El chi-cuadrado de Kilgarriff se basa en conteos observados y esperados, por lo que suele dar más peso a palabras muy frecuentes cuya desviación absoluta es grande. El Delta de Burrows Delta, en cambio, trabaja con frecuencias estandarizadas mediante \textit{z-scores}, de modo que resalta las palabras en las que la obra se aleja más del perfil normalizado del autor, aunque no sean las más frecuentes.
 
 \begin{figure}[H]
 \centering
@@ -2051,19 +2051,19 @@ Como vemos en las Figuras \ref{fig:kilgariff-contributions-example} y \ref{fig:d
 \label{fig:delta-contributions-example}
 \end{figure}
 
-Por tanto, estas listas no deben interpretarse como explicaciones equivalentes, sino como complementarias. El Chi-cuadrado muestra qué términos explican mejor la diferencia en conteos, mientras que Delta muestra qué términos generan mayor distancia una vez normalizadas las frecuencias.
+Por tanto, estas listas no deben interpretarse como explicaciones equivalentes, sino como complementarias. El chi-cuadrado muestra qué términos explican mejor la diferencia en conteos, mientras que Delta muestra qué términos generan mayor distancia una vez normalizadas las frecuencias.
 
 La utilidad de este análisis es doble. Por un lado, permite comprobar que los métodos no se apoyan en nombres propios, personajes o términos relacionados con un cierto tema, sino en palabras frecuentes y funcionales. Por otro, ayuda a detectar la variación interna dentro de un mismo autor. Si una obra presenta una distancia relativamente alta respecto a su propio corpus, las contribuciones por palabra permiten identificar qué elementos explican esa separación.
 
 De este modo, los resultados de Kilgariff y Burrows refuerzan una de las conclusiones principales del trabajo, que las palabras funcionales constituyen una representación especialmente eficaz para la atribución de autoría en este corpus. Ambos métodos alcanzan un rendimiento perfecto en el conjunto de prueba y, además, ofrecen una interpretación transparente de las distancias calculadas. Frente a modelos más complejos, su principal ventaja es que combinan buen rendimiento, bajo coste computacional y una lectura estilométrica directa.
 
-Aun así, conviene hacer una interpretación prudente ya que el experimento se plantea en un escenario cerrado, con seis autores candidatos conocidos y un conjunto de prueba reducido. Por tanto, el 100 \% de acierto no implica que estos métodos puedan atribuir cualquier texto con la misma fiabilidad. Lo que sí permite afirmar es que, dentro del corpus y de las condiciones experimentales definidas, las frecuencias de palabras funcionales separan con claridad los perfiles de autor y proporcionan una base sólida para comparar los métodos clásicos con los modelos supervisados posteriores.
+Aun así, conviene hacer una interpretación prudente ya que el experimento se plantea en un escenario cerrado, con seis autores candidatos conocidos y un conjunto de prueba reducido. Por tanto, el 100 \% de acierto no implica que estos métodos puedan atribuir cualquier texto con la misma fiabilidad. Lo que sí permite afirmar es que, dentro del corpus y de las condiciones experimentales aquí definidas, las frecuencias de palabras funcionales separan con claridad los perfiles de autor y proporcionan una base sólida para comparar los métodos clásicos con los modelos supervisados posteriores.
 
 \section{Rendimiento de los modelos supervisados}
 
 En esta sección se presentan los resultados obtenidos por los modelos de clasificación supervisada sobre la tarea de atribución de autoría. La métrica principal utilizada es \textit{F1 macro}, ya que permite evaluar el rendimiento medio por autor dando el mismo peso a todas las clases, independientemente del número de obras disponibles para cada una. Esta decisión es especialmente importante en este corpus donde, como se ha comprobado, existe un desbalance claro entre autores.
 
-Los primeros experimentos comparan tres conjuntos de variables: métricas estilométricas agregadas, frecuencias de palabras funcionales más frecuentes (MFW) y una combinación de ambas. En todos los casos, la evaluación se realiza sobre un conjunto de test equilibrado con dos obras por autor, es decir, 12 obras en total. La Tabla \ref{tab:rendimiento-modelos-supervisados} resume los resultados principales.
+Los primeros experimentos comparan tres conjuntos de variables: métricas estilométricas agregadas, frecuencias de palabras funcionales más frecuentes (MFW) y una combinación de ambas. En todos los casos, la evaluación se realiza sobre un conjunto de test equilibrado con dos obras por autor, es decir, 12 obras en total (una del género de misterio y otra no). La Tabla \ref{tab:rendimiento-modelos-supervisados} resume los resultados principales.
 
 \begin{longtable}{|p{4.2cm}|p{3.4cm}|r|p{1.4cm}|p{1.1cm}|p{1.6cm}|}
 \hline
@@ -2075,11 +2075,13 @@ MFW & Linear SVC & 50 & 1,000 & 1,000 & 1,000 \\
 \hline
 Métricas + MFW & Linear SVC & 75 & 1,000 & 1,000 & 1,000 \\
 \hline
+Métricas estilométricas & XGBoost & 32 & 0,804 & 0,833 & 0,822 \\
+\hline
 \caption{Rendimiento de los modelos supervisados sobre el conjunto de test equilibrado.}
 \label{tab:rendimiento-modelos-supervisados}
 \end{longtable}
 
-Para completar la evaluación global, la Tabla~\ref{tab:rendimiento-base-por-autor} muestra el informe de clasificación por autor del modelo basado únicamente en métricas estilométricas agregadas. Este desglose permite observar que el rendimiento no es completamente homogéneo entre clases, aunque la puntuación global sea alta.
+Para completar la evaluación global, la Tabla \ref{tab:rendimiento-base-por-autor} muestra el informe de clasificación por autor del modelo de regresión logística basado únicamente en métricas estilométricas agregadas. Este desglose permite observar que el rendimiento no es completamente homogéneo entre clases, aunque la puntuación global sea alta.
 
 \begin{longtable}{|p{4.5cm}|r|r|r|r|}
 \hline
@@ -2097,11 +2099,11 @@ Richard Austin Freeman & 1,00 & 0,50 & 0,67 & 2 \\
 \hline
 Wilkie Collins & 1,00 & 1,00 & 1,00 & 2 \\
 \hline
-\caption{Rendimiento por autor del modelo con métricas estilométricas agregadas.}
+\caption{Rendimiento por autor de la regresión logística con rasgos estilométricos agregados.}
 \label{tab:rendimiento-base-por-autor}
 \end{longtable}
 
-El desglose por autor muestra que el único fallo del modelo de métricas estilométricas agregadas afecta a Richard Austin Freeman, cuya exhaustividad desciende a 0,50. La precisión de Anna Katharine Green también baja a 0,67 porque recibe una obra atribuida erróneamente a esta clase. En cambio, el resto de autores obtiene valores perfectos en esta partición. Este resultado indica que las métricas agregadas son útiles, pero menos finas que las frecuencias de palabras funcionales para distinguir ciertos perfiles autorales.
+El desglose por autor muestra que el único fallo del modelo de métricas estilométricas agregadas afecta a Richard Austin Freeman, cuya exhaustividad desciende a 0,50. La precisión de Anna Katharine Green también baja a 0,67 porque recibe una obra atribuida erróneamente a esta clase. En cambio, el resto de autores obtiene valores perfectos en esta partición. Este resultado indica que las métricas agregadas son útiles, pero menos finas que las frecuencias de palabras funcionales para distinguir ciertos perfiles de autor.
 
 Los resultados muestran que las representaciones basadas en palabras funcionales son las más eficaces en este experimento. Tanto el modelo basado únicamente en MFW como el modelo combinado alcanzan una puntuación perfecta en el conjunto de test, con \textit{accuracy} y \textit{F1 macro} iguales a 1,000. Esto indica que, para la partición evaluada, las frecuencias relativas de palabras funcionales contienen una señal estilométrica suficiente para separar correctamente a los seis autores.
 
@@ -2109,33 +2111,27 @@ No obstante, estos resultados perfectos deben interpretarse dentro del diseño e
 
 El modelo basado solo en métricas estilométricas agregadas obtiene también un rendimiento alto, con una \textit{accuracy} de 0,917 y una \textit{F1 macro} de 0,911. Sin embargo, queda por debajo de los modelos basados en MFW. El único error observado en esta configuración afecta a Richard Austin Freeman, cuya exhaustividad baja a 0,50. Este resultado sugiere que las métricas globales de longitud, riqueza léxica, estructura y puntuación capturan diferencias relevantes entre autores, pero pueden no ser suficientemente específicas para distinguir todos los casos con la misma precisión que las palabras funcionales.
 
-Como experimento adicional, se evaluó un modelo XGBoost utilizando únicamente rasgos estilométricos agregados. Aunque se trata de un clasificador más flexible y capaz de modelar relaciones no lineales, su rendimiento fue inferior al de la regresión logística sobre rasgos estilométricos: obtuvo una \textit{accuracy} de 0,750 y una \textit{F1 macro} de 0,750 en test. Este resultado indica que, en este corpus y con este conjunto de variables, un modelo más complejo no necesariamente mejora el rendimiento. Dado el tamaño reducido del conjunto de entrenamiento, los modelos lineales parecen aprovechar mejor las señales disponibles sin introducir tanta varianza.
+Como experimento adicional, se evaluó un modelo XGBoost utilizando únicamente métricas estilométricas agregadas. A diferencia del mejor modelo lineal basado en estas variables, que se entrenó con 25 rasgos tras eliminar las características altamente correlacionadas, en este caso se mantuvieron las 32 métricas estilométricas iniciales. Esta decisión se tomó porque XGBoost, al estar basado en árboles de decisión ensamblados, suele ser más robusto frente a la multicolinealidad y puede manejar variables redundantes sin necesidad de aplicar el mismo filtrado previo.
 
-\begin{longtable}{|p{4.2cm}|p{3.2cm}|r|r|r|}
-\hline
-\textbf{Modelo} & \textbf{Representación} & \textbf{Rasgos} & \textbf{Test accuracy} & \textbf{Test F1 macro} \\
-\hline
-Regresión logística & Métricas estilométricas & 25 & 0,917 & 0,911 \\
-\hline
-XGBoost & Métricas estilométricas & 32 & 0,750 & 0,750 \\
-\hline
-Linear SVC & MFW & 50 & 1,000 & 1,000 \\
-\hline
-Linear SVC & Métricas + MFW & 75 & 1,000 & 1,000 \\
-\hline
-\caption{Comparación global de los principales modelos tabulares evaluados.}
-\label{tab:comparacion-modelos-tabulares}
-\end{longtable}
+El modelo XGBoost no se entrenó con una configuración fija, sino que se sometió a una búsqueda aleatoria de hiperparámetros mediante \texttt{RandomizedSearchCV}. La búsqueda se realizó con validación cruzada estratificada de tres particiones (\textit{folds}) sobre el conjunto de entrenamiento y utilizando \textit{F1 macro} como métrica de selección. Se exploraron distintos valores para el número de estimadores, la tasa de aprendizaje, la profundidad máxima de los árboles, el peso mínimo por hoja, el submuestreo de observaciones y variables, y los parámetros de regularización. La mejor configuración obtenida utilizó árboles poco profundos, con \texttt{max\_depth=2}, \texttt{learning\_rate=0.05}, \texttt{n\_estimators=1200}, \texttt{subsample=0.7}, \texttt{colsample\_bytree=0.6} y regularización L2 con \texttt{reg\_lambda=5}.
 
-Además de los modelos tabulares, se entrenó un modelo basado en \textit{transformers}, concretamente RoBERTa, en Google Colab. En este caso, el procedimiento de evaluación difiere del flujo tabular, ya que las obras se dividen en fragmentos y el modelo genera primero predicciones a nivel de fragmento. Posteriormente, estas predicciones se agregan para obtener una atribución final a nivel de documento.
+Tras la búsqueda de hiperparámetros, el modelo final se entrenó reservando un 20 \% del conjunto de entrenamiento como validación interna para aplicar \textit{early stopping}. Esta parada temprana se configuró con 30 rondas y se monitorizó mediante la pérdida multiclase \textit{mlogloss}. En la práctica, el mejor resultado de validación se alcanzó en la iteración 1120 y el entrenamiento finalizó en la iteración 1151, por lo que el mecanismo de parada temprana no interrumpió el ajuste de forma prematura, sino que permitió al modelo converger antes de fijar la mejor iteración.
 
-A nivel de fragmento, el modelo RoBERTa obtuvo una \textit{accuracy} de 0,8645 y una \textit{F1 macro} de 0,8140 sobre 6\,519 fragmentos de test. A nivel de documento, tras agregar las predicciones de los fragmentos, el rendimiento alcanzó una \textit{accuracy} y una \textit{F1 macro} de 1,000 sobre 14 obras de test.
+A pesar de este ajuste, el rendimiento de XGBoost fue inferior al de la regresión logística sobre métricas estilométricas. En el conjunto de test obtuvo una \textit{accuracy} de 0,833 y una \textit{F1 macro} de 0,822, frente a la \textit{F1 macro} de 0,911 alcanzada por el modelo lineal con 25 rasgos. Además, el modelo mostró indicios claros de sobreajuste puesto que la \textit{F1 macro} sobre el conjunto de entrenamiento fue de 0,955, bastante superior a la obtenida en test. Esto indica que, aunque XGBoost es capaz de ajustar con mucha precisión los datos disponibles, su mayor flexibilidad no se traduce en una mejor generalización en este corpus en concreto y para estas características.
+
+El informe por autor confirma esta pérdida de estabilidad. XGBoost clasificó correctamente todos los textos de Arthur Conan Doyle y Wilkie Collins, pero cometió errores que redujeron la exhaustividad de Arthur Morrison y Richard Austin Freeman al 0,50, y afectaron también a la precisión de Anna Katharine Green y Gilbert Keith Chesterton. Por tanto, el experimento muestra que añadir complejidad al clasificador y conservar todas las variables estilométricas no mejora necesariamente la atribución de autoría. En este caso, el modelo lineal con selección previa de rasgos correlacionados ofrece una solución más simple, más estable y con mejor rendimiento en el test.
+
+Además de los modelos tabulares, se entrenó un modelo basado en \textit{transformers}, concretamente RoBERTa, en Google Colab. Este experimento no sigue exactamente el mismo procedimiento de partición que los modelos supervisados anteriores. Mientras que los modelos tabulares se evaluaron sobre un conjunto de test equilibrado de 12 obras, con dos obras por autor, el modelo RoBERTa se entrenó con una partición a nivel de documento distinta del corpus normalizado. En este caso se utilizaron 95 documentos en total, divididos por autor en 66 documentos de entrenamiento, 15 de validación y 14 de test, siguiendo una proporción aproximada de 70/15/15. El conjunto de test resultante no queda completamente equilibrado por autor y contiene cinco obras de Anna Katharine Green, dos de Arthur Conan Doyle, una de Arthur Morrison, dos de Gilbert Keith Chesterton, tres de Richard Austin Freeman y una de Wilkie Collins. Por este motivo, sus resultados deben interpretarse como complementarios y no como una comparación directa con los modelos tabulares.
+
+Otra diferencia importante es la unidad de entrenamiento. RoBERTa no se ajusta directamente sobre obras completas, sino sobre fragmentos tokenizados. Cada documento se dividió en secuencias de hasta 256 tokens, con un solapamiento de 64 tokens entre fragmentos consecutivos. Este proceso generó 38.097 fragmentos de entrenamiento, 9.875 fragmentos de validación y 6.519 fragmentos de test. Por tanto, aunque la partición se realiza a nivel de documento para evitar que fragmentos de una misma obra aparezcan en distintos conjuntos, el ajuste del modelo se lleva a cabo a nivel de fragmento.
+
+El modelo utilizado fue \texttt{roberta-base}, al que se añadió una cabeza de clasificación multiclase con seis etiquetas, una por autor. Los pesos preentrenados de RoBERTa se reutilizaron como punto de partida, mientras que la cabeza de clasificación se inicializó desde cero para la tarea de atribución de autoría. El ajuste fino se realizó con una tasa de aprendizaje de \texttt{2e-5}, tamaño de lote de 8, \textit{weight decay} de 0,01 y un máximo de 10 épocas. Durante el entrenamiento se evaluó el modelo al final de cada época sobre el conjunto de validación y se guardó el mejor \textit{checkpoint} según \textit{F1 macro}. Además, se aplicó \textit{early stopping} con paciencia de dos evaluaciones, de modo que el entrenamiento finalizó en la época 5, antes de agotar el máximo previsto.
 
 \begin{longtable}{|p{4cm}|r|r|r|r|}
 \hline
 \textbf{Nivel de evaluación} & \textbf{Muestras} & \textbf{Accuracy} & \textbf{F1 macro} & \textbf{F1 weighted} \\
 \hline
-Fragmento & 6\,519 & 0,8645 & 0,8140 & 0,8638 \\
+Fragmento & 6.519 & 0,8645 & 0,8140 & 0,8638 \\
 \hline
 Documento & 14 & 1,0000 & 1,0000 & 1,0000 \\
 \hline
@@ -2143,10 +2139,27 @@ Documento & 14 & 1,0000 & 1,0000 & 1,0000 \\
 \label{tab:rendimiento-transformer}
 \end{longtable}
 
-La diferencia entre la evaluación por fragmento y por documento es importante. A nivel de fragmento, el modelo comete errores apreciables, especialmente en autores con menos representación o con fragmentos estilísticamente más ambiguos. Sin embargo, al agregar múltiples fragmentos de una misma obra, las predicciones erróneas individuales pueden quedar compensadas por la tendencia mayoritaria del documento, lo que explica la mejora observada a nivel de obra.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{img/roberta_chunk_evaluation.png}
+\caption{Evaluación a nivel de fragmento en RoBERTa.}
+\label{fig:roberta-chunk-evaluation}
+\end{figure}
 
-Así, los resultados muestran que la atribución de autoría en este corpus es viable con distintos enfoques, pero también que las representaciones no aportan el mismo tipo de información. Las MFW ofrecen el mejor equilibrio entre rendimiento e interpretabilidad, los rasgos estilométricos agregados proporcionan una línea base sólida pero algo menos precisa, y el modelo \textit{transformer} alcanza un rendimiento muy alto a nivel documental, aunque con menor transparencia y con un procedimiento de evaluación no directamente comparable al de los modelos tabulares.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{img/roberta_work_evaluation.png}
+\caption{Evaluación a nivel de obra en RoBERTa.}
+\label{fig:roberta-work-evaluation}
+\end{figure}
 
+La evaluación se realizó en dos niveles. En primer lugar, se evaluaron las predicciones de cada fragmento de test de forma independiente. En este nivel, el modelo obtuvo una \textit{accuracy} de 0,8645, una \textit{F1 macro} de 0,8140 y una \textit{F1 weighted} de 0,8638 sobre 6\,519 fragmentos. La diferencia entre la \textit{F1 macro} y la \textit{F1 weighted} indica que el rendimiento no fue homogéneo entre autores. En particular, Arthur Morrison obtuvo un rendimiento bajo a nivel de fragmento, con una F1 de 0,4617, mientras que autores con más fragmentos o perfiles más consistentes alcanzaron valores claramente superiores.
+
+En segundo lugar, las predicciones se agregaron a nivel de documento. Para ello, se calcularon las probabilidades de clase de cada fragmento y se promediaron las probabilidades correspondientes a todos los fragmentos de una misma obra. La clase asignada al documento fue la de mayor probabilidad media. Con esta estrategia, el modelo clasificó correctamente las 14 obras del conjunto de test, alcanzando una \textit{accuracy} y una \textit{F1 macro} de 1,000 a nivel de obra.
+
+La diferencia entre la evaluación por fragmento y por documento es importante. A nivel de fragmento, el modelo comete errores apreciables, especialmente en autores con menos representación o con fragmentos estilísticamente más ambiguos. Sin embargo, al agregar múltiples fragmentos de una misma obra, las predicciones erróneas individuales pueden quedar compensadas por la clase mayoritaria de la obra, lo que explica la mejora observada a nivel de documento. Por tanto, el resultado perfecto a nivel de obra debe interpretarse con cautela, ya que muestra que RoBERTa identifica correctamente las obras de test en esta partición concreta, pero no elimina la incertidumbre asociada al tamaño reducido del conjunto de prueba, al desbalance por autor y al hecho de que el procedimiento de evaluación no es idéntico al utilizado en los modelos tabulares.
+
+En definitiva, los resultados muestran que la atribución de autoría en este corpus es viable con distintos enfoques, pero también que las representaciones no aportan el mismo tipo de información. Las MFW ofrecen el mejor equilibrio entre rendimiento e interpretabilidad, los rasgos estilométricos agregados proporcionan una línea base sólida pero algo menos precisa, y el modelo \textit{transformer} alcanza un rendimiento muy alto a nivel de documento, aunque con menor transparencia y con un procedimiento de evaluación no directamente comparable al de los modelos tabulares.
 
 \section{Comparativa: enfoques clásicos vs. modernos}
 
@@ -2506,7 +2519,7 @@ Desde el punto de vista de los rasgos, el trabajo se ha centrado principalmente 
 
 En relación con los modelos basados en embeddings y transformers, una limitación relevante es su menor interpretabilidad. Aunque se han aplicado técnicas como \textit{Captum}, \textit{BertViz} y SHAP en las partes correspondientes del sistema, las representaciones internas de estos modelos no son tan transparentes como las frecuencias de palabras funcionales o los coeficientes de una regresión logística. Por ello, aunque pueden ofrecer buen rendimiento, sus predicciones deben interpretarse con mayor cautela, especialmente si se pretende relacionarlas con rasgos literarios concretos.
 
-También existe una posible influencia de factores externos al estilo individual, como la época, el país, la edición digital, el género o los personajes recurrentes. Aunque se ha realizado una limpieza cuidadosa del corpus y se han evitado metadatos externos en los modelos, no es posible garantizar que todas las señales aprendidas sean puramente autorales. En particular, las obras pertenecientes a una misma serie o protagonizadas por un mismo detective pueden compartir convenciones narrativas que el modelo podría utilizar indirectamente.
+También existe una posible influencia de factores externos al estilo individual, como la época, el país, la edición digital, el género o los personajes recurrentes. Aunque se ha realizado una limpieza cuidadosa del corpus y se han evitado metadatos externos en los modelos, no es posible garantizar que todas las señales aprendidas sean puramente de autor. En particular, las obras pertenecientes a una misma serie o protagonizadas por un mismo detective pueden compartir convenciones narrativas que el modelo podría utilizar indirectamente.
 
 Por último, el trabajo se ha desarrollado sobre textos en inglés de autores canónicos y de dominio público. Esto limita la generalización de los resultados a otros idiomas, periodos históricos, registros o contextos textuales. La metodología podría adaptarse a ensayos, artículos científicos, textos periodísticos u otros géneros, pero sería necesario reconstruir el corpus, revisar los criterios de preprocesamiento y validar de nuevo los modelos en cada caso.
 
@@ -2542,7 +2555,7 @@ La segunda conclusión es que las palabras funcionales constituyen la representa
 
 La tercera conclusión es que los métodos clásicos siguen siendo relevantes. Aunque el test de Mendenhall resultó más limitado, los métodos de Kilgariff y Burrows obtuvieron resultados muy sólidos. Esto muestra que la estilometría tradicional no queda obsoleta frente a los modelos modernos, sino que sigue ofreciendo herramientas útiles, especialmente cuando se apoya en rasgos adecuados. En este sentido, el trabajo confirma que los enfoques clásicos y modernos pueden entenderse como complementarios.
 
-La cuarta conclusión se refiere a los modelos modernos. Los modelos supervisados permiten optimizar la clasificación y comparar representaciones de forma sistemática, mientras que los embeddings y transformers aportan formas más ricas de representar los textos. RoBERTa obtuvo un rendimiento muy alto a nivel documental, y los embeddings mostraron cierta estructura autoral en el espacio de similitud. Sin embargo, estos enfoques presentan menor transparencia y pueden capturar señales temáticas o semánticas además de rasgos estrictamente estilísticos. Por tanto, su uso debe acompañarse de análisis interpretativo y cautela metodológica.
+La cuarta conclusión se refiere a los modelos modernos. Los modelos supervisados permiten optimizar la clasificación y comparar representaciones de forma sistemática, mientras que los embeddings y transformers aportan formas más ricas de representar los textos. RoBERTa obtuvo un rendimiento muy alto a nivel de documento, y los embeddings mostraron cierta estructura autoral en el espacio de similitud. Sin embargo, estos enfoques presentan menor transparencia y pueden capturar señales temáticas o semánticas además de rasgos estrictamente estilísticos. Por tanto, su uso debe acompañarse de análisis interpretativo y cautela metodológica.
 
 La quinta conclusión es que la explicabilidad resulta imprescindible en atribución de autoría. En este trabajo, el análisis de coeficientes, contribuciones locales y valores SHAP permitió comprobar que las predicciones de los modelos interpretables se apoyaban principalmente en combinaciones de palabras funcionales, y no en términos temáticos evidentes. Esto refuerza la validez del enfoque y permite conectar los resultados cuantitativos con una lectura estilométrica más razonada.
 
@@ -3359,7 +3372,7 @@ La opción \textbf{Métodos clásicos} permite aplicar tres aproximaciones estil
 
 En el caso del \textbf{Test de Mendenhall}, la aplicación muestra las curvas características de longitud de palabra por bloques y las curvas medias por autor. En la pestaña \textbf{Test de atribución} se puede subir un archivo \texttt{.txt} externo y la aplicación calcula su curva y la compara con las curvas medias de los autores del corpus. El autor más similar será el que presente menor distancia.
 
-En el \textbf{Chi-cuadrado de Kilgariff}, la aplicación construye perfiles léxicos comparables entre autores. La pestaña \textbf{Vocabulario global} muestra los términos utilizados en la comparación, mientras que la pestaña \textbf{Atribución de obra} permite subir una obra externa y consultar el ránking de autores candidatos. En este método, valores más bajos de chi-cuadrado indican mayor similitud.
+En el \textbf{chi-cuadrado de Kilgariff}, la aplicación construye perfiles léxicos comparables entre autores. La pestaña \textbf{Vocabulario global} muestra los términos utilizados en la comparación, mientras que la pestaña \textbf{Atribución de obra} permite subir una obra externa y consultar el ránking de autores candidatos. En este método, valores más bajos de chi-cuadrado indican mayor similitud.
 
 En la \textbf{Distancia de Burrows}, las frecuencias se normalizan mediante puntuaciones z para comparar el comportamiento relativo de cada término. La pestaña de atribución funciona de forma similar, se sube una obra \texttt{.txt}, se obtiene un ránking de autores y se puede consultar qué palabras explican mejor la distancia respecto a cada candidato. En este caso, el autor con menor Delta es el más cercano.
 
