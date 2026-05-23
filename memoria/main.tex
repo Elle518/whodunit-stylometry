@@ -2225,6 +2225,92 @@ Parece que los métodos no supervisados apoyan las conclusiones obtenidas por la
 \label{fig:mfw-features-dendrogram}
 \end{figure}
 
+\section{Resultados de los métodos basados en \textit{embeddings}}
+
+Con el objetivo de complementar los experimentos basados en rasgos estilométricos explícitos, se evaluó también una representación vectorial densa de las obras mediante \textit{embeddings} generados con el modelo \texttt{text-embedding-3-large} de OpenAI. A diferencia de los enfoques anteriores, esta aproximación no parte de variables lingüísticas definidas manualmente, sino que representa cada fragmento de texto en un espacio semántico de alta dimensionalidad. Por tanto, sus resultados deben interpretarse con cuidados ya que los \textit{embeddings} pueden capturar regularidades de estilo, pero también información sobre el tema, la narrativa o un léxico de carácter más general.
+
+El corpus se dividió en fragmentos de aproximadamente 1.200 \textit{tokens}, con un solapamiento de 150 \textit{tokens} entre fragmentos consecutivos. En total se obtuvieron 9.511 fragmentos correspondientes a 95 obras y 6 autores. Cada fragmento fue representado mediante un vector de 3.072 dimensiones. Posteriormente, los vectores de los fragmentos se agregaron a nivel de obra mediante una media ponderada por el número de \textit{tokens}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{img/umap_works_3d.png}
+\caption{UMAP de obras completas en 3D.}
+\label{fig:umap-works-3d}
+\end{figure}
+
+Las proyecciones exploratorias mediante PCA y UMAP muestran una estructura parcialmente organizada por autor. En el caso del PCA, los tres primeros componentes explican aproximadamente el 36,2\% de la varianza total, por lo que la visualización debe entenderse únicamente como una aproximación bastante reducida del espacio original. La proyección UMAP de las obras completas de la Figura \ref{fig:umap-works-3d} resulta más informativa visualmente, ya que permite observar agrupaciones por autor relativamente coherentes, aunque con zonas de proximidad entre algunos autores.
+
+Más allá de las proyecciones, los resultados cuantitativos en el espacio original de \textit{embeddings} indican una separación clara entre obras del mismo autor y obras de autores distintos. La distancia coseno media entre obras del mismo autor es de 0,132, mientras que la distancia media entre obras de autores distintos asciende a 0,218. Esta diferencia sugiere que las obras tienden a situarse más cerca de otras obras del mismo autor que de obras ajenas.
+
+\begin{longtable}{|l|r|r|r|r|}
+\hline
+Autor & Obras & Dist. intraautor & Dist. interautor & Margen \\
+\hline
+Arthur Morrison & 6 & 0,109 & 0,203 & 0,094 \\
+\hline
+Anna Katharine Green & 34 & 0,127 & 0,216 & 0,089 \\
+\hline
+Wilkie Collins & 10 & 0,132 & 0,220 & 0,088 \\
+\hline
+Richard Austin Freeman & 15 & 0,122 & 0,209 & 0,087 \\
+\hline
+Gilbert Keith Chesterton & 18 & 0,146 & 0,230 & 0,084 \\
+\hline
+Arthur Conan Doyle & 12 & 0,170 & 0,221 & 0,051 \\
+\hline
+\caption{Distancias coseno medias intraautor e interautor en el espacio de \textit{embeddings}}
+\label{tab:embedding_cohesion}
+\end{longtable}
+
+Como se observa en la Tabla \ref{tab:embedding_cohesion}, todos los autores presentan un margen de separación positivo ya que, en todos los casos, las obras de un mismo autor están, de media, más próximas entre sí que respecto al resto del corpus. Arthur Morrison, Anna Katharine Green, Wilkie Collins y Richard Austin Freeman muestran márgenes especialmente consistentes. En cambio, Arthur Conan Doyle presenta el margen más reducido, lo que apunta a una mayor dispersión interna de sus obras dentro del espacio vectorial o a una mayor proximidad con obras de otros autores.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{img/cosine_distances_inra_inter.png}
+\caption{Distancias coseno intra e interautor.}
+\label{fig:cosine-distances-inra-inter}
+\end{figure}
+
+Esta pauta se confirma también mediante el análisis de vecinos más próximos. Considerando para cada obra su vecino más cercano en el espacio de \textit{embeddings}, el 98,95\% de las obras tienen como primer vecino otra obra del mismo autor. Al ampliar el análisis a los tres vecinos más próximos, la proporción sigue siendo elevada, con un 94,39\%. Incluso considerando los seis vecinos más cercanos, el porcentaje de coincidencias se mantiene en el 91,05\%.
+
+\begin{longtable}{|l|r|}
+\hline
+Vecindad considerada & Coincidencia de autor \\
+\hline
+Vecino más próximo & 98,95\% \\
+\hline
+Tres vecinos más próximos & 94,39\% \\
+\hline
+Cinco vecinos más próximos & 91,79\% \\
+\hline
+Seis vecinos más próximos & 91,05\% \\
+\hline
+\caption{Porcentaje de vecinos más próximos pertenecientes al mismo autor}
+\label{tab:embedding_neighbors}
+\end{longtable}
+
+El coeficiente de silueta calculado con la distancia coseno es de 0,244. Este valor no indica una separación perfectamente nítida entre autores, pero sí una estructura de autores positiva en el espacio de representación. En otras palabras, los \textit{embeddings} no producen grupos completamente aislados, pero sí capturan una señal suficientemente consistente como para que las obras del mismo autor aparezcan sistemáticamente más próximas entre sí.
+
+La matriz de similitud coseno entre obras ofrece una lectura complementaria. Ordenada por autor, muestra bloques de mayor similitud alrededor de la diagonal, correspondientes a obras de un mismo autor. Esta visualización permite detectar tanto la cohesión interna de cada autor como las zonas de proximidad entre distintos autores.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{img/heatmap_cosine_similarity.png}
+\caption{Heatmap de similitud del coseno.}
+\label{fig:heatmap-cosine-similarity}
+\end{figure}
+
+La red de similitud entre obras proporciona una visualización adicional de estas relaciones. En esta representación, cada nodo corresponde a una obra y las aristas conectan cada texto con sus obras más próximas en términos de similitud coseno. El resultado permite observar comunidades de autores bastante definidas, en las que la mayoría de conexiones se establecen entre obras de un mismo autor. Al mismo tiempo, las conexiones entre autores distintos ayudan a identificar zonas de frontera dentro del corpus, es decir, obras que ocupan posiciones intermedias en el espacio vectorial. Esta figura no debe interpretarse como una prueba cuantitativa independiente, sino como una herramienta exploratoria útil para visualizar de forma sintética la estructura de proximidad detectada por los \textit{embeddings}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{img/works_similarity_network.png}
+\caption{Red de similitud entre obras.}
+\label{fig:works-similarity-network.png}
+\end{figure}
+
+El experimento con \textit{embeddings} confirma que las representaciones vectoriales densas contienen una señal de autoría clara. Aunque estos modelos no son estrictamente estilométricos y pueden incorporar información semántica o temática, los resultados son coherentes con los obtenidos mediante métodos más tradicionales, y es que las obras tienden a agruparse por autor, las distancias intraautor son menores que las interautor y los vecinos más próximos pertenecen mayoritariamente al mismo autor. Por tanto, los \textit{embeddings} constituyen una aproximación complementaria útil para explorar la atribución de autoría, especialmente como método de análisis global de similitud entre obras.
+
 \section{Interpretabilidad global}
 
 La interpretabilidad global se ha centrado en el modelo supervisado basado en MFW, ya que fue una de las configuraciones con mejor rendimiento y, al mismo tiempo, una de las más adecuadas para el análisis estilométrico. En concreto, se utilizó una regresión logística multiclase entrenada con las 25 palabras funcionales más frecuentes seleccionadas a partir del conjunto de entrenamiento. Esta configuración alcanzó una \textit{F1 macro} de 1,000 en el conjunto de test y permite examinar directamente qué rasgos desplazan la decisión del modelo hacia cada autor.
