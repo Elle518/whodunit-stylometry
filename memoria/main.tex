@@ -1842,57 +1842,232 @@ Con todo ello, la implementación persigue tres objetivos: reproducibilidad, mod
 
 \chapter{Resultados}
 
-Este capítulo presenta los resultados obtenidos tras aplicar el \textit{pipeline} estilométrico descrito en el capítulo anterior sobre el corpus final del proyecto. A diferencia de los capítulos previos, centrados en la construcción de los datos y en la definición metodológica de los experimentos, aquí se analizan los resultados empíricos derivados de la caracterización del corpus, la evaluación de los modelos, la comparación entre enfoques clásicos y modernos, y la interpretación de las predicciones.
+Este capítulo presenta los resultados obtenidos tras aplicar el \textit{pipeline} estilométrico descrito en el capítulo anterior sobre el corpus final del proyecto. A diferencia de los capítulos previos, centrados en la construcción de los datos y en la definición metodológica de los experimentos, aquí se analizan los resultados empíricos derivados del análisis descriptivo del corpus, la evaluación de los modelos, la comparación entre enfoques clásicos y modernos y la interpretación de las predicciones.
 
-La exposición se organiza de forma progresiva. En primer lugar, se resume la composición final del corpus utilizado en los experimentos, prestando atención a su distribución por autor, género, tipo de obra y extensión. A continuación, se presentan los resultados de los modelos de clasificación y se comparan los enfoques basados en rasgos clásicos, representaciones distribuidas y modelos contextuales. Finalmente, se analizan los resultados desde una perspectiva interpretativa, revisando tanto la importancia global de los rasgos como algunos casos concretos de acierto y error.
+La exposición se organiza de forma progresiva. En primer lugar, se resume la composición final del corpus utilizado en los experimentos, prestando atención a su distribución por autor, género, tipo de obra y extensión. A continuación, se presentan los resultados de los modelos de clasificación y se comparan los enfoques basados en rasgos clásicos, las representaciones distribuidas y los modelos basados en contexto. Finalmente, se analizan los resultados desde una perspectiva interpretativa, revisando tanto la importancia global de los rasgos como algunos casos concretos de acierto y error.
 
 \section{Descripción final del corpus}
 
-El corpus final utilizado en los experimentos está formado por 95 obras escritas en inglés y atribuidas a seis autores canónicos vinculados, en mayor o menor medida, a la narrativa de misterio de los siglos XIX y primeras décadas del XX: Anna Katharine Green, Arthur Conan Doyle, Arthur Morrison, Gilbert Keith Chesterton, Richard Austin Freeman y Wilkie Collins. En conjunto, los textos normalizados ocupan aproximadamente 42,48 MB y contienen en torno a 8,05 millones de palabras, considerando una segmentación básica por espacios.
+El corpus final utilizado en los experimentos está formado por 95 obras escritas en inglés y atribuidas a seis autores canónicos vinculados a la narrativa de misterio de los siglos XIX y primeras décadas del XX: Anna Katharine Green, Arthur Conan Doyle, Arthur Morrison, Gilbert Keith Chesterton, Richard Austin Freeman y Wilkie Collins. En conjunto, los textos normalizados ocupan aproximadamente 44 MB y contienen en torno a 9,7 millones de tokens.
 
-Desde el punto de vista cronológico, el corpus cubre un periodo amplio, entre 1852 y 1937. Esta amplitud temporal permite incluir autores y obras pertenecientes a distintas fases de consolidación de la ficción detectivesca y de misterio, aunque también introduce una posible fuente de variación estilística relacionada con la época. Por ello, los resultados deben interpretarse teniendo en cuenta que las diferencias observadas entre autores pueden reflejar tanto rasgos individuales como convenciones históricas, editoriales o genéricas.
+Desde el punto de vista cronológico, el corpus cubre un periodo amplio, entre 1852 y 1937. Esto permite incluir autores y obras pertenecientes a distintas fases de evolución de la narrativa de detectives y de misterio, aunque también introduce una posible fuente de variación de estilos relacionada con la época. Por ello, los resultados deben interpretarse teniendo en cuenta que las diferencias observadas entre autores pueden reflejar tanto rasgos individuales como convenciones históricas, editoriales o de género.
 
-\begin{longtable}{|p{4.2cm}|r|r|r|p{2.5cm}|}
+Como se observa en la Tabla~\ref{tab:resultados-corpus-autores}, el corpus presenta un desbalance claro entre autores. Anna Katharine Green es la autora con mayor representación, con 34 obras, mientras que Arthur Morrison cuenta únicamente con 6. Esta diferencia no responde a una decisión arbitraria de muestreo, sino a la disponibilidad desigual de textos adecuados, en dominio público y con calidad suficiente para su incorporación al corpus. El desbalance también se observa en el volumen de los textos, donde Green aporta aproximadamente 3,13 millones de tokens, frente a los 454.630 de Morrison. En cambio, Wilkie Collins, aunque solo cuenta con 10 obras, aporta un volumen elevado de tokens debido a la extensión de sus novelas.
+
+\begin{longtable}{|p{4.5cm}|r|r|r|p{2.5cm}|}
 \hline
 \textbf{Autor} & \textbf{Obras} & \textbf{\%} & \textbf{Palabras aprox.} & \textbf{Periodo} \\
 \hline
-Anna Katharine Green & 34 & 35,8 & 2\,620\,127 & 1878--1923 \\
+Anna Katharine Green & 34 & 35,8 & 3.132.600 & 1878--1923 \\
 \hline
-Gilbert Keith Chesterton & 18 & 18,9 & 931\,031 & 1904--1937 \\
+Gilbert Keith Chesterton & 18 & 18,9 & 1.117.023 & 1904--1937 \\
 \hline
-Richard Austin Freeman & 15 & 15,8 & 1\,321\,726 & 1905--1928 \\
+Richard Austin Freeman & 15 & 15,8 & 1.614.772 & 1905--1928 \\
 \hline
-Arthur Conan Doyle & 12 & 12,6 & 932\,763 & 1887--1921 \\
+Arthur Conan Doyle & 12 & 12,6 & 1.138.021 & 1887--1921 \\
 \hline
-Wilkie Collins & 10 & 10,5 & 1\,876\,214 & 1852--1878 \\
+Wilkie Collins & 10 & 10,5 & 2.266.766 & 1852--1878 \\
 \hline
-Arthur Morrison & 6 & 6,3 & 369\,498 & 1894--1903 \\
+Arthur Morrison & 6 & 6,3 & 454.630 & 1894--1903 \\
 \hline
 \caption{Distribución final del corpus por autor.}
 \label{tab:resultados-corpus-autores}
 \end{longtable}
 
-Como se observa en la Tabla~\ref{tab:resultados-corpus-autores}, el corpus presenta un desbalance claro entre autores. Anna Katharine Green es la autora con mayor representación, con 34 obras, mientras que Arthur Morrison cuenta únicamente con 6. Esta diferencia no responde a una decisión arbitraria de muestreo, sino a la disponibilidad desigual de textos adecuados, en dominio público y con calidad suficiente para su incorporación al corpus. El desbalance también se observa en el volumen textual: Green aporta aproximadamente 2,62 millones de palabras, frente a las 369\,498 de Morrison. En cambio, Wilkie Collins, aunque solo cuenta con 10 obras, aporta un volumen elevado de palabras debido a la extensión de sus novelas.
+Esta distribución tiene consecuencias directas para la interpretación de los modelos. Los autores con más obras y mayor volumen de textos pueden quedar mejor representados durante el entrenamiento, mientras que los autores con menos textos pueden ofrecer perfiles estilométricos más inestables. Por esta razón, en la evaluación posterior se emplean particiones equilibradas por autor, métricas macro y, cuando procede, modelos con ponderación de clases. De este modo, se evita que el rendimiento global quede dominado por las clases mayoritarias.
 
-Esta distribución tiene consecuencias directas para la interpretación de los modelos. Los autores con más obras y mayor volumen textual pueden quedar mejor representados durante el entrenamiento, mientras que los autores con menos textos pueden ofrecer perfiles estilométricos más inestables. Por esta razón, en la evaluación posterior se emplean particiones equilibradas por autor, métricas macro y, cuando procede, modelos con ponderación de clases. De este modo, se evita que el rendimiento global quede dominado por las clases mayoritarias.
+En cuanto al tipo de obra, el corpus incluye 64 novelas y 31 colecciones de relatos. Esta combinación resulta relevante porque la estructura narrativa, la longitud media, la organización en capítulos o relatos y el ritmo del texto pueden variar entre ambos formatos. Por ejemplo, una colección de relatos puede contener cambios internos de situación, personajes o tono más frecuentes que una novela extensa, lo que puede afectar a las métricas estructurales y léxicas.
 
-En cuanto al tipo de obra, el corpus incluye 64 novelas y 31 colecciones de relatos. Esta combinación resulta relevante porque la estructura narrativa, la longitud media, la organización en capítulos o relatos y el ritmo del texto pueden variar entre ambos formatos. Por ejemplo, una colección de relatos puede contener cambios internos de situación, personajes o tono más frecuentes que una novela extensa, lo que puede afectar a métricas estructurales y léxicas.
+Desde el punto de vista del género, el conjunto está dominado por la novela de misterio, con 79 obras etiquetadas como \texttt{mystery}. No obstante, también se incluyen 12 obras de ficción general, 2 de ciencia ficción, 1 de terror y 1 de ficción histórica. Esta composición permite mantener el foco principal en la narrativa de misterio, pero introduce cierta diversidad de género que resulta útil para comprobar si los modelos capturan únicamente convenciones del tema del género o si son capaces de identificar señales más estables de autoría.
 
-Desde el punto de vista genérico, el conjunto está dominado por la novela de misterio, con 79 obras etiquetadas como \textit{mystery}. No obstante, también se incluyen 12 obras de ficción general, 2 de ciencia ficción, 1 de terror y 1 de ficción histórica. Esta composición permite mantener el foco principal en la narrativa de misterio, pero introduce cierta diversidad genérica que resulta útil para comprobar si los modelos capturan únicamente convenciones temáticas del género o si son capaces de identificar señales más estables de autoría.
+En relación con la procedencia, 61 obras corresponden a autores británicos y 34 a autores estadounidenses. Las fuentes digitales utilizadas son principalmente \textit{Project Gutenberg USA} con 77 textos y \textit{Project Gutenberg Australia} con 18. Todas las obras han sido sometidas al proceso de limpieza, normalización y tokenización descrito en los capítulos anteriores, por lo que los experimentos se realizan sobre una versión homogénea y trazable del corpus.
 
-En relación con la procedencia, 61 obras corresponden a autores británicos y 34 a autores estadounidenses. Las fuentes digitales utilizadas son principalmente \textit{Project Gutenberg USA}, con 77 textos, y \textit{Project Gutenberg Australia}, con 18. Todas las obras han sido sometidas al proceso de limpieza, normalización y tokenización descrito en los capítulos anteriores, por lo que los experimentos se realizan sobre una versión homogénea y trazable del corpus.
+Esta descripción final del corpus muestra un conjunto suficientemente amplio para realizar una comparación estilométrica entre autores, pero también condicionada por las limitaciones propias de los estudios literarios con obras de dominio público, como son el desbalance entre clases, las diferencias de extensión, la combinación de novelas y relatos y cierta heterogeneidad de género y temporal. Estas características no invalidan el análisis, pero sí justifican las decisiones metodológicas adoptadas en la evaluación y obligan a interpretar los resultados con cautela.
 
-Esta descripción final del corpus muestra un conjunto suficientemente amplio para realizar una comparación estilométrica entre autores, pero también condicionado por limitaciones propias de los estudios literarios con obras de dominio público: desbalance entre clases, diferencias de extensión, combinación de novelas y relatos, y cierta heterogeneidad genérica y temporal. Estas características no invalidan el análisis, pero sí justifican las decisiones metodológicas adoptadas en la evaluación y obligan a interpretar los resultados con cautela.
+\section{Resultados de los métodos clásicos}
 
-\section{Rendimiento de modelos}
+\subsection{Curvas de Mendenhall: estabilidad interna y perfiles medios}
 
-En esta sección se presentan los resultados obtenidos por los modelos de clasificación supervisada sobre la tarea de atribución de autoría. La métrica principal utilizada es \textit{F1 macro}, ya que permite evaluar el rendimiento medio por autor dando el mismo peso a todas las clases, independientemente del número de obras disponibles para cada una. Esta decisión es especialmente importante en este corpus, donde existe un desbalance claro entre autores.
+Antes de evaluar los métodos clásicos únicamente como herramientas de atribución, resulta útil analizar qué información estilométrica aportan sobre el corpus. En el caso del test de Mendenhall, la representación se basa en la distribución de longitudes de palabra, es decir, en la frecuencia relativa de palabras de una, dos, tres o más letras. Aunque este rasgo es más simple que las frecuencias léxicas o las palabras funcionales, permite observar patrones globales de composición y estudiar hasta qué punto dichos patrones son estables dentro de cada autor.
 
-Los primeros experimentos comparan tres representaciones tabulares: métricas estilométricas agregadas, frecuencias de palabras funcionales más frecuentes (MFW) y una combinación de ambas. En todos los casos, la evaluación se realiza sobre un conjunto de test equilibrado con dos obras por autor, es decir, 12 obras en total. La Tabla~\ref{tab:rendimiento-modelos-supervisados} resume los resultados principales.
+Para ello, se dividió el corpus de cada autor en bloques aleatorios de 100.000 tokens y se calcularon 50 curvas de Mendenhall por autor. Cada curva representa la distribución de longitudes de palabra en uno de esos bloques. Posteriormente, las distribuciones se alinearon sobre el mismo rango de longitudes y se calculó la distancia de Jensen-Shannon entre todos los pares de bloques de un mismo autor. Esta distancia permite medir la divergencia entre distribuciones de probabilidad, donde valores próximos a cero indican curvas muy similares, mientras que valores más altos reflejan una mayor variación interna.
 
-\begin{longtable}{|p{3.6cm}|p{3.2cm}|r|r|r|r|}
+La Tabla \ref{tab:mendenhall-intraautor} resume la distancia media y la desviación típica de las distancias intraautor. Estos valores permiten aproximar la estabilidad interna de cada perfil de Mendenhall.
+
+\begin{longtable}{|p{5cm}|r|r|}
 \hline
-\textbf{Representación} & \textbf{Mejor modelo} & \textbf{Rasgos} & \textbf{CV F1 macro} & \textbf{Test accuracy} & \textbf{Test F1 macro} \\
+\textbf{Autor} & \textbf{Distancia media} & \textbf{Desv. típica} \\
+\hline
+Arthur Morrison & 0,0097 & 0,0050 \\
+\hline
+Arthur Conan Doyle & 0,0147 & 0,0056 \\
+\hline
+Gilbert Keith Chesterton & 0,0169 & 0,0068 \\
+\hline
+Richard Austin Freeman & 0,0204 & 0,0085 \\
+\hline
+Anna Katharine Green & 0,0210 & 0,0073 \\
+\hline
+Wilkie Collins & 0,0258 & 0,0100 \\
+\hline
+\caption{Estabilidad interna de las curvas de Mendenhall por autor.}
+\label{tab:mendenhall-intraautor}
+\end{longtable}
+
+Los resultados muestran diferencias apreciables entre autores. Arthur Morrison presenta la menor distancia media, seguido de Arthur Conan Doyle, lo que indica que sus bloques mantienen distribuciones de longitud de palabra especialmente homogéneas. En estos casos, la curva de Mendenhall parece comportarse de forma bastante estable dentro del corpus de cada autor.
+
+En el extremo contrario se sitúan Wilkie Collins y Anna Katharine Green, con las distancias medias más altas. Esto sugiere una mayor variabilidad interna en la distribución de longitudes de palabra. En el caso de Collins, esta variabilidad puede estar relacionada con la extensión y diversidad de sus novelas, mientras que en Green puede influir también el mayor número de obras incluidas en el corpus. Richard Austin Freeman y Gilbert Keith Chesterton ocupan posiciones intermedias, con perfiles relativamente estables pero menos homogéneos que los de Morrison y Doyle.
+
+Esta lectura es relevante porque muestra que Mendenhall no solo puede utilizarse como un método de atribución, sino también como una herramienta exploratoria para medir la consistencia interna de un autor. Una distancia intraautor baja indica que la distribución de longitudes de palabra se mantiene de forma parecida entre fragmentos distintos, mientras que una distancia más alta apunta a una mayor heterogeneidad interna.
+
+Además de las distancias numéricas, las curvas por bloques permiten observar visualmente esa estabilidad. En autores como Arthur Morrison, las curvas tienden a agruparse de forma estrecha alrededor de un mismo perfil, lo que refuerza la idea de una distribución interna bastante regular. En cambio, en autores como Wilkie Collins se observa una dispersión mayor entre bloques, especialmente en algunas longitudes de palabra, lo que resulta coherente con su mayor distancia media intraautor.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{img/mendenhall_blocks_morrison.png}
+\caption{Curvas de Mendenhall por bloques para Arthur Morrison.}
+\label{fig:mendenhall-blocks-morrison}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{img/mendenhall_blocks_collins.png}
+\caption{Curvas de Mendenhall por bloques para Wilkie Collins.}
+\label{fig:mendenhall-blocks-collins}
+\end{figure}
+
+Una vez analizada la estabilidad interna, se calculó una curva característica media para cada autor. Esta curva se obtiene promediando las frecuencias relativas de las longitudes de palabra en los bloques de cada autor, de modo que resume el comportamiento global de su corpus. Mientras que las curvas por bloques permiten estudiar la variación interna, las curvas medias permiten comparar directamente los perfiles de composición entre autores.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{img/mendenhall_average_curves.png}
+\caption{Curvas características medias de Mendenhall por autor.}
+\label{fig:mendenhall-average-curves}
+\end{figure}
+
+La comparación visual de las curvas medias muestra que los perfiles de los autores son parecidos en su forma general, como es esperable al tratarse de novelas en inglés de un periodo relativamente próximo. Todas las curvas presentan mayor concentración en palabras cortas y medias, y una caída progresiva a medida que aumenta la longitud de palabra. Sin embargo, también se observan pequeñas diferencias en la altura relativa de algunas longitudes, suficientes para producir distancias medibles entre autores.
+
+Para cuantificar estas relaciones, se calculó la distancia de Jensen-Shannon entre las curvas medias de todos los pares de autores. La Tabla \ref{tab:mendenhall-distancias-autores} recoge la matriz resultante.
+
+\begin{longtable}{|p{3cm}|r|r|r|r|r|r|}
+\hline
+\textbf{Autor} & \textbf{Green} & \textbf{Doyle} & \textbf{Morrison} & \textbf{Chesterton} & \textbf{Freeman} & \textbf{Collins} \\
+\hline
+\textbf{Green} & 0,0000 & 0,0190 & 0,0203 & 0,0283 & 0,0302 & 0,0270 \\
+\hline
+\textbf{Doyle} & 0,0190 & 0,0000 & 0,0127 & 0,0261 & 0,0374 & 0,0341 \\
+\hline
+\textbf{Morrison} & 0,0203 & 0,0127 & 0,0000 & 0,0198 & 0,0356 & 0,0309 \\
+\hline
+\textbf{Chesterton} & 0,0283 & 0,0261 & 0,0198 & 0,0000 & 0,0349 & 0,0319 \\
+\hline
+\textbf{Freeman} & 0,0302 & 0,0374 & 0,0356 & 0,0349 & 0,0000 & 0,0261 \\
+\hline
+\textbf{Collins} & 0,0270 & 0,0341 & 0,0309 & 0,0319 & 0,0261 & 0,0000 \\
+\hline
+\caption{Distancias de Jensen-Shannon entre curvas medias de Mendenhall por autor.}
+\label{tab:mendenhall-distancias-autores}
+\end{longtable}
+
+La matriz muestra que los perfiles más próximos son los de Arthur Morrison y Arthur Conan Doyle, con una distancia de 0,0127. También se observa cierta proximidad entre Arthur Conan Doyle y Anna Katharine Green, así como entre Arthur Morrison y Gilbert Keith Chesterton. Por otra parte, Richard Austin Freeman y Wilkie Collins forman otro par relativamente cercano, con una distancia de 0,0261, aunque ambos aparecen más alejados del grupo formado por Doyle, Morrison y Green.
+
+Estas relaciones ayudan a interpretar los resultados posteriores del test de atribución basado en Mendenhall. Algunos de los errores cometidos por este método se producen precisamente entre autores cuyas curvas medias son próximas. Por ejemplo, una obra de Arthur Morrison se atribuye a Arthur Conan Doyle, lo que resulta coherente con la baja distancia entre sus perfiles medios. Del mismo modo, la confusión entre Richard Austin Freeman y Wilkie Collins puede entenderse a partir de la relativa proximidad entre ambos en la matriz de distancias.
+
+Estos resultados indican que las curvas de Mendenhall capturan una señal estilométrica real, pero limitada. La distribución de longitudes de palabra permite observar diferencias de estabilidad interna, identificar afinidades globales entre autores y anticipar algunos errores de atribución. Sin embargo, estas diferencias son sutiles y no generan una separación clara entre todos los perfiles. Por esta razón, Mendenhall resulta más útil como herramienta exploratoria y descriptiva que como clasificador.
+
+\subsection{Kilgariff y Burrows: distancias léxicas y contribuciones por palabra}
+
+Tras el análisis exploratorio mediante las curvas de Mendenhall, se evaluaron dos métodos clásicos basados en frecuencias léxicas: el chi-cuadrado de Kilgariff y la Delta de Burrows. A diferencia de Mendenhall, que utiliza únicamente la distribución de longitudes de palabra, estos métodos comparan el comportamiento de un vocabulario común de palabras frecuentes. En este trabajo, dicho vocabulario se restringe a palabras funcionales, ya que estas suelen depender menos del tema de la obra y reflejan hábitos de escritura más estables.
+
+Ambos métodos se aplicaron sobre el mismo conjunto de obras de prueba utilizado en el experimento clásico, es decir, dos textos por autor combinando una obra de misterio y una obra de otro género. Para cada obra de prueba se calculó su distancia respecto al perfil de cada autor y se asignó la autoría al candidato con menor distancia. En el caso de Kilgariff, la distancia corresponde al valor de chi-cuadrado y, en el caso de Burrows, a la media de diferencias absolutas entre puntuaciones $z$.
+
+La Tabla \ref{tab:kilgariff-burrows-resultados} resume el rendimiento global de ambos métodos.
+
+\begin{longtable}{|p{4.6cm}|p{4.5cm}|r|r|}
+\hline
+\textbf{Método} & \textbf{Rasgos utilizados} & \textbf{Aciertos} & \textbf{Accuracy} \\
+\hline
+Chi-cuadrado de Kilgariff & 300 palabras funcionales & 12/12 & 100,0 \% \\
+\hline
+Delta de Burrows & 300 palabras funcionales & 12/12 & 100,0 \% \\
+\hline
+\caption{Rendimiento de Kilgariff y Burrows en el conjunto de prueba.}
+\label{tab:kilgariff-burrows-resultados}
+\end{longtable}
+
+Los resultados son muy sólidos y, tanto Kilgariff como Burrows, atribuyen correctamente todas las obras evaluadas. Esto contrasta con el comportamiento de Mendenhall, que alcanzaba un 75 \% de acierto, y confirma que las palabras funcionales contienen una señal estilométrica más discriminativa que la longitud de palabra. La diferencia no es solo cuantitativa, sino también metodológica, puesto que mientras que Mendenhall compara un rasgo superficial agregado, Kilgariff y Burrows trabajan con un perfil léxico más rico, formado por múltiples unidades de palabras funcionales frecuentes.
+
+No obstante, la exactitud global no debe interpretarse de forma aislada. En atribución de autoría es importante observar también la separación entre el autor predicho y el segundo candidato más cercano. Una atribución puede ser correcta pero poco concluyente si las distancias entre los dos primeros autores son muy próximas. Por este motivo, se revisaron los márgenes de distancia en cada método.
+
+En el caso de Kilgariff, la mayoría de las obras presentan una diferencia amplia entre el autor correcto y el segundo candidato. Algunos ejemplos son \textit{The Hound of the Baskervilles}, atribuido a Arthur Conan Doyle con una distancia de 693,4 frente a una segunda distancia de 4.279,8, o \textit{Room Number 3, and Other Detective Stories}, atribuido a Anna Katharine Green con una distancia de 1.244,9 frente a 8.250,8 para el segundo candidato. Estos casos muestran una separación clara entre el perfil del autor real y el resto de perfiles.
+
+Sin embargo, también aparecen casos más próximos. En \textit{The Napoleon of Notting Hill}, de Gilbert Keith Chesterton, la distancia al autor correcto es 2.661,0, mientras que el segundo candidato, Arthur Morrison, queda a 3.151,8. La atribución es correcta, pero el margen es menor que en otros textos. Algo parecido ocurre con \textit{The Shadow of the Wolf}, de Richard Austin Freeman, cuya distancia al autor real es 2.929,5 y la segunda distancia, correspondiente a Arthur Morrison, es 3.361,7. Estos casos sugieren cierta proximidad relativa entre algunos perfiles, aunque no lo suficiente para producir errores.
+
+Por lo que se observa en los resultados, el género de la novela parece ser un factor que contribuye a la distancia de similitud estilística entre las obras de prueba y los corpus de referencia, siendo estas distancias bastante menores para las obras de misterio que para las de no misterio para todos los autores, lo que sugiere que el género puede influir en la distribución las palabras funcionales y, por tanto, en la distancia calculada por el método de Kilgariff.
+
+La Delta de Burrows ofrece una lectura similar, pero sobre una escala distinta. Como las frecuencias se transforman previamente en puntuaciones $z$, los valores de distancia son mucho más pequeños y no son comparables directamente con los valores de chi-cuadrado. Lo importante en este caso es, de nuevo, la posición relativa dentro del ránking. Todas las obras presentan como distancia mínima la correspondiente al verdadero autor.
+
+\begin{longtable}{|p{5.4cm}|p{3.1cm}|r|r|r|}
+\hline
+\textbf{Obra} & \textbf{Autor correcto} & \textbf{Delta autor} & \textbf{Delta 2º} & \textbf{Margen} \\
+\hline
+\textit{The Napoleon of Notting Hill} & G.K. Chesterton & 1,2648 & 1,3118 & 0,0469 \\
+\hline
+\textit{The Hole in the Wall} & A. Morrison & 1,4879 & 1,7295 & 0,2416 \\
+\hline
+\textit{The White Company} & A.C. Doyle & 1,5229 & 1,8496 & 0,3267 \\
+\hline
+\textit{The Exploits of Danby Croker} & R.A. Freeman & 1,0782 & 1,4025 & 0,3243 \\
+\hline
+\textit{To the Minute} & A.K. Green & 0,9028 & 1,3342 & 0,4314 \\
+\hline
+\caption{Ejemplos de atribuciones con menor margen en Delta de Burrows.}
+\label{tab:burrows-menor-margen}
+\end{longtable}
+
+La Tabla \ref{tab:burrows-menor-margen} muestra algunos de los casos donde la separación entre el autor correcto y el segundo candidato es menor. El caso más ajustado es \textit{The Napoleon of Notting Hill}, donde Chesterton queda solo ligeramente por delante de Arthur Conan Doyle. Esta proximidad no invalida la atribución, pero sí indica que el texto comparte parte de su perfil funcional con otro candidato. En cambio, otros textos presentan márgenes más amplios y, por tanto, atribuciones más estables.
+
+Vemos que de nuevo el género de la novela parece influir en la distancia de similitud estilística ya que, salvo en el caso de Wilkie Collins, las obras de misterio presentan distancias menores con su propio corpus que las obras de no misterio para todos los autores, lo que sugiere que el género puede afectar a la distribución léxica y, por tanto, a la distancia calculada por el método Delta.
+
+Además del rendimiento, Kilgariff y Burrows permiten analizar qué palabras contribuyen más a la distancia entre una obra y el perfil de su autor. Esto es especialmente valioso desde el punto de vista de la interpretabilidad, porque permite pasar de una predicción global a una explicación basada en rasgos lingüísticos concretos.
+
+En Kilgariff, cada palabra del vocabulario aporta una contribución parcial al valor total de chi-cuadrado. Las palabras con mayor contribución son aquellas cuya frecuencia observada se aleja más de la frecuencia esperada si la obra de prueba y el corpus de referencia siguieran una misma distribución. Por ejemplo, en \textit{To the Minute}, de Anna Katharine Green, las mayores contribuciones proceden de palabras como \textit{i}, \textit{my}, \textit{his}, \textit{he} y \textit{they}. En \textit{The Hound of the Baskervilles}, de Arthur Conan Doyle, destacan términos como \textit{that}, \textit{they}, \textit{upon}, \textit{was} y \textit{since}. Estas palabras con mayor contribución al chi-cuadrado señalan los rasgos más diferenciadores de uso, ya sea porque aparecen mucho más o mucho menos de lo esperado en esa obra.
+
+En Burrows, la interpretación se basa en las diferencias entre puntuaciones $z$. Para cada palabra funcional se compara cuánto se aleja su frecuencia relativa en la obra de prueba respecto al comportamiento normalizado del corpus del autor. De este modo, una distancia Delta baja puede coexistir con desviaciones fuertes en algunas palabras concretas, siempre que el perfil global siga siendo próximo. Por ejemplo, en \textit{The White Company}, de Arthur Conan Doyle, aparecen desviaciones destacadas en términos como \textit{their}, \textit{them}, \textit{either}, \textit{won} y \textit{while}. En \textit{The Hole in the Wall}, de Arthur Morrison, destacan \textit{o}, \textit{an}, \textit{beyond}, \textit{be} y \textit{neither}. Estos casos muestran que una obra puede ser correctamente atribuida a su autor y, al mismo tiempo, contener rasgos locales que se apartan del perfil medio de ese autor. De nuevo, las palabras más influyentes son aquellas cuyos valores normalizados muestran las mayores desviaciones, por lo que indican diferencias relativas de uso.
+
+Como vemos en las Figuras \ref{fig:kilgariff-contributions-example} y \ref{fig:delta-contributions-example}, los métodos clásicos no destacan siempre las mismas palabras porque no miden la distancia estilométrica del mismo modo. El Chi-cuadrado de Kilgarriff se basa en conteos observados y esperados, por lo que suele dar más peso a palabras muy frecuentes cuya desviación absoluta es grande. El Delta de Burrows Delta, en cambio, trabaja con frecuencias estandarizadas mediante \textit{z-scores}, de modo que resalta las palabras en las que la obra se aleja más del perfil normalizado del autor, aunque no sean las más frecuentes.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{img/kilgariff_contributions_example.png}
+\caption{Ejemplo de palabras que más contribuyen al chi-cuadrado.}
+\label{fig:kilgariff-contributions-example}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{img/delta_contributions_example.png}
+\caption{Ejemplo de palabras que más contribuyen al delta de Burrows.}
+\label{fig:delta-contributions-example}
+\end{figure}
+
+Por tanto, estas listas no deben interpretarse como explicaciones equivalentes, sino como complementarias. El Chi-cuadrado muestra qué términos explican mejor la diferencia en conteos, mientras que Delta muestra qué términos generan mayor distancia una vez normalizadas las frecuencias.
+
+La utilidad de este análisis es doble. Por un lado, permite comprobar que los métodos no se apoyan en nombres propios, personajes o términos relacionados con un cierto tema, sino en palabras frecuentes y funcionales. Por otro, ayuda a detectar la variación interna dentro de un mismo autor. Si una obra presenta una distancia relativamente alta respecto a su propio corpus, las contribuciones por palabra permiten identificar qué elementos explican esa separación.
+
+De este modo, los resultados de Kilgariff y Burrows refuerzan una de las conclusiones principales del trabajo, que las palabras funcionales constituyen una representación especialmente eficaz para la atribución de autoría en este corpus. Ambos métodos alcanzan un rendimiento perfecto en el conjunto de prueba y, además, ofrecen una interpretación transparente de las distancias calculadas. Frente a modelos más complejos, su principal ventaja es que combinan buen rendimiento, bajo coste computacional y una lectura estilométrica directa.
+
+Aun así, conviene hacer una interpretación prudente ya que el experimento se plantea en un escenario cerrado, con seis autores candidatos conocidos y un conjunto de prueba reducido. Por tanto, el 100 \% de acierto no implica que estos métodos puedan atribuir cualquier texto con la misma fiabilidad. Lo que sí permite afirmar es que, dentro del corpus y de las condiciones experimentales definidas, las frecuencias de palabras funcionales separan con claridad los perfiles de autor y proporcionan una base sólida para comparar los métodos clásicos con los modelos supervisados posteriores.
+
+\section{Rendimiento de los modelos supervisados}
+
+En esta sección se presentan los resultados obtenidos por los modelos de clasificación supervisada sobre la tarea de atribución de autoría. La métrica principal utilizada es \textit{F1 macro}, ya que permite evaluar el rendimiento medio por autor dando el mismo peso a todas las clases, independientemente del número de obras disponibles para cada una. Esta decisión es especialmente importante en este corpus donde, como se ha comprobado, existe un desbalance claro entre autores.
+
+Los primeros experimentos comparan tres conjuntos de variables: métricas estilométricas agregadas, frecuencias de palabras funcionales más frecuentes (MFW) y una combinación de ambas. En todos los casos, la evaluación se realiza sobre un conjunto de test equilibrado con dos obras por autor, es decir, 12 obras en total. La Tabla \ref{tab:rendimiento-modelos-supervisados} resume los resultados principales.
+
+\begin{longtable}{|p{4.2cm}|p{3.4cm}|r|p{1.4cm}|p{1.1cm}|p{1.6cm}|}
+\hline
+\textbf{Representación} & \textbf{Mejor modelo} & \textbf{Rasgos} & \textbf{CV F1 macro} & \textbf{Acc. Test} & \textbf{Test F1 macro} \\
 \hline
 Métricas estilométricas & Regresión logística & 25 & 0,943 & 0,917 & 0,911 \\
 \hline
