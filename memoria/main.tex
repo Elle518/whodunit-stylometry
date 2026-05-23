@@ -2161,55 +2161,69 @@ La diferencia entre la evaluación por fragmento y por documento es importante. 
 
 En definitiva, los resultados muestran que la atribución de autoría en este corpus es viable con distintos enfoques, pero también que las representaciones no aportan el mismo tipo de información. Las MFW ofrecen el mejor equilibrio entre rendimiento e interpretabilidad, los rasgos estilométricos agregados proporcionan una línea base sólida pero algo menos precisa, y el modelo \textit{transformer} alcanza un rendimiento muy alto a nivel de documento, aunque con menor transparencia y con un procedimiento de evaluación no directamente comparable al de los modelos tabulares.
 
-\section{Comparativa: enfoques clásicos vs. modernos}
+Así, vemos que los enfoques clásicos siguen siendo competitivos cuando se apoyan en los rasgos adecuados, especialmente palabras funcionales, y que los métodos modernos no sustituyen necesariamente a los clásicos, sino que amplían el análisis. Sin embargo, los mejores resultados interpretables siguen procediendo de representaciones basadas en MFW, lo que confirma la utilidad de las aproximaciones estilométricas tradicionales dentro de un \textit{pipeline} de atribución de autoría moderno.
 
-La comparación entre enfoques clásicos y modernos permite valorar no solo qué métodos obtienen mejor rendimiento, sino también qué tipo de evidencia estilométrica aporta cada uno. En este trabajo se consideran como enfoques clásicos los métodos basados en distancias estilométricas explícitas, como Mendenhall, Kilgariff y Burrows. Como enfoques modernos se incluyen los modelos supervisados entrenados con rasgos tabulares, las representaciones distribuidas mediante \textit{embeddings} y el modelo contextual basado en RoBERTa.
+\section{Resultados de los métodos no supervisados}
 
-Conviene señalar que las métricas no son completamente equivalentes entre todos los enfoques. Los métodos clásicos se evaluaron sobre un conjunto controlado de 12 obras, con dos textos por autor, mientras que los modelos supervisados se evaluaron sobre una partición de test equilibrada también formada por 12 obras. El modelo RoBERTa, en cambio, se evaluó sobre una partición específica de 14 documentos y 6\,519 fragmentos. Por tanto, la comparación debe interpretarse como una lectura conjunta de rendimiento y comportamiento, no como una competición estrictamente homogénea entre sistemas.
+Además de los modelos supervisados, se evaluaron métodos de aprendizaje no supervisado con el objetivo de comprobar si las obras tendían a agruparse de forma coherente por autor sin utilizar las etiquetas durante el ajuste. Este análisis resulta especialmente útil como validación exploratoria, de modo que si los textos de un mismo autor aparecen próximos en el espacio de rasgos incluso antes de entrenar un clasificador, puede afirmarse que la representación captura una señal de autor reconocible.
 
-\begin{longtable}{|p{3.7cm}|p{3.9cm}|p{3.2cm}|r|}
+Los experimentos se realizaron sobre el corpus completo de 95 obras y con seis clústeres, uno por cada autor del corpus. Al igual que en el caso de los métodos supervisados, se compararon tres representaciones: métricas estilométricas agregadas, frecuencias de palabras funcionales más frecuentes (MFW) y una combinación de ambas. Sobre cada representación se aplicaron tres algoritmos: \textit{k-means}, \textit{clustering} aglomerativo y modelos de mezcla gaussiana. Aunque los algoritmos no utilizaron la etiqueta reales de salida para construir los grupos, estas sí que se emplearon posteriormente para evaluar la correspondencia entre clústeres y autores mediante ARI, NMI, homogeneidad, completitud y \textit{V-measure}.
+
+La Tabla \ref{tab:resultados-clustering-general} resume los mejores resultados obtenidos en cada combinación de representación y algoritmo.
+
+\begin{longtable}{|p{4.3cm}|p{3cm}|r|r|r|r|}
 \hline
-\textbf{Enfoque} & \textbf{Método} & \textbf{Representación principal} & \textbf{Rendimiento} \\
+\textbf{Representación} & \textbf{Modelo} & \textbf{Silhouette} & \textbf{ARI} & \textbf{NMI} & \textbf{V-measure} \\
 \hline
-Clásico & Mendenhall & Longitud de palabras & 75,0 \% accuracy \\
+MFW & Aglomerativo & 0,238 & 0,919 & 0,928 & 0,928 \\
 \hline
-Clásico & Kilgariff & Frecuencias léxicas / funcionales & 100,0 \% accuracy \\
+MFW & \textit{K-means} & 0,239 & 0,897 & 0,902 & 0,902 \\
 \hline
-Clásico & Delta de Burrows & MFW estandarizadas & 100,0 \% accuracy \\
+Métricas + MFW & Aglomerativo & 0,215 & 0,866 & 0,858 & 0,858 \\
 \hline
-Supervisado tabular & Regresión logística & Métricas estilométricas & 0,911 F1 macro \\
+Métricas + MFW & \textit{K-means} & 0,224 & 0,743 & 0,750 & 0,750 \\
 \hline
-Supervisado tabular & Linear SVC & MFW & 1,000 F1 macro \\
+Métricas + MFW & GMM & 0,127 & 0,713 & 0,770 & 0,770 \\
 \hline
-Supervisado tabular & Linear SVC & Métricas + MFW & 1,000 F1 macro \\
+Métricas estilométricas & Aglomerativo & 0,202 & 0,707 & 0,779 & 0,779 \\
 \hline
-Supervisado tabular & XGBoost & Métricas estilométricas & 0,750 F1 macro \\
+MFW & GMM & 0,194 & 0,705 & 0,850 & 0,850 \\
 \hline
-Transformer & RoBERTa & Fragmentos contextualizados & 0,814 F1 macro por fragmento \\
+Métricas estilométricas & \textit{K-means} & 0,222 & 0,680 & 0,706 & 0,706 \\
 \hline
-Transformer & RoBERTa & Agregación por documento & 1,000 F1 macro por documento \\
+Métricas estilométricas & GMM & 0,181 & 0,459 & 0,600 & 0,600 \\
 \hline
-\caption{Comparación general entre enfoques clásicos y modernos.}
-\label{tab:comparativa-clasicos-modernos}
+\caption{Resultados de \textit{clustering} no supervisado por representación y algoritmo.}
+\label{tab:resultados-clustering-general}
 \end{longtable}
 
-El resultado más débil entre los métodos clásicos corresponde al test de Mendenhall, que alcanza un 75 \% de acierto. Este comportamiento es coherente con las limitaciones conocidas del método: la distribución de longitud de palabra puede reflejar diferencias generales de estilo, pero es una señal relativamente gruesa y sensible a factores como género, época, edición o composición del corpus. En los casos analizados, Mendenhall confunde algunas obras de Gilbert Keith Chesterton, Richard Austin Freeman y Arthur Morrison, lo que sugiere que la longitud de palabra por sí sola no basta para separar de forma estable a todos los autores.
+Los resultados muestran que la representación basada únicamente en palabras funcionales vuelve a ser la más eficaz. El \textit{clustering} aglomerativo con MFW alcanza un ARI de 0,919 y un NMI de 0,928, lo que indica una correspondencia muy alta entre los grupos generados y las etiquetas reales de autor. \textit{K-means} con MFW obtiene también un rendimiento muy cercano, con un ARI de 0,897. En cambio, las métricas estilométricas agregadas presentan una separación menos nítida, el mejor resultado con esta representación alcanza un ARI de 0,707. Esto confirma que estos rasgos describen diferencias de estilo relevantes, pero no siempre bastan para separar todos los autores de forma natural.
 
-Los métodos de Kilgariff y Burrows obtienen, en cambio, un rendimiento perfecto en el conjunto evaluado. Ambos se apoyan en frecuencias de palabras comunes o funcionales, una familia de rasgos mucho más informativa para la atribución de autoría. Este resultado conecta directamente con los modelos supervisados basados en MFW, que también alcanzan una \textit{F1 macro} de 1,000. La coincidencia entre métodos clásicos y modelos supervisados refuerza la idea de que las palabras funcionales constituyen una señal estilométrica especialmente robusta en este corpus.
+La representación combinada no mejora a las MFW por sí solas. Aunque obtiene resultados altos con el modelo aglomerativo, con un ARI de 0,866, queda por debajo del experimento basado solo en palabras funcionales. Este comportamiento sugiere que añadir las métricas agregadas puede introducir información complementaria, pero también ruido, especialmente relacionado con la extensión, la estructura, el género o el tipo de obra. Por tanto, en el análisis no supervisado se mantiene la misma tendencia observada en los modelos supervisados, que las MFW proporcionan una señal más fina y estable que las variables estilométricas generales.
 
-La diferencia principal entre Kilgariff, Burrows y los modelos supervisados no está tanto en el rendimiento como en la forma de utilizar los rasgos. Los métodos clásicos calculan distancias explícitas entre un texto y los perfiles de autor, lo que facilita una interpretación directa de la atribución. Los modelos supervisados, por su parte, aprenden fronteras de decisión a partir de los mismos rasgos y permiten combinar distintas familias de variables. En este trabajo, la combinación de métricas estilométricas y MFW no mejora el resultado obtenido solo con MFW, pero confirma que las palabras funcionales ya contienen una señal suficientemente discriminativa para la partición evaluada.
+El análisis de los errores refuerza esta interpretación. Tras asignar cada clúster al autor mayoritario, el modelo aglomerativo con MFW clasifica correctamente 89 de las 95 obras, con una exactitud de 0,937. Los seis errores se concentran en dos situaciones: \textit{The White Company}, de Arthur Conan Doyle, se agrupa con Anna Katharine Green, y cinco obras de Arthur Morrison se agrupan con Richard Austin Freeman. Este segundo patrón es especialmente relevante porque Morrison es el autor con menor número de obras en el corpus, lo que puede dificultar la formación de un clúster propio estable.
 
-Los rasgos estilométricos agregados ofrecen un rendimiento inferior al de las MFW, aunque siguen siendo útiles. La regresión logística con métricas estructurales, léxicas y de puntuación obtiene una \textit{F1 macro} de 0,911, lo que indica que variables como la longitud de las oraciones, la riqueza léxica o el uso de signos de puntuación capturan diferencias relevantes entre autores. Sin embargo, estas métricas resumen propiedades globales de cada obra y pueden perder matices que sí aparecen en la distribución detallada de palabras funcionales.
+Con métricas estilométricas agregadas, los errores aumentan hasta 13 obras. En este caso, todas las obras de Arthur Morrison quedan asignadas a un clúster dominado por Arthur Conan Doyle, y también aparecen confusiones entre Gilbert Keith Chesterton y Richard Austin Freeman. La representación combinada reduce parcialmente estos errores, pero todavía mantiene cinco obras de Morrison fuera de su grupo y tres confusiones de Chesterton con Freeman. Estos patrones muestran que el \textit{clustering} no solo sirve para medir el rendimiento, sino también para identificar posibles zonas de proximidad de estilo entre autores.
 
-El experimento con XGBoost muestra que una mayor complejidad del modelo no garantiza mejores resultados. Aunque XGBoost puede capturar relaciones no lineales, su rendimiento con rasgos estilométricos agregados fue inferior al de la regresión logística. Este resultado sugiere que, con un número limitado de obras, los modelos más complejos pueden ser menos estables que los modelos lineales, especialmente cuando el espacio de rasgos no es muy amplio.
+El \textit{clustering} jerárquico resulta particularmente útil para visualizar esta estructura. El dendrograma generado con MFW permite observar cómo se van fusionando las obras en función de su distancia y si las obras de un mismo autor aparecen próximas antes de imponer el corte final en seis grupos. Por ello, se incluye esta visualización como apoyo a la tabla de métricas, ya que permite ver de forma intuitiva la separación entre autores y los casos de mayor proximidad.
 
-Las representaciones distribuidas mediante \textit{embeddings} aportan una perspectiva diferente. No se utilizaron principalmente como clasificador cerrado, sino como herramienta para analizar similitudes entre obras y autores. En este espacio, la silueta por autor con distancia coseno fue positiva, aunque moderada, con un valor de 0,2436. Esto indica que existe cierta agrupación por autor, pero también solapamiento entre obras. Además, las distancias intraautor fueron sistemáticamente menores que las distancias interautor, lo que sugiere que los embeddings capturan alguna forma de proximidad autoral, aunque mezclada con información semántica, temática y narrativa.
+Finalmente, se repitió el experimento con distintos valores de \texttt{TOP\_N\_MFW}. Con 50 palabras funcionales, el mejor modelo ya obtenía un ARI de 0,919 y, al aumentar a 100 MFW, el \textit{clustering} aglomerativo alcanzó una correspondencia perfecta con las etiquetas reales, con ARI, NMI, homogeneidad, completitud y \textit{V-measure} iguales a 1,000. Este resultado no debe interpretarse como una garantía absoluta de separación en cualquier corpus, pero sí como una evidencia clara de que las palabras funcionales reflejan patrones de autoría claramente diferenciados en el corpus estudiado. A diferencia de los modelos supervisados, que alcanzaban resultados perfectos con un número menor de rasgos, el análisis no supervisado parece necesitar un vocabulario funcional más amplio para separar todos los autores sin apoyo de las etiquetas.
 
-El análisis de cohesión por autor aporta una lectura más detallada de este resultado. En todos los autores, la distancia media entre obras del mismo autor fue menor que la distancia media respecto a obras de otros autores, lo que indica que el espacio de embeddings conserva cierta estructura autoral. Arthur Morrison, Anna Katharine Green, Wilkie Collins y Richard Austin Freeman presentaron márgenes de separación relativamente similares, mientras que Arthur Conan Doyle mostró el margen más bajo. Este último caso puede explicarse por la mayor heterogeneidad genérica de su subcorpus, que incluye textos de misterio, ciencia ficción, terror e historia. Así, los embeddings parecen capturar simultáneamente señales de autoría y de contenido, lo que los hace útiles para explorar proximidades literarias, pero menos transparentes como prueba estrictamente estilométrica.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.59\textwidth]{img/tsne_100_mfw_features.png}
+\caption{t-SNE del \textit{clustering} aglomerativo con 100 palabras funcionales.}
+\label{fig:tsne-100-mfw-features}
+\end{figure}
 
-En el caso del modelo RoBERTa, el rendimiento a nivel de documento fue perfecto, pero el análisis por fragmento muestra una imagen más matizada. La \textit{F1 macro} por fragmento fue de 0,814, lo que indica que no todos los fragmentos breves contienen una señal de autoría igualmente clara. La agregación por documento corrige parte de esta variabilidad: aunque algunos fragmentos puedan clasificarse erróneamente, la tendencia mayoritaria de la obra permite recuperar la autoría correcta. Este comportamiento es esperable en textos largos, donde la señal estilística se acumula a lo largo de múltiples fragmentos.
+Parece que los métodos no supervisados apoyan las conclusiones obtenidas por las aproximaciones clásicas y supervisadas. Así, las obras no se distribuyen aleatoriamente en el espacio de rasgos, sino que forman clústeres en gran medida coherentes con la autoría. Al mismo tiempo, los errores observados advierten que la señal estilométrica no es homogénea para todos los autores y que algunos perfiles, como el de Arthur Morrison, son más difíciles de aislar cuando se dispone de pocas obras. Por ello, el \textit{clustering} debe entenderse como una herramienta de exploración y validación complementaria, no como sustituto de un entrenamiento supervisado.
 
-En definitiva, la comparación muestra que los enfoques clásicos siguen siendo competitivos cuando se apoyan en rasgos adecuados, especialmente palabras funcionales. Los métodos modernos no sustituyen necesariamente a los clásicos, sino que amplían el análisis: los modelos supervisados permiten optimizar la clasificación, los embeddings permiten explorar relaciones de similitud más amplias y los transformers ofrecen una referencia contextual potente. Sin embargo, los mejores resultados interpretables siguen procediendo de representaciones basadas en MFW, lo que confirma la vigencia de los principios estilométricos clásicos dentro de un pipeline computacional moderno.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{img/mfw_features_dendrogram.png}
+\caption{Dendrograma del \textit{clustering} jerárquico con 100 palabras funcionales.}
+\label{fig:mfw-features-dendrogram}
+\end{figure}
 
 \section{Interpretabilidad global}
 
@@ -2431,17 +2445,17 @@ En primer lugar, se evaluó la robustez del número de palabras funcionales util
 
 Los resultados muestran que un vocabulario demasiado pequeño, como 5 MFW, no contiene información suficiente para separar correctamente a los autores. Con 10 MFW el rendimiento mejora de forma notable, aunque todavía presenta cierta variabilidad entre semillas. El valor 25 constituye el primer punto en el que se alcanza una \textit{F1 macro} media de 1,000 sin variabilidad observada. Por este motivo, se seleccionó como configuración preferente: mantiene el mejor rendimiento con un número reducido de rasgos, lo que favorece tanto la estabilidad como la interpretabilidad.
 
-La robustez también se analizó en los métodos no supervisados. En este caso, los resultados muestran que las representaciones basadas en MFW generan agrupamientos más coherentes por autor que las métricas estilométricas agregadas. El \textit{clustering} jerárquico con enlace \textit{ward} y distancia euclídea obtuvo los mejores resultados con MFW, alcanzando un ARI de 0,919, un NMI de 0,928 y una \textit{V-measure} de 0,928. Con métricas estilométricas agregadas, el ARI bajó a 0,608, mientras que la representación combinada obtuvo un valor intermedio de 0,831.
+La robustez también se analizó en los métodos no supervisados. En este caso, los resultados muestran que las representaciones basadas en MFW generan agrupamientos más coherentes por autor que las métricas estilométricas agregadas. El \textit{clustering} jerárquico con enlace \textit{ward} y distancia euclídea obtuvo los mejores resultados con MFW, alcanzando un ARI de 0,919, un NMI de 0,928 y una \textit{V-measure} de 0,928. Con métricas estilométricas agregadas, el ARI bajó a 0,707, mientras que la representación combinada obtuvo un valor intermedio de 0,866.
 
 \begin{longtable}{|p{3cm}|r|r|r|r|}
 \hline
 \textbf{Representación} & \textbf{Silhouette} & \textbf{ARI} & \textbf{NMI} & \textbf{V-measure} \\
 \hline
-Métricas estilométricas & 0,199 & 0,608 & 0,727 & 0,727 \\
+Métricas estilométricas & 0,202 & 0,707 & 0,779 & 0,779 \\
 \hline
 MFW & 0,238 & 0,919 & 0,928 & 0,928 \\
 \hline
-Métricas + MFW & 0,214 & 0,831 & 0,819 & 0,819 \\
+Métricas + MFW & 0,215 & 0,866 & 0,858 & 0,858 \\
 \hline
 \caption{Resultados de \textit{clustering} jerárquico con seis grupos.}
 \label{tab:robustez-clustering}
