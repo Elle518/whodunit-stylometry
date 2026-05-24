@@ -2319,13 +2319,13 @@ El análisis se realizó a partir de dos aproximaciones complementarias: los coe
 
 \subsection*{Coeficientes del modelo lineal}
 
-En una regresión logística multiclase, cada autor dispone de un vector de coeficientes. Un coeficiente positivo indica que, cuando aumenta el valor transformado de ese rasgo, la puntuación asociada a ese autor tiende a aumentar. Un coeficiente negativo indica el efecto contrario. Por tanto, los coeficientes no deben interpretarse como frecuencias absolutas de uso, sino como señales discriminativas dentro del modelo.
+En una regresión logística multiclase, cada autor dispone de un vector propio de coeficientes. Un coeficiente positivo indica que, cuando aumenta el valor transformado de una palabra funcional, la puntuación asociada a ese autor tiende a aumentar. Un coeficiente negativo indica el efecto contrario. Dado que el \textit{pipeline} aplica escalado previo, estos valores no deben leerse como frecuencias absolutas, sino como señales discriminativas dentro del espacio estandarizado del modelo.
 
-La Tabla~\ref{tab:coeficientes-globales-autores} resume algunos de los rasgos con mayor peso positivo y negativo para cada autor.
+La Tabla \ref{tab:coeficientes-globales-autores} resume las principales palabras funcionales que empujan la predicción hacia cada autor y aquellas que la alejan. El interés de esta tabla no reside en interpretar cada palabra de forma aislada, sino en observar los perfiles relativos que el modelo utiliza para separar a los autores.
 
-\begin{longtable}{|p{4cm}|p{5cm}|p{5cm}|}
+\begin{longtable}{|p{4.5cm}|p{4.5cm}|p{4.5cm}|}
 \hline
-\textbf{Autor} & \textbf{Rasgos que favorecen la clase} & \textbf{Rasgos que alejan de la clase} \\
+\textbf{Autor} & \textbf{Favorecen la clase} & \textbf{Alejan de la clase} \\
 \hline
 Anna Katharine Green &
 \textit{not}, \textit{but}, \textit{she}, \textit{her}, \textit{to} &
@@ -2351,21 +2351,71 @@ Wilkie Collins &
 \textit{to}, \textit{in}, \textit{my}, \textit{at}, \textit{her} &
 \textit{but}, \textit{a}, \textit{that}, \textit{with}, \textit{he} \\
 \hline
-\caption{Principales rasgos positivos y negativos según los coeficientes de la regresión logística.}
+\caption{Principales rasgos positivos y negativos según los coeficientes del modelo.}
 \label{tab:coeficientes-globales-autores}
 \end{longtable}
 
-Los resultados muestran que el modelo no se apoya en una única palabra funcional dominante, sino en combinaciones distintas para cada autor. Por ejemplo, en Arthur Conan Doyle destacan positivamente \textit{his}, \textit{have} e \textit{it}, mientras que en Arthur Morrison aparecen como señales positivas \textit{at}, \textit{as} y \textit{and}. En Richard Austin Freeman, el rasgo \textit{the} presenta un coeficiente positivo elevado, mientras que \textit{in} actúa como una señal claramente negativa para su clase.
+Los resultados muestran que el modelo de regresión logística no aprende una única señal dominante, sino diferentes combinaciones de palabras funcionales. En Anna Katharine Green, por ejemplo, destacan los coeficientes positivos de \textit{not}, \textit{but}, \textit{she} y \textit{her}, mientras que \textit{the}, \textit{it} e \textit{is} actúan en sentido contrario. En Arthur Conan Doyle, los rasgos más asociados positivamente son \textit{his}, \textit{have}, \textit{it} y \textit{my}, lo que contrasta con el efecto negativo de \textit{but} y \textit{as}. En Arthur Morrison, la señal positiva se concentra especialmente en \textit{at} y \textit{as}, mientras que \textit{with} y \textit{to} alejan la predicción de esta clase.
 
-Desde una perspectiva estilométrica, esto es relevante porque las palabras funcionales no remiten de forma directa al contenido de las obras, sino a patrones gramaticales y discursivos. El modelo, por tanto, parece estar capturando diferencias en el uso relativo de conectores, pronombres, preposiciones y auxiliares, más que nombres de personajes, escenarios o elementos temáticos.
+También aparecen oposiciones claras entre autores. La palabra \textit{at} empuja con fuerza hacia Arthur Morrison, pero aleja de Gilbert Keith Chesterton. La palabra \textit{in} favorece a Wilkie Collins, Gilbert Keith Chesterton y Arthur Morrison, pero penaliza de forma muy marcada a Richard Austin Freeman. Del mismo modo, \textit{but} favorece a Anna Katharine Green y Chesterton, pero aleja de Conan Doyle y Wilkie Collins. Estas oposiciones son relevantes porque muestran que el modelo no utiliza las palabras funcionales como rasgos aislados, sino como dimensiones que permiten comparar entre perfiles de autor.
+
+La Figura~\ref{fig:mfw-lr-coefficients-heatmap} permite visualizar esta estructura de forma conjunta. En ella, los coeficientes se ordenan según su importancia global, lo que facilita observar qué palabras generan mayores contrastes entre clases. Los tonos positivos y negativos muestran que una misma palabra funcional puede actuar como evidencia a favor de un autor y, al mismo tiempo, como evidencia en contra de otro.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{img/mfw_lr_coefficients_heatmap_ordered.png}
+\caption{Mapa de calor de los coeficientes por autor, ordenados por importancia global.}
+\label{fig:mfw-lr-coefficients-heatmap}
+\end{figure}
+
+No obstante, la interpretación de los coeficientes debe matizarse por la posible redundancia entre palabras funcionales. En el conjunto de entrenamiento se detectaron varios pares con altas correlaciones de Spearman. La relación más fuerte aparece entre \textit{her} y \textit{she}, con una correlación de 0,961, seguida de \textit{i} y \textit{my}, con 0,872. También aparecen correlaciones negativas marcadas, como \textit{a} con \textit{her} (-0,831), \textit{the} con \textit{not} (-0,798) y \textit{a} con \textit{she} (-0,776).
+
+\begin{longtable}{|p{3cm}|p{3cm}|r|}
+\hline
+\textbf{Rasgo 1} & \textbf{Rasgo 2} & \textbf{Correlación de Spearman} \\
+\hline
+\textit{her} & \textit{she} & 0,961 \\
+\hline
+\textit{i} & \textit{my} & 0,872 \\
+\hline
+\textit{a} & \textit{her} & -0,831 \\
+\hline
+\textit{the} & \textit{not} & -0,798 \\
+\hline
+\textit{a} & \textit{she} & -0,776 \\
+\hline
+\textit{to} & \textit{a} & -0,770 \\
+\hline
+\textit{to} & \textit{she} & 0,760 \\
+\hline
+\textit{to} & \textit{her} & 0,759 \\
+\hline
+\textit{he} & \textit{his} & 0,704 \\
+\hline
+\caption{Pares de palabras funcionales con mayor correlación absoluta.}
+\label{tab:correlaciones-palabras-funcionales}
+\end{longtable}
+
+Estas correlaciones sugieren que algunas variables funcionan como rasgos de estilo relacionados. Por ejemplo, la asociación entre \textit{she} y \textit{her}, o entre \textit{he} y \textit{his}, pueden reflejar perfiles de voz narrativa (primera persona vs tercera persona), presencia predominante de personajes femeninos o masculinos, cierta construcción sintáctica o simplemente hábitos del autor asociados a determinados textos.
+
+Desde el punto de vista del modelo, esto implica que el peso de una palabra puede estar parcialmente repartido con otra variable correlacionada. Por tanto, los coeficientes son interpretables, pero deben entenderse como parte de un sistema de rasgos y no como pruebas independientes sobre el uso de una palabra concreta.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.77\textwidth]{img/mfw_feature_correlation_heatmap.png}
+\caption{Correlación de Spearman entre palabras funcionales en el train.}
+\label{fig:mfw-feature-correlation-heatmap}
+\end{figure}
+
+El análisis de coeficientes confirma de nuevo que el clasificador se apoya en patrones gramaticales y del discurso, y no en un vocabulario temático. Las palabras funcionales más influyentes son artículos, preposiciones, conjunciones, pronombres y verbos auxiliares, precisamente unidades lingüísticas que suelen considerarse útiles en estilometría porque dependen menos del argumento de una obra y más de hábitos relativamente estables de escritura.
 
 \subsection*{Importancia global de los rasgos}
 
-Además del análisis por autor, se calculó la importancia global de cada rasgo considerando la magnitud media de sus coeficientes. Las palabras con mayor importancia media fueron \textit{but}, \textit{at}, \textit{to}, \textit{in}, \textit{his}, \textit{with} y \textit{the}. Estos rasgos son especialmente discriminativos porque sus coeficientes varían de forma notable entre autores.
+Además del análisis por autor, se calculó la importancia global de cada palabra funcional a partir de la magnitud media de sus coeficientes en las seis clases. Esta medida resume hasta qué punto un rasgo contribuye a separar autores en conjunto, aunque no indica por sí sola hacia qué autor empuja la predicción. Según este criterio, las palabras más importantes fueron \textit{but}, \textit{at}, \textit{to}, \textit{in}, \textit{his}, \textit{with}, \textit{the} y \textit{my}.
 
-\begin{longtable}{|p{3cm}|r|p{4.5cm}|p{4.5cm}|}
+\begin{longtable}{|p{1.3cm}|p{4cm}|p{4.9cm}|p{4.9cm}|}
 \hline
-\textbf{Rasgo} & \textbf{Importancia media} & \textbf{Autor con mayor asociación positiva} & \textbf{Autor con mayor asociación negativa} \\
+\textbf{Rasgo} & \textbf{Importancia media} & \textbf{Más asociación positiva} & \textbf{Más asociación negativa} \\
 \hline
 \textit{but} & 0,524 & Anna Katharine Green & Wilkie Collins \\
 \hline
@@ -2381,11 +2431,61 @@ Además del análisis por autor, se calculó la importancia global de cada rasgo
 \hline
 \textit{the} & 0,347 & Richard Austin Freeman & Anna Katharine Green \\
 \hline
+\textit{my} & 0,341 & Wilkie Collins & Gilbert Keith Chesterton \\
+\hline
 \caption{Rasgos más importantes según la magnitud media de los coeficientes.}
 \label{tab:importancia-global-coeficientes}
 \end{longtable}
 
-El análisis de permutación confirmó parcialmente esta lectura. Al alterar los valores de cada rasgo y medir la caída de rendimiento, las variables con mayor impacto fueron \textit{in}, \textit{but}, \textit{at}, \textit{have}, \textit{of}, \textit{the} y \textit{to}. Esto sugiere que las diferencias más útiles para la clasificación se concentran en un subconjunto reducido de palabras funcionales, aunque el modelo utilice el perfil completo de 25 rasgos.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{img/mfw_lr_global_coef_importance.png}
+\caption{Importancia global de cada rasgo según la media de los coeficientes absolutos.}
+\label{fig:mfw-lr-global-coef-importance}
+\end{figure}
+
+La Figura \ref{fig:mfw-lr-global-coef-importance} muestra esta misma información de forma visual. Se observa que las primeras variables concentran una parte importante de la capacidad discriminativa del modelo, aunque la separación entre autores no depende exclusivamente de ellas. En la parte baja del ránking aparecen \textit{you}, \textit{was}, \textit{i}, \textit{he} y \textit{for}, con menor importancia media. Esto no significa que sean irrelevantes en todos los casos, sino que su capacidad de separación global es más débil o más localizada.
+
+Algunas palabras funcionan como marcadores especialmente polarizados. \textit{At} presenta el mayor rango entre coeficientes, ya que favorece a Arthur Morrison y penaliza a Gilbert Keith Chesterton. \textit{in} separa sobre todo a Wilkie Collins de Richard Austin Freeman, mientras que \textit{his} diferencia a Arthur Conan Doyle frente a Freeman. Otros rasgos, como \textit{to}, tienen una importancia media alta pero un contraste menos extremo, lo que sugiere que contribuyen de forma más repartida a la separación entre varios autores.
+
+Para contrastar esta lectura, se calculó también la importancia por permutación sobre el conjunto de test, usando como métrica la caída media de \textit{F1 macro}. Esta aproximación mide cuánto empeora el modelo cuando se desordena una variable y se elimina su información útil para la predicción. Los resultados confirman parcialmente el análisis de coeficientes: \textit{in}, \textit{but} y \textit{at} aparecen como las tres variables más importantes por permutación, con caídas medias de 0,106, 0,084 y 0,054 respectivamente.
+
+\begin{longtable}{|p{1.3cm}|r|r|r|}
+\hline
+\textbf{Rasgo} & \textbf{Imp. por coeficientes} & \textbf{Imp. por permutación} & \textbf{Desv. típica} \\
+\hline
+\textit{in} & 0,420 & 0,106 & 0,081 \\
+\hline
+\textit{but} & 0,524 & 0,084 & 0,073 \\
+\hline
+\textit{at} & 0,480 & 0,054 & 0,060 \\
+\hline
+\textit{have} & 0,296 & 0,029 & 0,046 \\
+\hline
+\textit{of} & 0,191 & 0,023 & 0,039 \\
+\hline
+\textit{the} & 0,347 & 0,020 & 0,037 \\
+\hline
+\textit{to} & 0,473 & 0,016 & 0,034 \\
+\hline
+\textit{as} & 0,294 & 0,007 & 0,024 \\
+\hline
+\caption{Comparación entre importancia por coeficientes e importancia por permutación.}
+\label{tab:coeficientes-vs-permutacion}
+\end{longtable}
+
+La comparación muestra coincidencias, pero también diferencias relevantes. \textit{to}, por ejemplo, es la tercera variable por importancia media de coeficientes, pero baja al séptimo lugar por permutación. En cambio, \textit{of} tiene una importancia por coeficientes relativamente modesta, pero aparece entre las variables con impacto positivo al permutar. Además, rasgos como \textit{his}, \textit{with} o \textit{my} tienen coeficientes altos, pero importancia por permutación nula en este test.
+
+Estas discrepancias no invalidan los coeficientes. Más bien indican que ambas medidas responden a preguntas distintas. Los coeficientes describen cómo está estructurado internamente el modelo, mientras que la permutación evalúa cuánto cambia el rendimiento observado cuando se altera una variable concreta. En un conjunto de test reducido, con solo doce obras, la importancia por permutación tiene poca resolución y puede asignar valores nulos a variables que sí participan en la decisión, especialmente si están correlacionadas con otras.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{img/mfw_lr_coef_vs_permutation.png}
+\caption{Relación entre la importancia media de los coeficientes y la de permutación.}
+\label{fig:mfw-lr-coef-vs-permutation}
+\end{figure}
+
+Por tanto, la lectura más sólida se obtiene combinando ambas perspectivas. Cuando una palabra aparece destacada tanto por coeficientes como por permutación, como ocurre con \textit{in}, \textit{but} y \textit{at}, hay una evidencia más fuerte de que se trata de una señal útil para la atribución. Cuando ambas medidas divergen, el resultado debe interpretarse con cautela, atendiendo a la redundancia entre palabras funcionales y al tamaño limitado del conjunto de prueba. De esta manera, el análisis confirma que el modelo se apoya en un subconjunto reducido de palabras funcionales con alto poder discriminativo, pero que la atribución final depende del perfil completo de frecuencias y de sus relaciones internas.
 
 \subsection*{Importancia global mediante SHAP}
 
