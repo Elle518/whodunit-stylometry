@@ -2590,87 +2590,192 @@ SHAP confirma que el modelo basa sus decisiones en patrones de palabras funciona
 
 \section{Interpretabilidad local y análisis de casos}
 
-La interpretabilidad local permite analizar predicciones concretas y observar qué rasgos han contribuido a una decisión individual del modelo. Mientras que la interpretabilidad global resume patrones generales, el análisis local resulta especialmente útil para estudiar casos seguros, casos ambiguos y errores de clasificación. En este trabajo, el análisis se ha centrado principalmente en el modelo basado en MFW y regresión logística, complementado con la revisión de errores en métodos clásicos y modelos menos robustos.
+La interpretabilidad local permite analizar predicciones concretas y observar qué rasgos han contribuido a una decisión individual del modelo. Mientras que la interpretabilidad global resume patrones generales, el análisis local permite estudiar cómo se combinan las palabras funcionales en obras específicas, distinguir predicciones muy seguras de casos más ambiguos y comprobar si las señales utilizadas por el modelo son estilométricamente coherentes.
 
-En el conjunto de test del modelo MFW no se observaron errores: las 12 obras evaluadas fueron atribuidas correctamente. No obstante, las predicciones no fueron igualmente seguras en todos los casos. El margen entre la probabilidad asignada al autor predicho y la segunda clase más probable permite distinguir entre aciertos muy claros y aciertos más ambiguos.
+En este trabajo, el análisis local de nuevo se ha centrado en el modelo basado en MFW y regresión logística, ya que fue una de las configuraciones con mejor rendimiento y ofrece explicaciones directas mediante dos vías complementarias. Por un lado, se calculan contribuciones lineales a partir del producto entre el valor transformado de cada rasgo y el coeficiente de la clase explicada:
 
-\begin{longtable}{|p{4.5cm}|p{4cm}|r|r|r|}
+$$\text{contribución}_{j,k} = x_j \cdot \beta_{k,j}$$
+
+donde $x_j$ es el valor transformado del rasgo $j$ y $\beta_{k,j}$ es el coeficiente asociado a la clase $k$. Por otro lado, se utilizan valores SHAP, que permiten medir cuánto contribuye cada palabra funcional a desplazar la salida del modelo respecto a un valor base. Ambas aproximaciones son especialmente compatibles en este caso porque el modelo es lineal, aunque no son idénticas y las contribuciones lineales muestran la mecánica interna del clasificador, mientras que SHAP sitúa esa contribución en relación con una distribución de referencia.
+
+En el conjunto de test del modelo MFW no se observaron errores y las 12 obras evaluadas fueron atribuidas correctamente. No obstante, las predicciones no fueron igualmente seguras en todos los casos. El margen entre la probabilidad asignada al autor predicho y la segunda clase más probable permite distinguir entre aciertos muy claros y aciertos más ambiguos. La Tabla~\ref{tab:predicciones-locales-casos} recoge algunos casos representativos.
+
+\begin{longtable}{|p{5.4cm}|p{3.3cm}|r|r|r|}
 \hline
-\textbf{Obra} & \textbf{Autor predicho} & \textbf{Prob. pred.} & \textbf{Prob. segunda} & \textbf{Margen} \\
+\textbf{Obra} & \textbf{Autor predicho} & \textbf{Prob. pred.} & \textbf{Prob. 2ª} & \textbf{Margen} \\
 \hline
-\textit{akg-to\_the\_minute} & Anna Katharine Green & 0,990 & 0,006 & 0,983 \\
+\textit{akg-to\_the\_minute} & A.K. Green & 0,990 & 0,006 & 0,983 \\
 \hline
-\textit{akg-three\_thousand\_dollars} & Anna Katharine Green & 0,982 & 0,006 & 0,975 \\
+\textit{akg-three\_thousand\_dollars} & A.K. Green & 0,982 & 0,006 & 0,975 \\
 \hline
-\textit{gkc-four\_faultless\_felons} & Gilbert Keith Chesterton & 0,976 & 0,008 & 0,968 \\
+\textit{gkc-four\_faultless\_felons} & G.K. Chesterton & 0,976 & 0,008 & 0,968 \\
 \hline
-\textit{am-chronicles\_of\_martin\_hewitt} & Arthur Morrison & 0,971 & 0,010 & 0,962 \\
+\textit{am-the\_hole\_in\_the\_wall} & A. Morrison & 0,689 & 0,165 & 0,524 \\
 \hline
-\textit{wc-the\_law\_and\_the\_lady} & Wilkie Collins & 0,971 & 0,018 & 0,953 \\
+\textit{acd-the\_lost\_world} & A.C. Doyle & 0,696 & 0,172 & 0,524 \\
 \hline
-\caption{Predicciones correctas con mayor margen de confianza en el modelo MFW.}
-\label{tab:predicciones-mayor-confianza}
+\textit{raf-the\_shadow\_of\_the\_wolf} & R.A. Freeman & 0,718 & 0,188 & 0,530 \\
+\hline
+\caption{Casos de alta y baja confianza en el conjunto de test del modelo MFW.}
+\label{tab:predicciones-locales-casos}
 \end{longtable}
 
-Uno de los casos más seguros fue \textit{Three Thousand Dollars}, atribuido correctamente a Anna Katharine Green con una probabilidad de 0,982. En la explicación local mediante SHAP, los rasgos que más apoyaron esta predicción fueron \textit{but}, \textit{of}, \textit{she}, \textit{not}, \textit{the} y \textit{her}. Estos valores no deben leerse como una simple lista de palabras frecuentes, sino como desviaciones respecto al comportamiento aprendido por el modelo para diferenciar a Green del resto de autores.
+Uno de los casos más seguros fue \textit{Three Thousand Dollars}, atribuido correctamente a Anna Katharine Green con una probabilidad de 0,982 y un margen de 0,975. La explicación local mediante SHAP muestra una acumulación clara de señales positivas hacia la autora. Las contribuciones más importantes proceden de \textit{but}, \textit{of}, \textit{she}, \textit{not}, \textit{the} y \textit{her}. En conjunto, estas palabras desplazan la predicción de forma consistente hacia Green.
 
-\begin{longtable}{|p{3cm}|r|p{4cm}|}
+\begin{longtable}{|p{1.5cm}|r|r|p{3cm}|}
 \hline
-\textbf{Rasgo} & \textbf{Valor SHAP} & \textbf{Efecto} \\
+\textbf{Rasgo} & \textbf{Frecuencia} & \textbf{SHAP} & \textbf{Efecto} \\
 \hline
-\textit{but} & 1,142 & A favor de Anna Katharine Green \\
+\textit{but} & 0,0119 & 1,142 & A favor \\
 \hline
-\textit{of} & 0,667 & A favor de Anna Katharine Green \\
+\textit{of} & 0,0184 & 0,667 & A favor \\
 \hline
-\textit{she} & 0,635 & A favor de Anna Katharine Green \\
+\textit{she} & 0,0152 & 0,635 & A favor \\
 \hline
-\textit{not} & 0,535 & A favor de Anna Katharine Green \\
+\textit{not} & 0,0103 & 0,535 & A favor \\
 \hline
-\textit{the} & 0,452 & A favor de Anna Katharine Green \\
+\textit{the} & 0,0485 & 0,452 & A favor \\
 \hline
-\textit{her} & 0,356 & A favor de Anna Katharine Green \\
+\textit{her} & 0,0148 & 0,356 & A favor \\
 \hline
-\caption{Principales contribuciones locales para \textit{Three Thousand Dollars}.}
-\label{tab:shap-local-green}
+\textit{you} & 0,0182 & -0,185 & En contra \\
+\hline
+\textit{to} & 0,0243 & -0,135 & En contra \\
+\hline
+\caption{Principales contribuciones SHAP para \textit{Three Thousand Dollars}.}
+\label{tab:shap-local-three-thousand}
 \end{longtable}
 
-Este caso resulta coherente con la interpretación global del modelo, donde \textit{not}, \textit{but}, \textit{she} y \textit{her} aparecían como rasgos asociados positivamente a Anna Katharine Green. La explicación local confirma, por tanto, que la predicción no depende de un único rasgo aislado, sino de una combinación de señales funcionales.
+Este resultado encaja bien con la interpretación global del modelo. Anna Katharine Green aparecía asociada positivamente a \textit{not}, \textit{but}, \textit{she} y \textit{her}. En esta obra concreta, esas señales no solo están presentes, sino que además actúan conjuntamente. El caso es interesante porque combina conjunciones, negación y pronombres de tercera persona femenina, lo que sugiere que la atribución no se basa en una única palabra aislada, sino en un perfil funcional coherente.
 
-El caso de \textit{The Lost World}, de Arthur Conan Doyle, ofrece una situación más ambigua. La obra fue clasificada correctamente, pero con una probabilidad de 0,696 y un margen de 0,524, claramente inferior al de los casos más seguros. Esta menor confianza puede explicarse en parte porque \textit{The Lost World} no pertenece al ciclo de Sherlock Holmes, sino a la ficción científica y de aventuras, lo que puede alejarla de los patrones más habituales del subcorpus de Doyle.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.72\textwidth]{img/mfw_lr_shap_local_bar_0_anna_katharine_green.png}
+\caption{Contribuciones SHAP locales para \textit{Three Thousand Dollars}.}
+\label{fig:mfw-lr-shap-local-green-bar}
+\end{figure}
 
-En la explicación local de esta obra, los rasgos que más favorecieron la atribución a Doyle fueron \textit{but}, \textit{it}, \textit{he}, \textit{to}, \textit{you}, \textit{she} y \textit{have}. En cambio, otros rasgos como \textit{his} o \textit{for} actuaron en sentido contrario. Este comportamiento muestra que la decisión del modelo se apoya en una evidencia mixta: hay señales suficientes para atribuir la obra a Doyle, pero no con la claridad observada en otros textos.
+La lectura mediante \textit{waterfall plot} permite observar la misma decisión como una suma acumulativa de contribuciones. Cada rasgo desplaza la salida del modelo desde el valor base hasta la puntuación final de la clase Anna Katharine Green. En este caso, las contribuciones positivas dominan claramente sobre las negativas, lo que explica la alta probabilidad final.
 
-\begin{longtable}{|p{3cm}|r|p{4cm}|}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{img/mfw_lr_shap_waterfall_0_anna_katharine_green.png}
+\caption{\textit{Waterfall plot} de SHAP para \textit{Three Thousand Dollars}.}
+\label{fig:mfw-lr-shap-waterfall-green}
+\end{figure}
+
+El análisis mediante contribuciones lineales ofrece una lectura similar para \textit{To the Minute}, también de Anna Katharine Green y clasificada con una probabilidad de 0,990. En este caso, los rasgos que más empujan hacia la autora son \textit{had} (0,626), \textit{the} (0,558), \textit{not} (0,522), \textit{her} (0,450), \textit{she} (0,438), \textit{is} (0,355) y \textit{for} (0,312). La contribución de \textit{the} y \textit{is} es especialmente ilustrativa: ambas tienen valores transformados negativos y coeficientes negativos para Green, por lo que su menor presencia relativa acaba favoreciendo la clase. En cambio, \textit{his} aporta la principal señal en contra (-0,287), aunque no llega a compensar el conjunto de evidencias positivas.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth]{img/mfw_lr_local_explanation_random.png}
+\caption{Contribuciones lineales locales para \textit{To the Minute}.}
+\label{fig:mfw-lr-local-to-the-minute}
+\end{figure}
+
+Frente a estos casos de alta confianza, \textit{The Hole in the Wall}, de Arthur Morrison, representa una predicción correcta pero menos segura. La obra fue atribuida a Morrison con una probabilidad de 0,689 y un margen de 0,524. La explicación local muestra una tensión clara entre señales opuestas. El rasgo con mayor impacto absoluto es \textit{with}, con un valor transformado alto (1,917) y un coeficiente negativo para Morrison, lo que produce una contribución fuertemente contraria (-1,645 en la explicación lineal; -1,533 en SHAP). Es decir, el uso elevado de \textit{with} aleja esta obra del perfil aprendido para Morrison.
+
+A pesar de ello, varias palabras compensan esa señal negativa. \textit{At} aporta una contribución positiva muy fuerte (1,164 en la explicación lineal; 0,981 en SHAP), coherente con el hecho de que era uno de los rasgos más característicos de Morrison en el análisis global. También empujan hacia la clase \textit{as}, \textit{of}, \textit{to}, \textit{and}, \textit{have} e \textit{is}. En varios de estos casos, la contribución positiva no se debe a una presencia elevada, sino a una presencia relativamente baja combinada con un coeficiente negativo. Por ejemplo, \textit{of}, \textit{to}, \textit{have} e \textit{is} favorecen a Morrison porque sus valores transformados son negativos y sus coeficientes para la clase también lo son.
+
+\begin{longtable}{|p{2.5cm}|r|r|p{3cm}|}
 \hline
-\textbf{Rasgo} & \textbf{Valor SHAP} & \textbf{Efecto} \\
+\textbf{Rasgo} & \textbf{Contrib. lineal} & \textbf{SHAP} & \textbf{Efecto} \\
 \hline
-\textit{but} & 0,743 & A favor de Arthur Conan Doyle \\
+\textit{with} & -1,645 & -1,533 & En contra \\
 \hline
-\textit{it} & 0,609 & A favor de Arthur Conan Doyle \\
+\textit{at} & 1,164 & 0,981 & A favor \\
 \hline
-\textit{his} & -0,322 & En contra de Arthur Conan Doyle \\
+\textit{as} & 0,649 & 0,644 & A favor \\
 \hline
-\textit{he} & 0,234 & A favor de Arthur Conan Doyle \\
+\textit{of} & 0,611 & 0,616 & A favor \\
 \hline
-\textit{to} & 0,226 & A favor de Arthur Conan Doyle \\
+\textit{to} & 0,584 & 0,531 & A favor \\
 \hline
-\textit{you} & 0,221 & A favor de Arthur Conan Doyle \\
+\textit{and} & 0,514 & 0,503 & A favor \\
 \hline
-\caption{Principales contribuciones locales para \textit{The Lost World}.}
-\label{tab:shap-local-doyle}
+\textit{have} & 0,453 & 0,450 & A favor \\
+\hline
+\caption{Principales contribuciones locales para \textit{The Hole in the Wall}.}
+\label{tab:local-hole-in-the-wall}
 \end{longtable}
 
-Aunque el modelo MFW no cometió errores en el conjunto de test, el análisis de otros enfoques sí permite identificar casos problemáticos. En el test de Mendenhall, basado únicamente en la distribución de longitudes de palabra, se observaron tres errores: \textit{The Poet and The Lunatics}, de Gilbert Keith Chesterton, fue atribuido a Arthur Morrison; \textit{The Shadow of the Wolf}, de Richard Austin Freeman, fue atribuido a Wilkie Collins; y \textit{The Hole in the Wall}, de Arthur Morrison, fue atribuido a Arthur Conan Doyle. Estos errores indican que la longitud de palabra por sí sola no proporciona una señal suficientemente específica para distinguir todos los perfiles de autor.
+Este caso muestra por qué el análisis local resulta útil incluso cuando la predicción es correcta. Si solo se observa la etiqueta final, la atribución parece resuelta; al examinar las contribuciones, se ve que la decisión depende de un equilibrio entre una señal negativa muy fuerte y varias señales positivas de menor magnitud. Desde una perspectiva estilométrica, la obra conserva rasgos importantes del perfil de Morrison, especialmente \textit{at} y \textit{as}, pero presenta también un uso de \textit{with} más cercano al patrón de otros autores. Esta mezcla explica su menor margen de confianza.
 
-También en el experimento con XGBoost sobre métricas estilométricas agregadas aparecieron confusiones entre autores. En este caso, el modelo obtuvo una \textit{F1 macro} de 0,750, por debajo de la regresión logística con los mismos tipos de rasgos y muy lejos de los modelos basados en MFW. Esto sugiere que los errores no se deben únicamente al clasificador, sino también a la capacidad limitada de las métricas agregadas para capturar diferencias finas de autoría.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth]{img/mfw_lr_local_explanation_most_uncertain.png}
+\caption{Contribuciones lineales locales para \textit{The Hole in the Wall}.}
+\label{fig:mfw-lr-local-hole-in-wall}
+\end{figure}
 
-De este modo, el análisis local muestra tres ideas importantes. En primer lugar, las predicciones correctas de alta confianza se explican por combinaciones coherentes de palabras funcionales, no por señales temáticas evidentes. En segundo lugar, los casos ambiguos suelen corresponder a obras que se alejan del perfil más característico del autor o que presentan señales mixtas. En tercer lugar, los errores de los métodos más simples ayudan a entender por qué las MFW resultan más robustas: capturan patrones de uso lingüístico más finos que las métricas globales o la longitud de palabra.
+El segundo caso ambiguo analizado con detalle es \textit{The Lost World}, de Arthur Conan Doyle. La obra fue clasificada correctamente con una probabilidad de 0,696 y un margen de 0,524. Esta menor confianza resulta plausible desde el punto de vista literario, ya que no se trata de una obra de Sherlock Holmes, sino de una novela de aventuras y ciencia ficción. Por tanto, aunque pertenece al autor, puede alejarse parcialmente del perfil más representativo que el modelo aprende a partir del conjunto de textos de Doyle.
+
+La explicación SHAP muestra que las principales señales a favor de Conan Doyle son \textit{but}, \textit{it}, \textit{he}, \textit{to}, \textit{you}, \textit{she}, \textit{have} y \textit{not}. En cambio, \textit{his}, \textit{for}, \textit{is}, \textit{had} y \textit{a} actúan en contra. La variable \textit{but} es especialmente significativa: aunque su coeficiente para Doyle es negativo, en esta obra aparece con un valor transformado bajo (-1,201), lo que genera una contribución positiva. Este tipo de caso ilustra por qué no basta con decir que una palabra ``favorece'' o ``penaliza'' a un autor de forma absoluta: el efecto local depende tanto del coeficiente como del valor observado en la obra.
+
+\begin{longtable}{|p{2.5cm}|r|r|p{3cm}|}
+\hline
+\textbf{Rasgo} & \textbf{Frecuencia} & \textbf{SHAP} & \textbf{Efecto} \\
+\hline
+\textit{but} & 0,0056 & 0,743 & A favor \\
+\hline
+\textit{it} & 0,0158 & 0,609 & A favor \\
+\hline
+\textit{his} & 0,0086 & -0,322 & En contra \\
+\hline
+\textit{he} & 0,0091 & 0,234 & A favor \\
+\hline
+\textit{to} & 0,0226 & 0,226 & A favor \\
+\hline
+\textit{you} & 0,0084 & 0,221 & A favor \\
+\hline
+\textit{she} & 0,0006 & 0,196 & A favor \\
+\hline
+\textit{have} & 0,0066 & 0,181 & A favor \\
+\hline
+\textit{for} & 0,0065 & -0,144 & En contra \\
+\hline
+\caption{Principales contribuciones SHAP para \textit{The Lost World}.}
+\label{tab:shap-local-lost-world}
+\end{longtable}
+
+En esta obra, la evidencia es más mixta que en los casos de Anna Katharine Green. La atribución a Doyle no depende de una señal dominante única, sino de la suma de varias contribuciones moderadas. \textit{It} aporta una señal positiva clara, coherente con su coeficiente positivo para Doyle. \textit{His}, en cambio, actúa en contra porque su valor observado no encaja con la dirección que normalmente favorecería a esta clase. Esta mezcla de rasgos explica que la predicción sea correcta pero menos contundente.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.72\textwidth]{img/mfw_lr_shap_local_bar_3_arthur_conan_doyle.png}
+\caption{Contribuciones SHAP locales para \textit{The Lost World}.}
+\label{fig:mfw-lr-shap-local-lost-world-bar}
+\end{figure}
+
+El \textit{decision plot} de la Figura~\ref{fig:mfw-lr-shap-decision-lost-world} permite seguir la trayectoria acumulada de la predicción para \textit{The Lost World}. A partir del valor base de la clase Arthur Conan Doyle, cada palabra funcional desplaza progresivamente la salida del modelo. La visualización ayuda a entender que la decisión final no aparece de forma inmediata, sino como resultado de una secuencia de pequeños desplazamientos positivos y negativos.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.72\textwidth]{img/mfw_lr_shap_decision_arthur_conan_doyle_3.png}
+\caption{\textit{Decision plot} de SHAP para \textit{The Lost World} y la clase Arthur Conan Doyle.}
+\label{fig:mfw-lr-shap-decision-lost-world}
+\end{figure}
+
+También se generaron \textit{dependence plots} para los rasgos más importantes de la clase Arthur Conan Doyle, como \textit{but}, \textit{have}, \textit{his}, \textit{it} y \textit{my}. Estos gráficos permiten observar cómo cambia el valor SHAP de una palabra funcional en función de su valor transformado. En un modelo lineal, esta relación tiende a ser monotónica, pero la visualización sigue siendo útil porque muestra dónde se sitúa cada obra del test respecto al patrón general. Por ejemplo, en \textit{The Lost World}, el valor bajo de \textit{but} produce una contribución positiva hacia Doyle, mientras que el comportamiento de \textit{his} va en sentido contrario. Esto confirma que los rasgos no deben interpretarse solo por su frecuencia bruta, sino por su posición relativa dentro del espacio estandarizado del modelo.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{img/mfw_lr_shap_dependence_arthur_conan_doyle_fw_but.png}
+\caption{\textit{Dependence plot} de \textit{but} para la clase Arthur Conan Doyle.}
+\label{fig:mfw-lr-shap-dependence-doyle-but}
+\end{figure}
+
+El \textit{force plot}, generado de forma interactiva en el notebook, ofrece una lectura complementaria de una única obra: separa visualmente las contribuciones que empujan la predicción hacia la clase explicada de aquellas que la reducen. Aunque esta visualización es más adecuada para exploración interactiva que para la memoria impresa, resulta útil para auditar casos concretos y comprobar qué palabras funcionales sostienen una atribución.
+
+En conjunto, el análisis local muestra tres ideas principales. En primer lugar, las predicciones de alta confianza se explican por combinaciones coherentes de palabras funcionales, no por una sola señal aislada. En segundo lugar, los casos ambiguos no son necesariamente errores, sino obras donde conviven rasgos favorables y desfavorables respecto al perfil aprendido para el autor. En tercer lugar, la comparación entre contribuciones lineales, SHAP, \textit{waterfall plots}, \textit{decision plots} y \textit{dependence plots} permite pasar de una evaluación cuantitativa global a una interpretación detallada de decisiones individuales.
+
+Esta lectura refuerza la validez estilométrica del modelo MFW. Las explicaciones locales se apoyan en artículos, preposiciones, conjunciones, pronombres y auxiliares, no en nombres propios ni en vocabulario temático evidente. Al mismo tiempo, los casos de \textit{The Hole in the Wall} y \textit{The Lost World} recuerdan que la autoría no se expresa como una firma perfectamente uniforme: una misma obra puede presentar rasgos que se apartan parcialmente del perfil medio de su autor, especialmente cuando cambia el género, la voz narrativa o la composición interna del texto.
 
 \section{Robustez y validez}
 
 La evaluación de robustez y validez permite matizar los resultados obtenidos y evitar una interpretación excesivamente optimista del rendimiento. Aunque varios modelos alcanzan puntuaciones perfectas en el conjunto de test, estas cifras deben analizarse teniendo en cuenta el tamaño limitado del corpus, el desbalance entre autores y la sensibilidad de la tarea a las decisiones de partición, representación y evaluación.
 
-En primer lugar, se evaluó la robustez del número de palabras funcionales utilizadas como rasgos. Para ello, se realizó un barrido sobre distintos valores de \texttt{TOP\_N\_MFW}, desde 5 hasta 150, y sobre varias semillas aleatorias. El objetivo no era seleccionar simplemente el número de rasgos con mejor puntuación puntual, sino identificar el menor vocabulario capaz de mantener un rendimiento estable y próximo al mejor resultado observado.
+En primer lugar, se evaluó la robustez del número de palabras funcionales utilizadas como rasgos. Para ello, se realizó un barrido sobre distintos valores de \texttt{TOP\_N\_MFW}, desde 5 hasta 150, y sobre varias semillas aleatorias. El objetivo no era seleccionar simplemente el número de rasgos con mejor puntuación, sino identificar el menor vocabulario capaz de mantener un rendimiento estable y próximo al mejor resultado observado.
 
 \begin{longtable}{|r|r|r|r|r|}
 \hline
@@ -2702,7 +2807,7 @@ En primer lugar, se evaluó la robustez del número de palabras funcionales util
 \label{tab:robustez-mfw}
 \end{longtable}
 
-Los resultados muestran que un vocabulario demasiado pequeño, como 5 MFW, no contiene información suficiente para separar correctamente a los autores. Con 10 MFW el rendimiento mejora de forma notable, aunque todavía presenta cierta variabilidad entre semillas. El valor 25 constituye el primer punto en el que se alcanza una \textit{F1 macro} media de 1,000 sin variabilidad observada. Por este motivo, se seleccionó como configuración preferente: mantiene el mejor rendimiento con un número reducido de rasgos, lo que favorece tanto la estabilidad como la interpretabilidad.
+Los resultados muestran que un vocabulario demasiado pequeño, como 5 MFW, no contiene información suficiente para separar correctamente a los autores. Con 10 MFW el rendimiento mejora de forma notable, aunque todavía presenta cierta variabilidad entre semillas. El valor 25 constituye el primer punto en el que se alcanza una \textit{F1 macro} media de 1,000 sin variabilidad observada. Por este motivo, se seleccionó como configuración preferente, puesto que mantiene el mejor rendimiento con un número reducido de rasgos, lo que favorece tanto la estabilidad como la interpretabilidad.
 
 La robustez también se analizó en los métodos no supervisados. En este caso, los resultados muestran que las representaciones basadas en MFW generan agrupamientos más coherentes por autor que las métricas estilométricas agregadas. El \textit{clustering} jerárquico con enlace \textit{ward} y distancia euclídea obtuvo los mejores resultados con MFW, alcanzando un ARI de 0,919, un NMI de 0,928 y una \textit{V-measure} de 0,928. Con métricas estilométricas agregadas, el ARI bajó a 0,707, mientras que la representación combinada obtuvo un valor intermedio de 0,866.
 
