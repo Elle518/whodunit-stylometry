@@ -2716,7 +2716,7 @@ En conjunto, la planificación se ha seguido de forma satisfactoria, aunque con 
 \chapter*{Glosario}
 \addcontentsline{toc}{chapter}{Glosario}
 
-\begin{longtable}{|p{5cm}|p{10.5cm}|}
+\begin{longtable}{|p{5.2cm}|p{10.5cm}|}
 \hline
 \textbf{Término} & \textbf{Definición} \\
 \hline
@@ -2771,6 +2771,10 @@ Medida clásica de distancia estilométrica basada en frecuencias estandarizadas
 
 Desbalance de clases &
 Situación en la que algunas clases tienen muchas más muestras que otras. En este trabajo ocurre porque la disponibilidad de obras no es igual para todos los autores. \\
+\hline
+
+Distancia de Jensen-Shannon &
+Medida de divergencia entre distribuciones de probabilidad. En este trabajo se utiliza para comparar curvas de longitud de palabra, donde valores más bajos indican perfiles más similares. \\
 \hline
 
 Distancia del coseno &
@@ -2863,6 +2867,10 @@ Método clásico de estilometría basado en comparar distribuciones de longitud 
 
 MFW &
 \textit{Most Frequent Words}. Conjunto de palabras más frecuentes utilizadas como rasgos estilométricos. En este trabajo se emplean principalmente palabras funcionales. \\
+\hline
+
+\textit{Mlogloss} &
+Pérdida logarítmica multiclase. Métrica que penaliza las predicciones probabilísticas incorrectas, especialmente cuando el modelo asigna alta probabilidad a una clase equivocada. En este trabajo se utiliza para monitorizar el entrenamiento de XGBoost. \\
 \hline
 
 NMI &
