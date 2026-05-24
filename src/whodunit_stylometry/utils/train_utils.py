@@ -1178,14 +1178,14 @@ def local_explanation(
     proba_second = confidence_df.loc[instance_id, "proba_second"]
 
     print(
-        f"Explicación local de `{work}`\n"
-        f"- Autor real: `{true_author}`\n"
-        f"- Autor predicho: `{pred_author}`\n"
-        f"- Clase explicada: `{author}`\n"
-        f"- Probabilidad de la predicción: `{confidence_df.loc[instance_id, 'proba_pred']:.6f}`\n"
-        f"- Probabilidad de la clase explicada: `{proba_author:.6f}`\n"
-        f"- Probabilidad de la segunda clase más probable: `{proba_second:.6f}`\n"
-        f"- Margen de confianza: `{proba_author - proba_second:.6f}`\n"
+        f"Explicación local de {work}\n"
+        f"- Autor real: {true_author}\n"
+        f"- Autor predicho: {pred_author}\n"
+        f"- Clase explicada: {author}\n"
+        f"- Probabilidad de la predicción: {confidence_df.loc[instance_id, 'proba_pred']:.6f}\n"
+        f"- Probabilidad de la clase explicada: {proba_author:.6f}\n"
+        f"- Probabilidad de la segunda clase más probable: {proba_second:.6f}\n"
+        f"- Margen de confianza: {proba_author - proba_second:.6f}\n"
         f"- Es correcta la predicción: {'Sí' if true_author == pred_author else 'No'}"
     )
 
@@ -1202,21 +1202,6 @@ def local_explanation(
     display(df)
 
     plot_local_shap_bar(df, author, work, instance_id, figs_dir)
-
-    # plot_df = df.sort_values("shap_value")
-    # plt.figure(figsize=(8, max(4, 0.35 * len(plot_df))))
-    # plt.barh(plot_df["word"], plot_df["shap_value"])
-    # plt.axvline(0, linestyle="--", linewidth=1)
-    # plt.xlabel("Valor SHAP")
-    # plt.ylabel("Palabra funcional")
-    # plt.title(f"Contribuciones locales para {author}\n{work}")
-    # plt.tight_layout()
-    # plt.savefig(
-    #     FIGS_DIR / f"mfw_lr_shap_local_bar_{instance_id}_{author}.png",
-    #     dpi=200,
-    #     bbox_inches="tight",
-    # )
-    # plt.show()
 
     exp = shap.Explanation(
         values=shap_matrix_for_author(author, classes, values)[row_pos, :],
