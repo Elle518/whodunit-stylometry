@@ -54,6 +54,7 @@ def metric_card(label: str, value) -> None:
         label: Text label shown above the metric value.
         value: Value displayed in the metric card.
     """
+
     st.metric(label=label, value=value)
 
 
@@ -66,6 +67,7 @@ def parse_int_list(value: str) -> list[int]:
     Returns:
         A list of parsed integers.
     """
+
     return [int(part.strip()) for part in value.split(",") if part.strip()]
 
 
@@ -77,6 +79,7 @@ def apply_work_box_hover(fig, metric_name: str):
             Plotly figure.
         metric_name: Name of the metric displayed in the hover label.
     """
+
     fig.update_traces(
         hovertemplate=("Autor: %{x}<br>" "Obra: %{customdata[0]}<br>" f"{metric_name}: %{{y:.6f}}" "<extra></extra>")
     )
@@ -90,6 +93,7 @@ def apply_correlation_heatmap_layout(fig, n_features: int):
             ``update_yaxes`` methods, such as a Plotly figure.
         n_features: Number of features shown in the correlation heatmap.
     """
+
     size = max(520, min(980, 70 * n_features))
     fig.update_layout(
         height=size,
@@ -108,6 +112,7 @@ def show_metric_table_by_work(metrics_df: pd.DataFrame, metric_cols: list[str]):
         metric_cols: Metric column names requested for display. Only columns
             present in ``metrics_df`` are shown.
     """
+
     available_cols = [col for col in metric_cols if col in metrics_df.columns]
     id_cols = [col for col in ["author", "work", "filename"] if col in metrics_df.columns]
     st.dataframe(
@@ -133,6 +138,7 @@ def cached_load_and_tokenize(corpus_path: str, lowercase: bool) -> pd.DataFrame:
     Returns:
         A DataFrame containing the loaded corpus with tokens added.
     """
+
     return add_tokens(load_corpus(corpus_path), lowercase=lowercase)
 
 
@@ -155,6 +161,7 @@ def corpus_cache_fingerprint(df: pd.DataFrame) -> tuple[tuple[int, int], int]:
             - The DataFrame shape as ``(row_count, column_count)``.
             - An integer hash derived from the selected DataFrame values.
     """
+
     fingerprint_cols = [col for col in ["author", "work", "filename", "text"] if col in df.columns]
     fingerprint_df = df[fingerprint_cols].astype(str) if fingerprint_cols else df.astype(str)
     fingerprint_hash = pd.util.hash_pandas_object(fingerprint_df, index=False).sum()
@@ -171,6 +178,7 @@ def eda_core_cache_key(df: pd.DataFrame, lowercase: bool) -> tuple:
     Returns:
         A tuple containing the corpus fingerprint and the lowercase flag.
     """
+
     return (
         corpus_cache_fingerprint(df),
         lowercase,
@@ -189,35 +197,13 @@ def eda_vocab_cache_key(df: pd.DataFrame, lowercase: bool, config: EDAConfig) ->
         A tuple containing the corpus fingerprint, the lowercase flag, and selected
         vocabulary configuration values.
     """
+
     return (
         corpus_cache_fingerprint(df),
         lowercase,
         config.top_n,
         config.zipf_max_rank,
     )
-
-
-def eda_cache_key(
-    df: pd.DataFrame,
-    lowercase: bool,
-    config: EDAConfig,
-) -> tuple[object, ...]:
-    """Builds a cache key for full exploratory data analysis results.
-
-    The key combines the core EDA cache key with configuration values that
-    affect the full exploratory analysis output.
-
-    Args:
-        df: DataFrame used to build the core cache key.
-        lowercase: Whether text normalization lowercases values when building
-            the core cache key.
-        config: EDA configuration containing additional cache-relevant options.
-
-    Returns:
-        A tuple containing the core EDA cache key values followed by
-        `config.top_n` and `config.zipf_max_rank`.
-    """
-    return (*eda_core_cache_key(df, lowercase), config.top_n, config.zipf_max_rank)
 
 
 def supervised_experiment_cache_key(
@@ -238,6 +224,7 @@ def supervised_experiment_cache_key(
         supervised experiment configuration values, and the selected models as
         an immutable tuple.
     """
+
     return (
         corpus_cache_fingerprint(df),
         lowercase,
@@ -269,6 +256,7 @@ def unsupervised_experiment_cache_key(
         unsupervised experiment configuration values, the selected models as an
         immutable tuple, and the number of clusters.
     """
+
     return (
         corpus_cache_fingerprint(df),
         lowercase,
@@ -298,6 +286,7 @@ def hierarchical_experiment_cache_key(
         hierarchical experiment configuration values, selected methods as an
         immutable tuple, the dendrogram method, and the number of clusters.
     """
+
     return (
         corpus_cache_fingerprint(df),
         lowercase,
@@ -326,6 +315,7 @@ def embeddings_experiment_cache_key(
         A tuple containing the corpus fingerprint, the lowercase flag, and
         selected embeddings experiment configuration values.
     """
+
     return (
         corpus_cache_fingerprint(df),
         lowercase,
