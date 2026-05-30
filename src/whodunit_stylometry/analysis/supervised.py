@@ -60,7 +60,19 @@ class SupervisedConfig:
 
 
 def build_models(seed: int) -> dict[str, Any]:
-    """Build supported classifiers using a shared seed when possible."""
+    """Build the supported classifier instances.
+
+    Creates a dictionary of classifier names mapped to unfitted scikit-learn
+    estimator instances. Classifiers that support deterministic randomness are
+    initialized with the provided seed.
+
+    Args:
+        seed: Random seed used for classifiers that expose a ``random_state``
+            parameter.
+
+    Returns:
+        A dictionary mapping model identifiers to classifier instances.
+    """
 
     return {
         "logreg": LogisticRegression(max_iter=5000, class_weight="balanced", random_state=seed),
@@ -73,7 +85,23 @@ def build_models(seed: int) -> dict[str, Any]:
 
 
 def build_work_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute lightweight stylometric features for each work."""
+    """Compute lightweight stylometric features for each work.
+
+    Iterates over a DataFrame of works and computes token-, sentence-,
+    paragraph-, and punctuation-based summary features for each row. Empty
+    token, sentence, or vocabulary collections produce ``np.nan`` for ratios
+    or averages that cannot be computed.
+
+    Args:
+        df: Input DataFrame containing one row per work. Each row is expected to
+            provide ``author``, ``work``, ``filename``, ``tokens``, and ``text``
+            fields. The ``tokens`` field must be iterable, and ``text`` must be
+            a string.
+
+    Returns:
+        A DataFrame containing one row per input work with identifying metadata,
+        copied tokens, and computed stylometric features.
+    """
 
     rows = []
     for row in df.itertuples(index=False):
@@ -130,7 +158,27 @@ def split_train_test_by_author(
     n_test_per_author: int,
     seed: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Create a deterministic author-balanced train/test split."""
+    """Create a deterministic author-balanced train/test split.
+
+    Groups the input DataFrame by author, shuffles each author's rows using the
+    provided seed, and selects up to ``n_test_per_author`` rows per author for
+    the test set. For each author, at least one row is selected for the test set
+    when rows are available, and no more than one third of that author's rows
+    are selected unless ``n_test_per_author`` is smaller.
+
+    If an author has only one row, that row is included in both the training and
+    test sets to avoid returning an empty training subset for that author.
+
+    Args:
+        features_df: Feature DataFrame containing an ``author`` column.
+        n_test_per_author: Maximum number of rows to place in the test set for
+            each author.
+        seed: Seed used to deterministically shuffle rows within each author.
+
+    Returns:
+        A tuple containing the training DataFrame and test DataFrame,
+        respectively. Both returned DataFrames have reset integer indexes.
+    """
 
     rng = np.random.default_rng(seed)
     train_parts = []
@@ -154,7 +202,25 @@ def prepare_supervised_datasets(
     df: pd.DataFrame,
     config: SupervisedConfig,
 ) -> dict[str, Any]:
-    """Build train/test datasets for the selected supervised feature set."""
+    """Build train/test datasets for the selected supervised feature set.
+
+    Computes work-level stylometric features, creates an author-balanced
+    train/test split, optionally removes highly correlated stylometric features,
+    and optionally adds most-frequent-word features. Feature selection is
+    controlled by ``config.feature_set``.
+
+    Args:
+        df: Input DataFrame containing the source works. It must contain the
+            columns required by ``build_work_features``.
+        config: Supervised dataset configuration. The ``feature_set`` value must
+            be one of ``"stylometric"``, ``"mfw"``, or ``"combined"``.
+
+    Returns:
+        A dictionary containing the full feature DataFrame, train and test
+        DataFrames, selected feature column names, stylometric feature column
+        names, most-frequent-word vocabulary and column names, removed correlated
+        features, and the correlation summary DataFrame.
+    """
 
     features_df = build_work_features(df)
     train_df, test_df = split_train_test_by_author(features_df, config.n_test_per_author, config.seed)
@@ -204,7 +270,24 @@ def prepare_supervised_datasets(
 
 
 def run_supervised_experiment(df: pd.DataFrame, config: SupervisedConfig) -> dict[str, Any]:
-    """Compare supervised classifiers and evaluate the best model on the test set."""
+    """Compare supervised classifiers and evaluate the best model on the test set.
+
+    Builds supervised train/test datasets from the input works, constructs the
+    configured subset of supported classifiers, runs model selection on the
+    training data, and evaluates the selected model on the test data. Dataset
+    metadata is merged into the model-selection result before returning.
+
+    Args:
+        df: Input DataFrame containing the source works. It must contain the
+            columns required by ``prepare_supervised_datasets``.
+        config: Supervised experiment configuration. ``selected_models`` is used
+            to filter the models returned by ``build_models``.
+
+    Returns:
+        A dictionary containing model-selection results combined with the
+        prepared dataset artifacts, including train/test DataFrames and selected
+        feature columns.
+    """
 
     datasets = prepare_supervised_datasets(df, config)
     models = {name: model for name, model in build_models(config.seed).items() if name in config.selected_models}
@@ -228,7 +311,32 @@ def run_mfw_robustness(
     tolerance: float,
     selected_models: tuple[str, ...],
 ) -> dict[str, Any]:
-    """Run a sweep over MFW vocabulary sizes and random seeds."""
+    """Run a robustness sweep over MFW vocabulary sizes and random seeds.
+
+    Runs supervised experiments using most-frequent-word features for every
+    combination of seed, vocabulary size, and selected model. The per-run
+    results are aggregated by vocabulary size and model name, then the smallest
+    vocabulary size whose mean macro F1 score is within ``tolerance`` of the
+    best mean score is selected. When multiple models share that vocabulary
+    size, the model with the higher mean macro F1 score is selected.
+
+    Args:
+        df: Input DataFrame containing the source works. It must contain the
+            columns required by ``run_supervised_experiment``.
+        top_n_values: MFW vocabulary sizes to evaluate.
+        seeds: Random seeds to evaluate for each vocabulary size and model.
+        n_test_per_author: Maximum number of test rows to select per author
+            when creating train/test splits.
+        tolerance: Allowed drop from the best mean macro F1 score when choosing
+            the smallest acceptable MFW vocabulary size.
+        selected_models: Model identifiers to evaluate. Each model name is
+            passed individually to ``SupervisedConfig.selected_models``.
+
+    Returns:
+        A dictionary containing the raw sweep results, aggregated summary,
+        final selection table, best mean score, threshold score, selected MFW
+        vocabulary size, and selected model name.
+    """
 
     rows = []
     for seed in seeds:
@@ -294,52 +402,38 @@ def run_mfw_robustness(
     }
 
 
-def train_final_model(df: pd.DataFrame, config: SupervisedConfig, model_name: str) -> dict[str, Any]:
-    """Fit a final model on the full reference corpus."""
-
-    full_df = build_work_features(df)
-    stylometric_cols = _stylometric_feature_cols(full_df)
-    mfw_vocab: list[str] = []
-    mfw_cols: list[str] = []
-
-    if config.feature_set in {"mfw", "combined"}:
-        mfw_vocab = _build_mfw_vocab(full_df, config.top_n_mfw)
-        full_df = _add_mfw_features(full_df, mfw_vocab)
-        mfw_cols = [f"fw_{word}" for word in mfw_vocab]
-
-    if config.feature_set == "stylometric":
-        feature_cols = stylometric_cols
-    elif config.feature_set == "mfw":
-        feature_cols = mfw_cols
-    else:
-        feature_cols = stylometric_cols + mfw_cols
-
-    model = build_models(config.seed)[model_name]
-    pipeline = Pipeline(
-        [
-            ("imputer", SimpleImputer(strategy="median")),
-            ("scaler", RobustScaler()),
-            ("clf", model),
-        ]
-    )
-    pipeline.fit(full_df[feature_cols], full_df["author"].astype(str))
-
-    return {
-        "pipeline": pipeline,
-        "feature_cols": feature_cols,
-        "mfw_vocab": mfw_vocab,
-        "training_df": full_df,
-        "model_name": model_name,
-    }
-
-
 def classify_text_with_supervised_model(
     text: str,
     model_bundle: dict[str, Any],
     config: SupervisedConfig,
     lowercase: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Classify a single text with a fitted supervised model bundle."""
+    """Classify a single text with a fitted supervised model bundle.
+
+    Tokenizes the input text, builds the same work-level features used during
+    supervised training, optionally adds most-frequent-word features, and
+    applies the fitted pipeline from ``model_bundle``. The function returns both
+    a ranked author score table and a feature-contribution explanation table for
+    the predicted author.
+
+    Args:
+        text: Raw text to classify.
+        model_bundle: Fitted supervised model bundle. It must contain
+            ``"pipeline"``, ``"feature_cols"``, and, when MFW features are used,
+            ``"mfw_vocab"``.
+        config: Supervised experiment configuration. ``feature_set`` controls
+            whether MFW features are added before prediction.
+        lowercase: Whether to lowercase text during tokenization.
+
+    Returns:
+        A tuple containing:
+
+        - A ranking DataFrame with one row per class, sorted by descending
+          probability or score. It includes the author label, rank, and whether
+          the row is the predicted class.
+        - A feature-contribution DataFrame returned by
+          ``_linear_feature_contributions`` for the predicted author.
+    """
 
     tokenizer = CustomTokenizer()
     tokens = tokenize_text(text, tokenizer=tokenizer, lowercase=lowercase)
@@ -403,6 +497,31 @@ def _run_model_selection(
     seed: int,
     scoring: str,
 ) -> dict[str, Any]:
+    """Select the best supervised model by cross-validation and evaluate it.
+
+    Builds a preprocessing pipeline for each candidate model, evaluates each
+    pipeline with stratified 3-fold cross-validation on the training data, and
+    selects the model with the highest mean cross-validation score. The selected
+    model is then refit on the full training set and evaluated on the test set.
+
+    Args:
+        train_df: Training DataFrame containing feature columns and an
+            ``author`` column.
+        test_df: Test DataFrame containing feature columns, an ``author`` column,
+            and a ``work`` column used for prediction reporting.
+        feature_cols: Names of feature columns used as model inputs.
+        models: Mapping of model names to unfitted estimator instances.
+        seed: Random seed used by the stratified cross-validator and by the
+            rebuilt best model.
+        scoring: Scikit-learn scoring name passed to ``cross_val_score``.
+
+    Returns:
+        A dictionary containing cross-validation results, the selected model
+        name, the fitted best pipeline, test-set macro F1 score, test-set
+        accuracy, classification report, confusion matrix, label order, and a
+        per-work prediction DataFrame.
+    """
+
     X_train = train_df[feature_cols]
     y_train = train_df["author"].astype(str)
     X_test = test_df[feature_cols]
@@ -433,7 +552,6 @@ def _run_model_selection(
     best_pipe.fit(X_train, y_train)
     y_pred = best_pipe.predict(X_test)
     labels = sorted(set(y_train) | set(y_test))
-    # pred_df = test_df[["filename", "work", "author"]].copy()
     pred_df = test_df[["work", "author"]].copy()
     pred_df["pred_author"] = y_pred
     pred_df["correct"] = pred_df["author"] == pred_df["pred_author"]
@@ -454,15 +572,57 @@ def _run_model_selection(
 
 
 def _count_alpha_words(text: str) -> int:
+    """Count alphabetic word-like sequences in text.
+
+    Counts contiguous sequences of ASCII letters from ``A`` to ``Z`` and
+    ``a`` to ``z``. Non-ASCII letters, digits, underscores, punctuation, and
+    whitespace are not counted as part of words.
+
+    Args:
+        text: Text to search for ASCII alphabetic word-like sequences.
+
+    Returns:
+        The number of matching alphabetic sequences.
+
+    """
+
     return len(re.findall(r"[A-Za-z]+", text))
 
 
 def _stylometric_feature_cols(df: pd.DataFrame) -> list[str]:
+    """Return numeric stylometric feature column names.
+
+    Selects numeric columns from a feature DataFrame and excludes metadata
+    columns that should not be used as stylometric model inputs.
+
+    Args:
+        df: Feature DataFrame containing stylometric features and metadata.
+
+    Returns:
+        A list of numeric column names excluding known metadata columns.
+
+    """
+
     metadata_cols = {"author", "work", "filename", "token_count"}
     return [col for col in df.select_dtypes(include=[np.number]).columns if col not in metadata_cols]
 
 
 def _build_mfw_vocab(df: pd.DataFrame, top_n: int) -> list[str]:
+    """Build a most-frequent-word vocabulary from stopword tokens.
+
+    Counts tokens from the DataFrame's ``tokens`` column that are present in
+    ``STOPWORDS`` and returns the ``top_n`` most common tokens in descending
+    frequency order.
+
+    Args:
+        df: DataFrame containing a ``tokens`` column. Each value in the column
+            is expected to be an iterable of tokens.
+        top_n: Maximum number of most frequent stopword tokens to return.
+
+    Returns:
+        A list of up to ``top_n`` stopword tokens ordered by descending count.
+    """
+
     counts = Counter()
     for tokens in df["tokens"]:
         counts.update(token for token in tokens if token in STOPWORDS)
@@ -470,6 +630,26 @@ def _build_mfw_vocab(df: pd.DataFrame, top_n: int) -> list[str]:
 
 
 def _add_mfw_features(df: pd.DataFrame, mfw_vocab: list[str]) -> pd.DataFrame:
+    """Add normalized most-frequent-word features to a DataFrame.
+
+    Computes one feature per word in ``mfw_vocab`` for each row in ``df``. Each
+    feature value is the relative frequency of that word in the row's
+    ``tokens`` collection. Rows with no tokens receive ``0.0`` for all MFW
+    features.
+
+    The input DataFrame is not modified in place.
+
+    Args:
+        df: DataFrame containing a ``tokens`` column. Each value in the column
+            is expected to be an iterable of tokens.
+        mfw_vocab: Vocabulary words to convert into normalized frequency
+            features. Output column names are prefixed with ``"fw_"``.
+
+    Returns:
+        A copy of ``df`` with one additional MFW feature column per vocabulary
+        word.
+    """
+
     feature_rows = []
     for tokens in df["tokens"]:
         counts = Counter(tokens)
@@ -479,17 +659,38 @@ def _add_mfw_features(df: pd.DataFrame, mfw_vocab: list[str]) -> pd.DataFrame:
     return pd.concat([df.copy(), mfw_df], axis=1)
 
 
-def _mode_or_first(values: pd.Series) -> str:
-    modes = values.mode()
-    return modes.iloc[0] if not modes.empty else values.iloc[0]
-
-
 def _linear_feature_contributions(
     pipeline: Pipeline,
     sample_features: pd.DataFrame,
     feature_cols: list[str],
     predicted_author: str,
 ) -> pd.DataFrame:
+    """Compute linear feature contributions for a predicted class.
+
+    Uses the fitted classifier coefficients and the transformed feature values
+    from the pipeline preprocessing steps to estimate each feature's contribution
+    to the decision score for ``predicted_author``. Contributions are returned
+    only for classifiers that expose ``coef_``.
+
+    Args:
+        pipeline: Fitted scikit-learn pipeline containing preprocessing steps
+            followed by a classifier step named ``"clf"``.
+        sample_features: DataFrame containing one or more rows with the required
+            feature columns. Only the first row is used for the raw feature
+            values in the output.
+        feature_cols: Names of feature columns to use for contribution
+            calculation.
+        predicted_author: Predicted class label for which contributions should
+            be computed.
+
+    Returns:
+        A DataFrame sorted by descending absolute contribution, with columns for
+        the feature name, raw feature value, signed contribution, and absolute
+        contribution. Returns an empty DataFrame when the classifier has no
+        ``coef_`` attribute or when ``predicted_author`` is not in the fitted
+        pipeline classes.
+    """
+
     clf = pipeline.named_steps["clf"]
     if not hasattr(clf, "coef_"):
         return pd.DataFrame()
