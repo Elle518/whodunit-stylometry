@@ -98,6 +98,7 @@ def run_experiment(
             - ``feature_cols`` (list): The list of feature columns used in the
               experiment.
     """
+
     X_train = train_data[feature_cols]
     y_train = train_data[author_col].astype(str)
 
@@ -190,6 +191,7 @@ def build_models_with_seed(seed: int) -> dict[str, Any]:
         ``KNeighborsClassifier`` and ``GaussianNB`` are instantiated without a
         random state because they do not use one in this configuration.
     """
+
     return {
         "logreg": LogisticRegression(
             max_iter=5000,
@@ -225,6 +227,7 @@ def get_mfw_feature_cols(df: pd.DataFrame) -> list[str]:
     Returns:
         A list of column names from ``df.columns`` that start with ``"fw_"``.
     """
+
     return [c for c in df.columns if c.startswith("fw_")]
 
 
@@ -247,6 +250,7 @@ def summarize_result_row(
     Returns:
         A dictionary representing a single flattened summary row.
     """
+
     row = {
         "seed": seed,
         "top_n_mfw": top_n_mfw,
@@ -289,18 +293,8 @@ def build_train_test_mfw(
             - The training DataFrame with MFW features and metadata.
             - The test DataFrame with MFW features and metadata.
             - The list of MFW feature column names.
-
-    Raises:
-        KeyError: If ``train_df`` or ``test_df`` does not contain required
-            columns such as ``"file_name"`` or ``"author_norm"``.
-        NameError: If required external names such as ``STOPWORDS``,
-            ``build_mfw_features``, ``transform_with_mfw``, or
-            ``get_mfw_feature_cols`` are not defined.
-
-    Notes:
-        The exact type of ``mfw_vocab`` cannot be inferred safely from this
-        function alone, so it is annotated as ``Any``.
     """
+
     # MFW vocabulary learned from training data only.
     mfw_vocab, train_mfw_df = build_mfw_features(
         tokens_by_file=train_tokens_by_file,
@@ -382,6 +376,7 @@ def run_clustering_experiment(
         ``label_col``. This assumes the ground-truth label cardinality is an
         appropriate target for all evaluated clustering models.
     """
+
     X = data[feature_cols].copy()
     y = data[label_col].copy()
 
@@ -497,6 +492,7 @@ def evaluate_cluster_errors(
         label depends on the behavior of ``pandas.DataFrame.idxmax`` and the
         column ordering in the contingency table.
     """
+
     df = assignments_df.copy()
 
     # Cluster x true label table
@@ -556,6 +552,7 @@ def cluster_author_table(
         A pandas DataFrame representing the contingency table of cluster counts
         by label.
     """
+
     table = pd.crosstab(assignments_df["cluster"], assignments_df[label_col])
     return table
 
@@ -588,6 +585,7 @@ def errors_by_true_author(
 
         The result is sorted by ``"error_rate"`` in descending order.
     """
+
     df = eval_dict["data_with_predictions"]
     out = (
         df.groupby(label_col)["correct"]
@@ -625,6 +623,7 @@ def confusion_pairs(
 
         The result is sorted by ``"n_errors"`` in descending order.
     """
+
     errors = eval_dict["errors_df"]
     return (
         errors.groupby([label_col, "pred_author_from_cluster"])
@@ -676,6 +675,7 @@ def evaluate_hierarchical_clustering(
               ``RobustScaler``.
             - ``"y_true"``: The original label values as a NumPy array.
     """
+
     X = data[feature_cols].copy()
     y = data[label_col].copy()
 
@@ -752,6 +752,7 @@ def compare_hierarchical_methods(
         A DataFrame containing one row per evaluated method, sorted by ``ARI``,
         ``NMI``, and ``silhouette`` in descending order.
     """
+
     rows = []
 
     for method in methods:
@@ -788,13 +789,8 @@ def coefficients_long(coef_matrix: pd.DataFrame) -> pd.DataFrame:
             - `abs_coefficient`: The absolute value of `coefficient`.
             - `direction`: `"pushes_toward_author"` when `coefficient >= 0`,
               otherwise `"pushes_away_from_author"`.
-
-    Raises:
-        AttributeError: If `coef_matrix` does not provide DataFrame-like methods
-            such as `rename_axis`, `reset_index`, or `melt`.
-        TypeError: If coefficient values do not support `.abs()` or comparison
-            with zero.
     """
+
     long_df = (
         coef_matrix.rename_axis("author")
         .reset_index()
@@ -831,6 +827,7 @@ def top_coefficients_per_author(coef_matrix: pd.DataFrame, top_n: int = 10) -> p
               coefficients, or `"pushes_away_from_author"` for the smallest
               coefficients.
     """
+
     rows = []
     for author, row in coef_matrix.iterrows():
         positive = row.sort_values(ascending=False).head(top_n)
@@ -881,13 +878,8 @@ def upper_triangle_pairs(corr: pd.DataFrame, threshold: float = 0.70) -> pd.Data
             - `abs_corr`: The absolute value of `spearman_corr`.
 
         Rows are sorted by `abs_corr` in descending order.
-
-    Raises:
-        ValueError: If `corr` is not two-dimensional or if its shape is invalid
-            for the NumPy upper-triangle mask operation.
-        TypeError: If correlation values do not support absolute-value
-            calculation or comparison with `threshold`.
     """
+
     mask = np.triu(np.ones(corr.shape), k=1).astype(bool)
     pairs = (
         corr.where(mask)
@@ -919,6 +911,7 @@ def transformed_features(pipeline: Any, X: pd.DataFrame, feature_names: list[str
         A DataFrame containing the transformed feature values, with `X.index` as
         its index and `feature_names` as its columns.
     """
+
     steps = list(pipeline.steps[:-1])
     Xt = X.copy()
 
@@ -963,6 +956,7 @@ def local_linear_contributions(
 
         Rows are sorted by `abs_contribution` in descending order.
     """
+
     x = X_model_space.loc[instance_index]
     beta = coef_matrix.loc[author]
 
@@ -988,6 +982,7 @@ def clean_feature_name(feature: str) -> str:
     Returns:
         The feature name with every occurrence of ``"fw_"`` removed.
     """
+
     return feature.replace("fw_", "")
 
 
@@ -1005,6 +1000,7 @@ def shap_matrix_for_author(author: str, classes: list[str], values: np.ndarray) 
         position. For binary classification with two classes, this returns
         ``values`` for the positive class and ``-values`` for the negative class.
     """
+
     pos = classes.index(author)
     if values.ndim == 3:
         return values[:, :, pos]
@@ -1029,12 +1025,8 @@ def base_value_for_author(
 
     Returns:
         The selected base value as a float.
-
-    Raises:
-        ValueError: If ``author`` is not present in ``classes``.
-        IndexError: If ``row_pos`` or the author's class position is out of bounds.
-        TypeError: If the selected value cannot be converted to ``float``.
     """
+
     pos = classes.index(author)
     arr = np.asarray(base_values)
     if arr.ndim == 0:
@@ -1064,6 +1056,7 @@ def top_shap_table_for_author(
         requested author. The returned rows are sorted by ``mean_abs_shap`` in
         descending order and limited to ``top_n`` rows.
     """
+
     mat = shap_matrix_for_author(author, classes, shap_values)
     out = pd.DataFrame(
         {
@@ -1114,6 +1107,7 @@ def shap_row_table(
         feature values, original feature values, SHAP values, absolute SHAP
         values, and effect labels for the selected instance and author.
     """
+
     row_pos = X_test.index.get_loc(instance_id)
     mat = shap_matrix_for_author(author, classes, values)
     df = pd.DataFrame(
@@ -1168,6 +1162,7 @@ def local_explanation(
         top_n: Maximum number of top features to include in the displayed table
             and waterfall plot.
     """
+
     author = confidence_df.loc[instance_id, "pred_author"]
 
     row_pos = X_test.index.get_loc(instance_id)
@@ -1209,15 +1204,6 @@ def local_explanation(
         data=X_test_model_space.loc[instance_id, feature_cols].values,
         feature_names=[clean_feature_name(c) for c in feature_cols],
     )
-    # shap.plots.waterfall(exp, max_display=top_n, show=False)
-    # plt.title(f"Waterfall SHAP: {author} | {work}")
-    # plt.tight_layout()
-    # plt.savefig(
-    #     FIGS_DIR / f"mfw_lr_shap_waterfall_{instance_id}_{author}.png",
-    #     dpi=200,
-    #     bbox_inches="tight",
-    # )
-    # plt.show()
 
     plot_shap_waterfall(exp, top_n, author, work, instance_id, figs_dir)
 
