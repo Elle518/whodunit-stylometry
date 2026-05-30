@@ -39,13 +39,33 @@ class ClassicalAnalysisConfig:
 
 
 def tokens_by_author(df: pd.DataFrame) -> dict[str, list[str]]:
-    """Aggregate tokens by author."""
+    """Aggregates tokens by author.
+
+    Args:
+        df: DataFrame containing an ``author`` column and a ``tokens`` column.
+            Each value in ``tokens`` is expected to be an iterable of token
+            strings.
+
+    Returns:
+        Dictionary mapping each author to a flattened list of that author's
+        tokens.
+    """
 
     return {author: [token for tokens in sub["tokens"] for token in tokens] for author, sub in df.groupby("author")}
 
 
 def filter_feature_tokens(tokens: list[str], use_function_words: bool) -> list[str]:
-    """Optionally keep only function words for classical distance methods."""
+    """Filters tokens for use as features in classical distance methods.
+
+    Args:
+        tokens: Tokens to filter.
+        use_function_words: Whether to keep only tokens present in ``STOPWORDS``.
+            When ``False``, the original ``tokens`` list is returned unchanged.
+
+    Returns:
+        The original token list when ``use_function_words`` is ``False``;
+        otherwise, a new list containing only tokens found in ``STOPWORDS``.
+    """
 
     if not use_function_words:
         return tokens
@@ -53,7 +73,21 @@ def filter_feature_tokens(tokens: list[str], use_function_words: bool) -> list[s
 
 
 def prepare_feature_tokens(df: pd.DataFrame, use_function_words: bool) -> pd.DataFrame:
-    """Add the token column used by distance-based methods."""
+    """Adds feature-token columns used by distance-based methods.
+
+    Args:
+        df: DataFrame containing a ``tokens`` column, where each value is a list
+            of token strings.
+        use_function_words: Whether to keep only function words when building
+            ``feature_tokens``. This value is passed to
+            ``filter_feature_tokens``.
+
+    Returns:
+        A copy of ``df`` with two additional columns:
+
+        * ``feature_tokens``: The tokens selected for distance-based methods.
+        * ``feature_token_count``: The number of selected feature tokens.
+    """
 
     out = df.copy()
     out["feature_tokens"] = out["tokens"].map(lambda tokens: filter_feature_tokens(tokens, use_function_words))
@@ -62,7 +96,21 @@ def prepare_feature_tokens(df: pd.DataFrame, use_function_words: bool) -> pd.Dat
 
 
 def top_tokens_by_author(df: pd.DataFrame, top_n: int = 20, use_function_words: bool = True) -> pd.DataFrame:
-    """Compute top tokens for each author."""
+    """Computes the most frequent tokens for each author.
+
+    Args:
+        df: DataFrame containing an ``author`` column and a ``tokens`` column.
+            Each value in ``tokens`` is expected to be a list of token strings.
+        top_n: Maximum number of tokens to return per author.
+        use_function_words: Whether to keep only function words before counting
+            tokens. This value is passed to ``filter_feature_tokens``.
+
+    Returns:
+        DataFrame with one row per selected token and the following columns:
+        ``author``, ``rank``, ``token``, ``count``, and
+        ``relative_frequency``. The relative frequency is computed as the token
+        count divided by the total number of counted tokens for that author.
+    """
 
     rows = []
     for author, sub in df.groupby("author"):
@@ -87,7 +135,29 @@ def kilgariff_reference_tables(
     df: pd.DataFrame,
     config: ClassicalAnalysisConfig,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Build Kilgariff vocabulary and author-frequency tables for display."""
+    """Build Kilgariff vocabulary and author-frequency tables.
+
+    Prepares feature tokens from the input data, groups tokens by author, builds a
+    global vocabulary, and returns two tables suitable for display or downstream
+    analysis.
+
+    Args:
+        df: Input data containing at least the columns required by
+            `prepare_feature_tokens()`, including an author column.
+        config: Classical analysis configuration. Uses `use_function_words`,
+            `vocab_size`, and `min_freq` to prepare tokens and build the
+            vocabulary.
+
+    Returns:
+        A tuple containing:
+            - A vocabulary table with columns `rank`, `token`, and
+              `global_count`.
+            - An author-frequency table with columns `author`, `token`, `count`,
+              and `relative_frequency`.
+
+        If no author has tokens after preprocessing, both returned DataFrames are
+        empty.
+    """
 
     feature_df = prepare_feature_tokens(df, use_function_words=config.use_function_words)
     corpora = {
@@ -125,7 +195,28 @@ def burrows_reference_tables(
     df: pd.DataFrame,
     config: ClassicalAnalysisConfig,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Build Burrows vocabulary and author z-score tables for display."""
+    """Build Burrows vocabulary and author z-score tables.
+
+    Prepares feature tokens from the input data, groups tokens by author, builds a
+    global vocabulary, and computes per-author relative frequencies and z-scores
+    for each vocabulary token.
+
+    Args:
+        df: Input data containing at least the columns required by
+            `prepare_feature_tokens()`, including an author column.
+        config: Classical analysis configuration. Uses `use_function_words`,
+            `vocab_size`, and `min_freq` to prepare tokens and build the
+            vocabulary.
+
+    Returns:
+        A tuple containing:
+            - A vocabulary table with columns `rank`, `token`, `global_count`,
+              `mean_frequency`, and `std_frequency`.
+            - An author z-score table with columns `author`, `token`,
+              `relative_frequency`, and `z_score`.
+
+        If no vocabulary can be built, both returned DataFrames are empty.
+    """
 
     feature_df = prepare_feature_tokens(df, use_function_words=config.use_function_words)
     corpora = {
@@ -172,7 +263,28 @@ def compute_mendenhall_author_profiles(
     df: pd.DataFrame,
     config: ClassicalAnalysisConfig,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, dict[int, float]]]:
-    """Compute Mendenhall block curves, stability stats and average curves."""
+    """Compute Mendenhall block curves, stability statistics, and average curves.
+
+    Groups the input text by author, samples random token blocks for each author,
+    computes word-length distributions for those blocks, and derives per-author
+    stability statistics from pairwise distances between aligned block
+    distributions.
+
+    Args:
+        df: Input data containing the columns required by `tokens_by_author()`.
+        config: Classical analysis configuration. Uses `block_size`, `n_blocks`,
+            `seed`, and `max_word_len` for block sampling and curve alignment.
+
+    Returns:
+        A tuple containing:
+            - A block-curves table with columns `author`, `block`,
+              `word_length`, and `relative_frequency`.
+            - A stability-statistics table with columns `author`,
+              `mean_distance`, and `std_distance`, sorted by `mean_distance`.
+            - An average-curves table created from the per-author average curves.
+            - A mapping from author to average word-length curve, where each
+              curve maps word length to relative frequency.
+    """
 
     rows = []
     stats_rows = []
@@ -221,7 +333,21 @@ def mendenhall_average_curves_to_frame(
     average_curves: dict[str, dict[int, float]],
     max_word_len: int = 20,
 ) -> pd.DataFrame:
-    """Convert average Mendenhall curves to long-form tabular data."""
+    """Convert average Mendenhall curves to long-form tabular data.
+
+    Aligns each author's average word-length curve to a shared set of word
+    lengths and returns one row per author and word length.
+
+    Args:
+        average_curves: Mapping from author to an average curve, where each
+            curve maps word length to relative frequency.
+        max_word_len: Maximum word length to include when aligning curves.
+
+    Returns:
+        A DataFrame with columns `author`, `word_length`, and
+        `relative_frequency`. The DataFrame is empty if `average_curves` is
+        empty.
+    """
 
     aligned, lengths = align_distributions(list(average_curves.values()), max_len=max_word_len)
     rows = []
@@ -241,7 +367,22 @@ def compare_mendenhall_average_curves(
     average_curves: dict[str, dict[int, float]],
     max_word_len: int = 20,
 ) -> pd.DataFrame:
-    """Compute pairwise Jensen-Shannon distances between average curves."""
+    """Compute pairwise distances between average Mendenhall curves.
+
+    Aligns the supplied average word-length curves to a shared maximum word
+    length, computes pairwise distances between the aligned curves, and returns
+    the result as a square author-by-author distance matrix.
+
+    Args:
+        average_curves: Mapping from author to an average curve, where each
+            curve maps word length to relative frequency.
+        max_word_len: Maximum word length to include when aligning curves.
+
+    Returns:
+        A square DataFrame whose rows and columns are authors and whose values
+        are pairwise distances between aligned average curves. If
+        `average_curves` is empty, returns an empty DataFrame.
+    """
 
     authors = list(average_curves.keys())
     aligned, _ = align_distributions(list(average_curves.values()), max_len=max_word_len)
@@ -254,7 +395,28 @@ def classify_text_with_mendenhall(
     average_curves: dict[str, dict[int, float]],
     config: ClassicalAnalysisConfig,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Attribute one text using Mendenhall average curves."""
+    """Attribute a text using Mendenhall average word-length curves.
+
+    Tokenizes the input text, samples random word-length distributions from it,
+    computes its average Mendenhall curve, and compares that curve with each
+    author's reference average curve using Jensen-Shannon distance.
+
+    Args:
+        text: Text to classify.
+        average_curves: Mapping from author to an average curve, where each
+            curve maps word length to relative frequency.
+        config: Classical analysis configuration. Uses `lowercase` for
+            tokenization and `max_word_len` for curve alignment.
+
+    Returns:
+        A tuple containing:
+            - A distance table with columns `author`, `distance`, and `rank`,
+              sorted by ascending distance. Lower distances indicate closer
+              matches.
+            - A curve table for the classified text with columns `author`,
+              `word_length`, and `relative_frequency`.
+    """
+
     tokenizer = CustomTokenizer()
     test_tokens = tokenize_text(text, tokenizer=tokenizer, lowercase=config.lowercase)
     distributions = word_length_distributions_random_blocks(
@@ -292,7 +454,28 @@ def classify_text_with_kilgariff(
     reference_df: pd.DataFrame,
     config: ClassicalAnalysisConfig,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
-    """Attribute one text using Kilgariff's chi-square distance."""
+    """Attribute a text using Kilgariff's chi-square distance.
+
+    Tokenizes the input text, filters it to the configured feature tokens, builds
+    author corpora from the reference data, and compares the text against each
+    author with Kilgariff's chi-square distance.
+
+    Args:
+        text: Text to classify.
+        reference_df: Reference data containing at least the columns required by
+            `prepare_feature_tokens()`, including an author column.
+        config: Classical analysis configuration. Uses `lowercase`,
+            `use_function_words`, `vocab_size`, and `min_freq`.
+
+    Returns:
+        A tuple containing:
+            - A distance table with columns `rank`, `author`, `chi2`,
+              `margin_to_best`, and `margin_to_second`, sorted by ascending
+              chi-square distance.
+            - A contribution table created from per-author token contributions.
+            - A statistics dictionary with `token_count`, `feature_token_count`,
+              and `vocab_size`.
+    """
 
     tokenizer = CustomTokenizer()
     test_tokens = tokenize_text(text, tokenizer=tokenizer, lowercase=config.lowercase)
@@ -352,7 +535,28 @@ def classify_text_with_burrows(
     reference_df: pd.DataFrame,
     config: ClassicalAnalysisConfig,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, int]]:
-    """Attribute one text using Burrows's Delta distance."""
+    """Attribute a text using Burrows's Delta distance.
+
+    Tokenizes the input text, filters it to the configured feature tokens, builds
+    author corpora from the reference data, and compares the text against each
+    author with Burrows's Delta distance.
+
+    Args:
+        text: Text to classify.
+        reference_df: Reference data containing at least the columns required by
+            `prepare_feature_tokens()`, including an author column.
+        config: Classical analysis configuration. Uses `lowercase`,
+            `use_function_words`, `vocab_size`, and `min_freq`.
+
+    Returns:
+        A tuple containing:
+            - A distance table with columns `rank`, `author`, `delta`,
+              `margin_to_best`, and `margin_to_second`, sorted by ascending
+              Delta distance.
+            - A contribution table created from per-author token contributions.
+            - A statistics dictionary with `token_count`, `feature_token_count`,
+              and `vocab_size`.
+    """
 
     tokenizer = CustomTokenizer()
     test_tokens = tokenize_text(text, tokenizer=tokenizer, lowercase=config.lowercase)
@@ -412,6 +616,24 @@ def _kilgariff_distances(
     test_tokens: list[str],
     vocab: list[str],
 ) -> tuple[dict[str, float], dict[str, list[tuple]]]:
+    """Compute Kilgariff chi-square distances for a test token sequence.
+
+    Compares the test tokens against each author's token sequence using the
+    supplied vocabulary and returns both the aggregate chi-square distance and
+    token-level contribution details for each author.
+
+    Args:
+        corpora: Mapping from author to that author's feature tokens.
+        test_tokens: Feature tokens from the text being classified.
+        vocab: Vocabulary tokens to include in the chi-square comparison.
+
+    Returns:
+        A tuple containing:
+            - A mapping from author to Kilgariff chi-square distance.
+            - A mapping from author to token-level contribution tuples returned
+              by `kilgariff_chi2()`.
+    """
+
     distances = {}
     contributions = {}
     for author, author_tokens in corpora.items():
@@ -426,6 +648,23 @@ def _burrows_distances(
     test_tokens: list[str],
     vocab: list[str],
 ) -> tuple[dict[str, float], dict[str, list[tuple]]]:
+    """Compute Burrows's Delta distances for a test token sequence.
+
+    Computes reference feature statistics from the author corpora, then compares
+    the test tokens against each author's token sequence using Burrows's Delta.
+
+    Args:
+        corpora: Mapping from author to that author's feature tokens.
+        test_tokens: Feature tokens from the text being classified.
+        vocab: Vocabulary tokens to include in the Delta comparison.
+
+    Returns:
+        A tuple containing:
+            - A mapping from author to Burrows's Delta distance.
+            - A mapping from author to token-level contribution tuples returned
+              by `burrows_delta()`.
+    """
+
     means, stds, _ = compute_feature_stats(corpora, vocab)
     distances = {}
     contributions = {}
@@ -436,42 +675,6 @@ def _burrows_distances(
     return distances, contributions
 
 
-def _results_to_tables(
-    details: dict[str, dict[str, dict]],
-    method: str,
-    distance_key: str,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    result_rows = []
-    contribution_rows = []
-    for work, author_details in details.items():
-        ranking = sorted(
-            ((author, values[distance_key]) for author, values in author_details.items()),
-            key=lambda item: item[1],
-        )
-        pred_author, min_distance = ranking[0]
-        second_distance = ranking[1][1] if len(ranking) > 1 else np.nan
-        row = {
-            "method": method,
-            "work": work,
-            "pred_author": pred_author,
-            "min_distance": min_distance,
-            "second_distance": second_distance,
-            "margin_to_second": second_distance - min_distance if pd.notna(second_distance) else np.nan,
-            "status": "ok",
-        }
-        row.update({f"dist_{author}": distance for author, distance in ranking})
-        result_rows.append(row)
-
-        for rank, contribution in enumerate(author_details[pred_author]["contributions"][:10], start=1):
-            contribution_rows.append(
-                _format_contribution(
-                    method, {"author": None, "work": work}, pred_author, rank, contribution, distance_key
-                )
-            )
-
-    return pd.DataFrame(result_rows), pd.DataFrame(contribution_rows)
-
-
 def _format_contribution(
     method: str,
     test_row,
@@ -480,6 +683,31 @@ def _format_contribution(
     contribution: tuple,
     distance_label: str,
 ) -> dict[str, object]:
+    """Format one attribution contribution as a table row.
+
+    Formats contribution tuples from supported attribution methods into a common
+    dictionary structure. The exact output fields depend on `method`.
+
+    Args:
+        method: Attribution method name. Special handling is applied for
+            `"mendenhall"` and `"kilgariff"`; all other values are formatted as
+            Burrows-style z-score contributions.
+        test_row: Mapping-like row containing at least `author` and `work`
+            entries for the text being evaluated.
+        candidate_author: Candidate author associated with the contribution.
+        rank: Contribution rank within the candidate-author comparison.
+        contribution: Method-specific contribution tuple:
+            - For `"mendenhall"`: `(word_length, diff, ref_freq, test_freq)`.
+            - For `"kilgariff"`:
+              `(token, chi, obs_ref, exp_ref, obs_test, exp_test)`.
+            - For other methods: `(token, diff, z_ref, z_test)`.
+        distance_label: Output key to use for the contribution distance or
+            difference value.
+
+    Returns:
+        A dictionary representing one formatted contribution row.
+    """
+
     if method == "mendenhall":
         length, diff, ref_freq, test_freq = contribution
         return {
@@ -521,18 +749,4 @@ def _format_contribution(
         distance_label: diff,
         "z_ref": z_ref,
         "z_test": z_test,
-    }
-
-
-def _skipped_row(test_row, method: str, reason: str) -> dict[str, object]:
-    return {
-        "method": method,
-        "author": test_row["author"],
-        "work": test_row["work"],
-        "pred_author": None,
-        "correct": False,
-        "min_distance": np.nan,
-        "second_distance": np.nan,
-        "margin_to_second": np.nan,
-        "status": reason,
     }
