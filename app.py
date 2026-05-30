@@ -61,6 +61,8 @@ from whodunit_stylometry.utils.st_utils import (
     ML_WORKFLOWS,
     SIDEBAR_ICON_PATH,
     UNSUPERVISED_WORKFLOWS,
+    apply_correlation_heatmap_layout,
+    apply_work_box_hover,
     cached_load_and_tokenize,
     corpus_cache_fingerprint,
     eda_core_cache_key,
@@ -69,6 +71,7 @@ from whodunit_stylometry.utils.st_utils import (
     hierarchical_experiment_cache_key,
     metric_card,
     parse_int_list,
+    show_metric_table_by_work,
     supervised_experiment_cache_key,
     unsupervised_experiment_cache_key,
 )
@@ -83,35 +86,6 @@ st.set_page_config(
 )
 
 st.title("Whodunit Stylometry 🕵")
-
-
-def apply_work_box_hover(fig, metric_name: str) -> None:
-    """Use a stable hover format for work-level metric boxplots."""
-    fig.update_traces(
-        hovertemplate=("Autor: %{x}<br>" "Obra: %{customdata[0]}<br>" f"{metric_name}: %{{y:.6f}}" "<extra></extra>")
-    )
-
-
-def apply_correlation_heatmap_layout(fig, n_features: int) -> None:
-    """Scale correlation heatmaps so metric names remain readable."""
-    size = max(520, min(980, 70 * n_features))
-    fig.update_layout(
-        height=size,
-        margin=dict(l=220, r=40, t=60, b=180),
-    )
-    fig.update_xaxes(tickangle=45, automargin=True)
-    fig.update_yaxes(automargin=True)
-
-
-def show_metric_table_by_work(metrics_df: pd.DataFrame, metric_cols: list[str]) -> None:
-    """Display work-level values for the metric group shown in a tab."""
-    available_cols = [col for col in metric_cols if col in metrics_df.columns]
-    id_cols = [col for col in ["author", "work", "filename"] if col in metrics_df.columns]
-    st.dataframe(
-        metrics_df[[*id_cols, *available_cols]],
-        width="stretch",
-        hide_index=True,
-    )
 
 
 #################################

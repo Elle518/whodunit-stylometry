@@ -69,6 +69,54 @@ def parse_int_list(value: str) -> list[int]:
     return [int(part.strip()) for part in value.split(",") if part.strip()]
 
 
+def apply_work_box_hover(fig, metric_name: str):
+    """Applies a stable hover format to work-level metric box plots.
+
+    Args:
+        fig: Figure-like object with an ``update_traces`` method, such as a
+            Plotly figure.
+        metric_name: Name of the metric displayed in the hover label.
+    """
+    fig.update_traces(
+        hovertemplate=("Autor: %{x}<br>" "Obra: %{customdata[0]}<br>" f"{metric_name}: %{{y:.6f}}" "<extra></extra>")
+    )
+
+
+def apply_correlation_heatmap_layout(fig, n_features: int):
+    """Scales a correlation heatmap layout to keep metric names readable.
+
+    Args:
+        fig: Figure-like object with ``update_layout``, ``update_xaxes``, and
+            ``update_yaxes`` methods, such as a Plotly figure.
+        n_features: Number of features shown in the correlation heatmap.
+    """
+    size = max(520, min(980, 70 * n_features))
+    fig.update_layout(
+        height=size,
+        margin=dict(l=220, r=40, t=60, b=180),
+    )
+    fig.update_xaxes(tickangle=45, automargin=True)
+    fig.update_yaxes(automargin=True)
+
+
+def show_metric_table_by_work(metrics_df: pd.DataFrame, metric_cols: list[str]):
+    """Displays work-level values for the selected metric columns.
+
+    Args:
+        metrics_df: DataFrame containing work-level metric data and optional
+            identifier columns such as ``author``, ``work``, and ``filename``.
+        metric_cols: Metric column names requested for display. Only columns
+            present in ``metrics_df`` are shown.
+    """
+    available_cols = [col for col in metric_cols if col in metrics_df.columns]
+    id_cols = [col for col in ["author", "work", "filename"] if col in metrics_df.columns]
+    st.dataframe(
+        metrics_df[[*id_cols, *available_cols]],
+        width="stretch",
+        hide_index=True,
+    )
+
+
 #####################
 # CACHING FUNCTIONS #
 #####################
