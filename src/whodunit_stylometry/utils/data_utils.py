@@ -8,38 +8,6 @@ from pathlib import Path
 import pandas as pd
 
 
-def load_corpus_by_directory(base_path: str | Path, encoding: str = "utf-8") -> dict[str, str]:
-    """
-    Reads a directory containing subdirectories with `.txt` files and returns a
-    dictionary that maps each subdirectory name to the concatenated text of all
-    its files.
-
-    Args:
-        base_path (str | Path): Path to the base directory (e.g.,
-            ``corpus/hand_cleaned``).
-        encoding (str, optional): Text encoding used to read the files.
-            Defaults to ``"utf-8"``.
-
-    Returns:
-        dict[str, str]: Dictionary where keys are subdirectory names and values
-        are the concatenated contents of their `.txt` files.
-    """
-
-    base_path = Path(base_path)
-    corpus: dict[str, str] = {}
-
-    for subdir in sorted(p for p in base_path.iterdir() if p.is_dir()):
-        texts = []
-
-        for txt_file in sorted(subdir.glob("*.txt")):
-            with txt_file.open(encoding=encoding) as f:
-                texts.append(f.read())
-
-        corpus[subdir.name] = "\n\n".join(texts)
-
-    return corpus
-
-
 def file_md5(path: Path) -> str:
     """Computes the MD5 checksum of a file.
 
@@ -294,6 +262,7 @@ def load_corpus(corpus_dir: str | Path) -> pd.DataFrame:
         A DataFrame describing the discovered corpus files, as returned by
         ``discover_corpus``.
     """
+
     path = Path(corpus_dir).expanduser()
     if not path.exists():
         raise FileNotFoundError(f"No existe la ruta: {path}")
@@ -332,6 +301,7 @@ def merge_if_needed(
         Otherwise, returns `df_meta` left-merged with non-overlapping columns from
         `df_inv`.
     """
+
     inv_cols = df_inv.columns.difference([key])
     missing_cols = inv_cols.difference(df_meta.columns)
     common_cols = inv_cols.intersection(df_meta.columns)

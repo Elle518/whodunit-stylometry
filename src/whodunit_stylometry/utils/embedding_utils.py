@@ -26,10 +26,8 @@ def get_encoding(model: str) -> tiktoken.Encoding:
     Returns:
         The `tiktoken` encoding associated with `model`, or the fallback
         `cl100k_base` encoding if the model is unknown.
-
-    Raises:
-        ValueError: If the fallback encoding name is invalid or unavailable.
     """
+
     try:
         return tiktoken.encoding_for_model(model)
     except KeyError:
@@ -56,11 +54,8 @@ def chunk_text_by_tokens(
     Returns:
         A list of dictionaries, one per chunk. Each dictionary contains:
         `chunk_index`, `text`, and `token_count`.
-
-    Raises:
-        AttributeError: If the global `encoding` object does not provide
-            compatible `encode` or `decode` methods.
     """
+
     tokens = encoding.encode(text)
     chunks: list[dict[str, Any]] = []
 
@@ -105,6 +100,7 @@ def text_hash(text: str, model: str, dimensions: int | None) -> str:
     Returns:
         The SHA-256 hash of the JSON-serialized payload as a hexadecimal string.
     """
+
     payload = json.dumps(
         {"model": model, "dimensions": dimensions, "text": text},
         ensure_ascii=False,
@@ -136,6 +132,7 @@ def call_embeddings_api(
         A list of embedding vectors, one per input text. Each embedding vector
         is represented as a list of floats.
     """
+
     kwargs: dict[str, Any] = {"model": model, "input": texts}
 
     if embedding_dimensions is not None:
@@ -179,6 +176,7 @@ def weighted_average_embeddings(
             - A NumPy array of normalized weighted-average vectors with dtype
               `np.float32`.
     """
+
     meta_rows: list[dict[str, object]] = []
     vectors: list[np.ndarray] = []
 
@@ -230,6 +228,7 @@ def simple_average_embeddings(
             - A NumPy array containing one normalized average embedding per
               group.
     """
+
     rows: list[dict[str, object]] = []
     vectors: list[np.ndarray] = []
 
@@ -277,6 +276,7 @@ def nearest_neighbors_table(
     Returns:
         A DataFrame with one row per source-neighbor pair.
     """
+
     sim = cosine_similarity(embeddings)
     rows: list[dict[str, object]] = []
 
@@ -326,6 +326,7 @@ def pairwise_author_metrics(
               distance, and `separation_margin`, sorted by descending
               `separation_margin`.
     """
+
     dist = cosine_distances(embeddings)
     rows: list[dict[str, object]] = []
 
@@ -402,6 +403,7 @@ def build_similarity_network(
         An undirected NetworkX graph representing nearest-neighbor similarities
         between works.
     """
+
     sim = cosine_similarity(embeddings)
     graph = nx.Graph()
 

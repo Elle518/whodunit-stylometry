@@ -27,6 +27,8 @@ AUTHORS_NORM_MAP = {
     "Wilkie Collins": "wilkie_collins",
 }
 
+# Function words proxi that are considered
+# as features for stylometric analysis.
 STOPWORDS = {
     "'d",
     "'ll",
