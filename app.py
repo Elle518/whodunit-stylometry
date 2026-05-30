@@ -127,32 +127,103 @@ if selected_analysis == "eda":
         eda_top_n = st.slider("Top n-grams", min_value=5, max_value=50, value=20, step=5)
         eda_zipf_max_rank = st.slider("Máximo rango Zipf", min_value=500, max_value=10000, value=5000, step=500)
 
-
-#### REVISAR #####
-if selected_analysis == "embeddings":
+if selected_analysis == "classical":
     with st.sidebar:
-        st.subheader("Embeddings de OpenAI")
-        embedding_model = st.selectbox("Modelo", list(EMBEDDING_MODELS.keys()), index=0)
-        dimension_options = ["Nativa", "512", "1024", "1536"]
-        if embedding_model == "text-embedding-3-large":
-            dimension_options.append("3072")
-        embedding_dimensions_label = st.selectbox("Dimensiones", dimension_options, index=0)
-        embedding_dimensions = None if embedding_dimensions_label == "Nativa" else int(embedding_dimensions_label)
+        st.subheader("Métodos clásicos")
+        selected_method_label = st.selectbox(
+            "Método",
+            options=list(CLASSICAL_METHODS.keys()),
+        )
+        selected_method = CLASSICAL_METHODS[selected_method_label]
 
-        st.caption("Segmentación")
-        embedding_chunk_tokens = st.slider("CHUNK_TOKENS", min_value=200, max_value=2000, value=1200, step=100)
-        embedding_chunk_overlap = st.slider("CHUNK_OVERLAP", min_value=0, max_value=500, value=150, step=25)
-        embedding_min_chunk_tokens = st.slider("MIN_CHUNK_TOKENS", min_value=20, max_value=500, value=120, step=20)
+        use_function_words = True
+        vocab_size = 500
+        min_freq = 1
+        block_size = 100_000
+        n_blocks = 50
+        max_word_len = 20
+        seed = 1
 
-        st.caption("API y visualización")
-        embedding_batch_size = st.slider("BATCH_SIZE", min_value=1, max_value=128, value=64, step=1)
-        embedding_max_retries = st.number_input("MAX_RETRIES", min_value=1, max_value=10, value=6, step=1)
-        embedding_random_state = st.number_input("Semilla", min_value=0, max_value=10_000, value=42, step=1)
-        embedding_umap_neighbors = st.slider("UMAP n_neighbors", min_value=2, max_value=50, value=10, step=1)
-        embedding_umap_min_dist = st.slider("UMAP min_dist", min_value=0.0, max_value=0.99, value=0.08, step=0.01)
-        embedding_network_top_k = st.slider("Top-k red", min_value=1, max_value=10, value=3, step=1)
-        embedding_nn_k = st.slider("Vecinos por obra", min_value=1, max_value=15, value=6, step=1)
-        openai_api_key = st.text_input("OpenAI API key", type="password")
+        if selected_method == "mendenhall":
+            st.caption("Parámetros de curvas características")
+            block_size = st.number_input("BLOCK_SIZE", min_value=100, max_value=1_000_000, value=100_000, step=5_000)
+            n_blocks = st.number_input("N_BLOCKS", min_value=1, max_value=500, value=50, step=1)
+            max_word_len = st.slider("Longitud máxima de palabra", min_value=10, max_value=40, value=20, step=1)
+            seed = st.number_input("Semilla aleatoria", min_value=0, max_value=10_000, value=1, step=1)
+        elif selected_method in {"kilgariff", "burrows"}:
+            st.caption("Parámetros léxicos")
+            use_function_words = st.toggle("Usar solo palabras funcionales", value=True)
+            vocab_size = st.slider("Tamaño del vocabulario", min_value=50, max_value=1500, value=500, step=50)
+            min_freq = st.number_input("Frecuencia mínima", min_value=1, max_value=1000, value=1, step=1)
+
+        top_n = 20
+        if selected_method in {"kilgariff", "burrows"}:
+            st.subheader("Visualización")
+            top_n = st.slider("Top palabras por autor", min_value=5, max_value=50, value=20, step=5)
+
+if selected_analysis == "supervised":
+    with st.sidebar:
+        st.subheader("Machine learning supervisado")
+        selected_ml_workflow_label = st.selectbox("Flujo", list(ML_WORKFLOWS.keys()))
+        selected_ml_workflow = ML_WORKFLOWS[selected_ml_workflow_label]
+
+        ml_feature_label = "MFW"
+        ml_feature_set = FEATURE_SETS[ml_feature_label]
+        ml_model_labels = ["Regresión logística", "Linear SVC"]
+        ml_model_names = tuple(MODEL_NAMES[label] for label in ml_model_labels)
+        ml_model_label = "Regresión logística"
+        ml_model_name = MODEL_NAMES[ml_model_label]
+        ml_top_n_mfw = 50
+        ml_seed = 42
+        ml_n_test_per_author = 2
+        ml_keep_correlated = False
+        ml_corr_threshold = 0.85
+        ml_tolerance = 0.01
+        ml_top_n_values = [5, 10, 15, 25, 50, 75, 100]
+        ml_seeds = [0, 1, 2, 42, 123]
+
+        if selected_ml_workflow == "experiment":
+            ml_feature_label = st.selectbox("Conjunto de rasgos", list(FEATURE_SETS.keys()), index=1)
+            ml_feature_set = FEATURE_SETS[ml_feature_label]
+            ml_model_labels = st.multiselect(
+                "Modelos",
+                list(MODEL_NAMES.keys()),
+                default=list(MODEL_NAMES.keys()),
+            )
+            ml_model_names = tuple(MODEL_NAMES[label] for label in ml_model_labels)
+            ml_top_n_mfw = st.slider("TOP_N_MFW", min_value=5, max_value=200, value=50, step=5)
+            ml_seed = st.number_input("Semilla", min_value=0, max_value=10_000, value=42, step=1)
+            ml_n_test_per_author = st.number_input("Obras de test por autor", min_value=1, max_value=5, value=2, step=1)
+            if ml_feature_set in {"stylometric", "combined"}:
+                ml_keep_correlated = st.toggle("Mantener rasgos correlacionados", value=False)
+                ml_corr_threshold = st.slider("Umbral de correlación", 0.50, 0.99, 0.85, 0.01)
+        elif selected_ml_workflow == "robustness":
+            robustness_preset = st.selectbox("Preset", ["Rápido", "Completo"])
+            if robustness_preset == "Rápido":
+                ml_top_n_values = [10, 25, 50]
+                ml_seeds = [0, 42, 123]
+            else:
+                ml_top_n_values = [5, 10, 15, 25, 30, 40, 50, 75, 100, 125, 150]
+                ml_seeds = [0, 1, 2, 3, 4, 5, 10, 20, 42, 123, 150]
+            ml_top_n_values = parse_int_list(
+                st.text_input("Valores TOP_N_MFW", value=", ".join(map(str, ml_top_n_values)))
+            )
+            ml_seeds = parse_int_list(st.text_input("Semillas", value=", ".join(map(str, ml_seeds))))
+            ml_model_labels = st.multiselect(
+                "Modelos",
+                list(MODEL_NAMES.keys()),
+                default=["Regresión logística", "Linear SVC"],
+            )
+            ml_model_names = tuple(MODEL_NAMES[label] for label in ml_model_labels)
+            ml_n_test_per_author = st.number_input("Obras de test por autor", min_value=1, max_value=5, value=2, step=1)
+            ml_tolerance = st.slider("Tolerancia desde el mejor F1", 0.0, 0.10, 0.01, 0.005)
+        else:
+            ml_feature_label = st.selectbox("Conjunto de rasgos", list(FEATURE_SETS.keys()), index=1)
+            ml_feature_set = FEATURE_SETS[ml_feature_label]
+            ml_model_label = st.selectbox("Modelo final", list(MODEL_NAMES.keys()), index=0)
+            ml_model_name = MODEL_NAMES[ml_model_label]
+            ml_top_n_mfw = st.slider("TOP_N_MFW", min_value=5, max_value=200, value=50, step=5)
+            ml_seed = st.number_input("Semilla", min_value=0, max_value=10_000, value=42, step=1)
 
 if selected_analysis == "unsupervised":
     with st.sidebar:
@@ -228,103 +299,30 @@ if selected_analysis == "unsupervised":
             if not use_author_count:
                 unsup_n_clusters = st.number_input("Número de clusters", min_value=2, max_value=50, value=6, step=1)
 
-if selected_analysis == "supervised":
+if selected_analysis == "embeddings":
     with st.sidebar:
-        st.subheader("Machine learning supervisado")
-        selected_ml_workflow_label = st.selectbox("Flujo", list(ML_WORKFLOWS.keys()))
-        selected_ml_workflow = ML_WORKFLOWS[selected_ml_workflow_label]
+        st.subheader("Embeddings de OpenAI")
+        embedding_model = st.selectbox("Modelo", list(EMBEDDING_MODELS.keys()), index=0)
+        dimension_options = ["Nativa", "512", "1024", "1536"]
+        if embedding_model == "text-embedding-3-large":
+            dimension_options.append("3072")
+        embedding_dimensions_label = st.selectbox("Dimensiones", dimension_options, index=0)
+        embedding_dimensions = None if embedding_dimensions_label == "Nativa" else int(embedding_dimensions_label)
 
-        ml_feature_label = "MFW"
-        ml_feature_set = FEATURE_SETS[ml_feature_label]
-        ml_model_labels = ["Regresión logística", "Linear SVC"]
-        ml_model_names = tuple(MODEL_NAMES[label] for label in ml_model_labels)
-        ml_model_label = "Regresión logística"
-        ml_model_name = MODEL_NAMES[ml_model_label]
-        ml_top_n_mfw = 50
-        ml_seed = 42
-        ml_n_test_per_author = 2
-        ml_keep_correlated = False
-        ml_corr_threshold = 0.85
-        ml_tolerance = 0.01
-        ml_top_n_values = [5, 10, 15, 25, 50, 75, 100]
-        ml_seeds = [0, 1, 2, 42, 123]
+        st.caption("Segmentación")
+        embedding_chunk_tokens = st.slider("CHUNK_TOKENS", min_value=200, max_value=2000, value=1200, step=100)
+        embedding_chunk_overlap = st.slider("CHUNK_OVERLAP", min_value=0, max_value=500, value=150, step=25)
+        embedding_min_chunk_tokens = st.slider("MIN_CHUNK_TOKENS", min_value=20, max_value=500, value=120, step=20)
 
-        if selected_ml_workflow == "experiment":
-            ml_feature_label = st.selectbox("Conjunto de rasgos", list(FEATURE_SETS.keys()), index=1)
-            ml_feature_set = FEATURE_SETS[ml_feature_label]
-            ml_model_labels = st.multiselect(
-                "Modelos",
-                list(MODEL_NAMES.keys()),
-                default=list(MODEL_NAMES.keys()),
-            )
-            ml_model_names = tuple(MODEL_NAMES[label] for label in ml_model_labels)
-            ml_top_n_mfw = st.slider("TOP_N_MFW", min_value=5, max_value=200, value=50, step=5)
-            ml_seed = st.number_input("Semilla", min_value=0, max_value=10_000, value=42, step=1)
-            ml_n_test_per_author = st.number_input("Obras de test por autor", min_value=1, max_value=5, value=2, step=1)
-            if ml_feature_set in {"stylometric", "combined"}:
-                ml_keep_correlated = st.toggle("Mantener rasgos correlacionados", value=False)
-                ml_corr_threshold = st.slider("Umbral de correlación", 0.50, 0.99, 0.85, 0.01)
-        elif selected_ml_workflow == "robustness":
-            robustness_preset = st.selectbox("Preset", ["Rápido", "Completo"])
-            if robustness_preset == "Rápido":
-                ml_top_n_values = [10, 25, 50]
-                ml_seeds = [0, 42, 123]
-            else:
-                ml_top_n_values = [5, 10, 15, 25, 30, 40, 50, 75, 100, 125, 150]
-                ml_seeds = [0, 1, 2, 3, 4, 5, 10, 20, 42, 123, 150]
-            ml_top_n_values = parse_int_list(
-                st.text_input("Valores TOP_N_MFW", value=", ".join(map(str, ml_top_n_values)))
-            )
-            ml_seeds = parse_int_list(st.text_input("Semillas", value=", ".join(map(str, ml_seeds))))
-            ml_model_labels = st.multiselect(
-                "Modelos",
-                list(MODEL_NAMES.keys()),
-                default=["Regresión logística", "Linear SVC"],
-            )
-            ml_model_names = tuple(MODEL_NAMES[label] for label in ml_model_labels)
-            ml_n_test_per_author = st.number_input("Obras de test por autor", min_value=1, max_value=5, value=2, step=1)
-            ml_tolerance = st.slider("Tolerancia desde el mejor F1", 0.0, 0.10, 0.01, 0.005)
-        else:
-            ml_feature_label = st.selectbox("Conjunto de rasgos", list(FEATURE_SETS.keys()), index=1)
-            ml_feature_set = FEATURE_SETS[ml_feature_label]
-            ml_model_label = st.selectbox("Modelo final", list(MODEL_NAMES.keys()), index=0)
-            ml_model_name = MODEL_NAMES[ml_model_label]
-            ml_top_n_mfw = st.slider("TOP_N_MFW", min_value=5, max_value=200, value=50, step=5)
-            ml_seed = st.number_input("Semilla", min_value=0, max_value=10_000, value=42, step=1)
-
-elif selected_analysis == "classical":
-    with st.sidebar:
-        st.subheader("Métodos clásicos")
-        selected_method_label = st.selectbox(
-            "Método",
-            options=list(CLASSICAL_METHODS.keys()),
-        )
-        selected_method = CLASSICAL_METHODS[selected_method_label]
-
-        use_function_words = True
-        vocab_size = 500
-        min_freq = 1
-        block_size = 100_000
-        n_blocks = 50
-        max_word_len = 20
-        seed = 1
-
-        if selected_method == "mendenhall":
-            st.caption("Parámetros de curvas características")
-            block_size = st.number_input("BLOCK_SIZE", min_value=100, max_value=1_000_000, value=100_000, step=5_000)
-            n_blocks = st.number_input("N_BLOCKS", min_value=1, max_value=500, value=50, step=1)
-            max_word_len = st.slider("Longitud máxima de palabra", min_value=10, max_value=40, value=20, step=1)
-            seed = st.number_input("Semilla aleatoria", min_value=0, max_value=10_000, value=1, step=1)
-        elif selected_method in {"kilgariff", "burrows"}:
-            st.caption("Parámetros léxicos")
-            use_function_words = st.toggle("Usar solo palabras funcionales", value=True)
-            vocab_size = st.slider("Tamaño del vocabulario", min_value=50, max_value=1500, value=500, step=50)
-            min_freq = st.number_input("Frecuencia mínima", min_value=1, max_value=1000, value=1, step=1)
-
-        top_n = 20
-        if selected_method in {"kilgariff", "burrows"}:
-            st.subheader("Visualización")
-            top_n = st.slider("Top palabras por autor", min_value=5, max_value=50, value=20, step=5)
+        st.caption("API y visualización")
+        embedding_batch_size = st.slider("BATCH_SIZE", min_value=1, max_value=128, value=64, step=1)
+        embedding_max_retries = st.number_input("MAX_RETRIES", min_value=1, max_value=10, value=6, step=1)
+        embedding_random_state = st.number_input("Semilla", min_value=0, max_value=10_000, value=42, step=1)
+        embedding_umap_neighbors = st.slider("UMAP n_neighbors", min_value=2, max_value=50, value=10, step=1)
+        embedding_umap_min_dist = st.slider("UMAP min_dist", min_value=0.0, max_value=0.99, value=0.08, step=0.01)
+        embedding_network_top_k = st.slider("Top-k red", min_value=1, max_value=10, value=3, step=1)
+        embedding_nn_k = st.slider("Vecinos por obra", min_value=1, max_value=15, value=6, step=1)
+        openai_api_key = st.text_input("OpenAI API key", type="password")
 
 
 ########################################
