@@ -68,7 +68,32 @@ class HierarchicalConfig:
 
 
 def prepare_unsupervised_dataset(df: pd.DataFrame, config: UnsupervisedConfig) -> dict[str, Any]:
-    """Build the selected feature matrix for clustering over the full corpus."""
+    """Builds a feature dataset for unsupervised clustering.
+
+    Creates work-level features from the input dataframe, normalizes selected
+    metadata column names, and selects the feature columns requested by the
+    unsupervised configuration. Depending on ``config.feature_set``, the returned
+    feature set may include stylometric features, most-frequent-word features,
+    or both.
+
+    Args:
+        df: Input dataframe containing the corpus records expected by
+            ``build_work_features``.
+        config: Unsupervised dataset configuration. The ``feature_set`` attribute
+            must be one of ``"stylometric"``, ``"mfw"``, or ``"combined"``. The
+            ``top_n_mfw`` attribute is used when most-frequent-word features are
+            requested.
+
+    Returns:
+        A dictionary with the prepared dataframe and feature metadata:
+            - ``data``: The prepared dataframe.
+            - ``feature_cols``: Names of the selected feature columns.
+            - ``stylometric_cols``: Names of the available stylometric columns.
+            - ``mfw_vocab``: Most-frequent-word vocabulary, or an empty list when
+              MFW features are not requested.
+            - ``mfw_cols``: Names of the generated MFW feature columns, or an
+              empty list when MFW features are not requested.
+    """
 
     data = build_work_features(df).rename(columns={"author": "author_norm", "filename": "file_name"})
     stylometric_cols = _stylometric_feature_cols(
@@ -101,7 +126,32 @@ def prepare_unsupervised_dataset(df: pd.DataFrame, config: UnsupervisedConfig) -
 
 
 def run_unsupervised_experiment(df: pd.DataFrame, config: UnsupervisedConfig) -> dict[str, Any]:
-    """Run selected clustering models and evaluate them against author labels."""
+    """Runs clustering models and evaluates the best result against author labels.
+
+    Prepares an unsupervised feature dataset, runs the clustering models selected
+    in the configuration, chooses the first model in the clustering results table
+    as the best model, and computes error-analysis outputs for that model's
+    assignments.
+
+    Args:
+        df: Input dataframe containing the corpus records expected by
+            ``prepare_unsupervised_dataset``.
+        config: Unsupervised experiment configuration. Uses ``selected_models``,
+            ``n_clusters``, and ``seed`` for clustering, and passes the full
+            configuration to ``prepare_unsupervised_dataset``.
+
+    Returns:
+        A dictionary combining the prepared dataset, clustering results, and
+        evaluation outputs. Includes:
+            - ``best_model_name``: Name of the first model in the clustering
+              results table.
+            - ``best_eval``: Evaluation dataframe for the best model assignments.
+            - ``best_cluster_author_table``: Cluster-by-author summary for the
+              best model.
+            - ``errors_by_author``: Error summary grouped by true author, with
+              the index reset.
+            - ``confusion_pairs``: Confusion-pair summary for the best model.
+    """
 
     dataset = prepare_unsupervised_dataset(df, config)
     cluster_result = _run_selected_clustering(
@@ -133,7 +183,38 @@ def run_unsupervised_mfw_robustness(
     seeds: list[int],
     selected_models: tuple[str, ...],
 ) -> dict[str, Any]:
-    """Run a robustness sweep over MFW vocabulary sizes, seeds, and clustering models."""
+    """Runs a robustness sweep for MFW clustering experiments.
+
+    Evaluates most-frequent-word clustering performance across vocabulary sizes,
+    random seeds, and selected clustering models. Each combination is run as a
+    separate unsupervised experiment using only MFW features. Results are
+    aggregated by vocabulary size and model, then ranked by mean ARI, mean NMI,
+    mean silhouette score, and vocabulary size.
+
+    Args:
+        df: Input dataframe containing the corpus records expected by
+            ``run_unsupervised_experiment``.
+        top_n_values: MFW vocabulary sizes to evaluate.
+        seeds: Random seeds to evaluate for each vocabulary size and model.
+        selected_models: Clustering model names to evaluate. Each model is run
+            independently as a single selected model in ``UnsupervisedConfig``.
+
+    Returns:
+        A dictionary containing sweep results and the selected robustness choice:
+            - ``sweep_df``: Per-run metrics for every evaluated combination.
+            - ``summary_df``: Aggregated metrics grouped by ``top_n_mfw`` and
+              ``model``.
+            - ``decision_df``: Copy of ``summary_df`` with a boolean
+              ``selected`` column marking the chosen row.
+            - ``selected_top_n_mfw``: Vocabulary size from the top-ranked
+              summary row.
+            - ``selected_model_name``: Model name from the top-ranked summary
+              row.
+            - ``best_mean_ARI``: Mean ARI for the selected row.
+            - ``best_mean_NMI``: Mean NMI for the selected row.
+            - ``best_mean_silhouette``: Mean silhouette score for the selected
+              row.
+    """
 
     rows = []
     for top_n in top_n_values:
@@ -194,7 +275,43 @@ def run_unsupervised_mfw_robustness(
 
 
 def run_hierarchical_experiment(df: pd.DataFrame, config: HierarchicalConfig) -> dict[str, Any]:
-    """Evaluate hierarchical clustering linkage methods and prepare a dendrogram."""
+    """Evaluates hierarchical clustering methods and prepares dendrogram data.
+
+    Builds the selected unsupervised feature dataset, scales the feature matrix,
+    evaluates the configured hierarchical clustering methods against normalized
+    author labels, and stores linkage matrices for both selected methods and the
+    configured dendrogram method. The best method is chosen as the first row
+    after sorting selected methods by ARI, NMI, and silhouette score in
+    descending order.
+
+    Args:
+        df: Input dataframe containing corpus records expected by
+            ``prepare_unsupervised_dataset``.
+        config: Hierarchical clustering configuration. Uses ``feature_set`` and
+            ``top_n_mfw`` for dataset preparation, ``selected_methods`` for
+            evaluation, ``dendrogram_method`` for dendrogram linkage generation,
+            and ``n_clusters`` when provided. If ``n_clusters`` is falsey, the
+            number of unique normalized authors is used.
+
+    Returns:
+        A dictionary combining the prepared dataset, hierarchical clustering
+        outputs, and evaluation artifacts. Includes:
+            - ``results``: Metrics for selected hierarchical methods.
+            - ``assignments``: Mapping from method name to cluster assignment
+              dataframe.
+            - ``linkages``: Mapping from method name to linkage matrix.
+            - ``X_scaled``: Scaled feature matrix used for clustering.
+            - ``label_encoder``: Fitted label encoder for author labels.
+            - ``best_method``: Top-ranked selected method.
+            - ``best_eval``: Error evaluation for the best method.
+            - ``best_cluster_author_table``: Cluster-by-author summary for the
+              best method.
+            - ``errors_by_author``: Error summary grouped by true author, with
+              the index reset.
+            - ``confusion_pairs``: Confusion-pair summary for the best method.
+            - ``dendrogram_method``: Configured dendrogram linkage method.
+            - ``n_clusters``: Number of clusters used for flat assignments.
+    """
 
     if not config.selected_methods:
         raise ValueError("Select at least one hierarchical clustering method.")
@@ -275,7 +392,28 @@ def build_dendrogram_figure(
     assignments_df: pd.DataFrame,
     method_label: str,
 ) -> go.Figure:
-    """Build a Plotly dendrogram from a SciPy linkage matrix."""
+    """Builds a Plotly dendrogram from a SciPy linkage matrix.
+
+    Creates a left-oriented dendrogram using a precomputed SciPy linkage matrix
+    and overlays leaf markers colored by author. Leaf labels are built from the
+    ``author_norm`` and ``work`` columns in ``assignments_df``. Hover metadata is
+    taken from the ``author_norm``, ``work``, ``file_name``, and ``cluster``
+    columns.
+
+    Args:
+        linkage_matrix: SciPy linkage matrix describing the hierarchical
+            clustering tree.
+        assignments_df: Dataframe containing one row per clustered item. Must
+            align with the observation order used to build ``linkage_matrix``.
+            Expected columns are ``author_norm``, ``work``, ``file_name``, and
+            ``cluster``.
+        method_label: Display label for the hierarchical method, used in the
+            figure title.
+
+    Returns:
+        A Plotly figure containing dendrogram line traces and author-colored leaf
+        marker traces.
+    """
 
     leaf_labels = [f"{row.author_norm} | {row.work}" for row in assignments_df.itertuples(index=False)]
     dendro = dendrogram(linkage_matrix, labels=leaf_labels, orientation="left", no_plot=True)
@@ -341,7 +479,25 @@ def build_cluster_projection(
     method_name: str,
     seed: int,
 ) -> pd.DataFrame:
-    """Project clustered works to two dimensions with t-SNE for display."""
+    """Projects clustered works to two dimensions with t-SNE.
+
+    Computes a two-dimensional t-SNE embedding from a scaled feature matrix and
+    appends the resulting coordinates to a copy of the cluster assignments
+    dataframe. The cluster labels are converted to strings for display, and the
+    clustering method name is stored in a ``model`` column.
+
+    Args:
+        X_scaled: Scaled feature matrix with one row per clustered work.
+        assignments: Cluster assignment dataframe aligned row-by-row with
+            ``X_scaled``. Must contain a ``cluster`` column.
+        method_name: Name of the clustering method or model used to create the
+            assignments.
+        seed: Random seed passed to t-SNE for reproducible projection.
+
+    Returns:
+        A copy of ``assignments`` with added ``x``, ``y``, and ``model`` columns.
+        The existing ``cluster`` column is converted to string dtype.
+    """
 
     perplexity = max(2, min(30, (len(assignments) - 1) // 3))
     coords = TSNE(
@@ -365,7 +521,35 @@ def evaluate_cluster_errors(
     cluster_col: str = "cluster",
     file_col: str = "file_name",
 ) -> dict[str, Any]:
-    """Map clusters to majority authors and summarize the induced errors."""
+    """Maps clusters to majority labels and summarizes induced errors.
+
+    Copies the assignments dataframe, maps each cluster to its majority true
+    label, and compares that mapped label with the original label column. The
+    function also builds a contingency table, confusion matrix, and dataframe of
+    incorrectly mapped rows.
+
+    Args:
+        assignments_df: Dataframe containing cluster assignments and true labels.
+            Must include ``label_col``, ``cluster_col``, ``file_col``, and
+            ``work`` columns.
+        label_col: Name of the column containing the true labels.
+        cluster_col: Name of the column containing cluster assignments.
+        file_col: Name of the column containing file identifiers.
+
+    Returns:
+        A dictionary containing:
+            - ``data_with_predictions``: Copy of ``assignments_df`` with
+              ``pred_author_from_cluster`` and ``correct`` columns added.
+            - ``contingency_table``: Crosstab of clusters by true labels.
+            - ``cluster_to_author``: Mapping from each cluster to its majority
+              true label.
+            - ``accuracy_after_mapping``: Mean correctness after majority-label
+              mapping.
+            - ``confusion_matrix``: Confusion matrix as a dataframe indexed and
+              columned by sorted true labels.
+            - ``errors_df``: Incorrectly mapped rows sorted by true label,
+              predicted label, and file identifier.
+    """
 
     df = assignments_df.copy()
     contingency = pd.crosstab(df[cluster_col], df[label_col])
@@ -392,13 +576,43 @@ def evaluate_cluster_errors(
 
 
 def cluster_author_table(assignments_df: pd.DataFrame, label_col: str = "author_norm") -> pd.DataFrame:
-    """Build a cluster-by-author contingency table."""
+    """Builds a cluster-by-label contingency table.
+
+    Counts the number of rows for each combination of cluster assignment and
+    true label.
+
+    Args:
+        assignments_df: Dataframe containing cluster assignments and true labels.
+            Must include a ``cluster`` column and the column named by
+            ``label_col``.
+        label_col: Name of the column containing the true labels.
+
+    Returns:
+        A dataframe whose rows are cluster values, whose columns are label
+        values, and whose cells contain counts.
+    """
 
     return pd.crosstab(assignments_df["cluster"], assignments_df[label_col])
 
 
 def errors_by_true_author(eval_dict: dict[str, Any], label_col: str = "author_norm") -> pd.DataFrame:
-    """Summarize mapped-cluster errors by true author."""
+    """Summarizes mapped-cluster errors by true label.
+
+    Groups the prediction results by the true-label column and computes the
+    total number of works, number of correctly mapped works, number of errors,
+    and error rate for each label. Results are sorted by descending error rate.
+
+    Args:
+        eval_dict: Evaluation dictionary containing a
+            ``data_with_predictions`` dataframe, such as the output of
+            ``evaluate_cluster_errors``. The dataframe must contain ``label_col``
+            and ``correct`` columns.
+        label_col: Name of the column containing the true labels.
+
+    Returns:
+        A dataframe indexed by true label with the following columns:
+            ``total_works``, ``correct``, ``errors``, and ``error_rate``.
+    """
 
     df = eval_dict["data_with_predictions"]
     return (
@@ -411,7 +625,23 @@ def errors_by_true_author(eval_dict: dict[str, Any], label_col: str = "author_no
 
 
 def confusion_pairs(eval_dict: dict[str, Any], label_col: str = "author_norm") -> pd.DataFrame:
-    """Count true-author vs mapped-author pairs among clustering errors."""
+    """Counts true-label versus mapped-label pairs among clustering errors.
+
+    Reads the error rows from an evaluation dictionary and counts how often each
+    true label is confused with each mapped cluster label. If there are no
+    errors, an empty dataframe with the expected output columns is returned.
+
+    Args:
+        eval_dict: Evaluation dictionary containing an ``errors_df`` dataframe,
+            such as the output of ``evaluate_cluster_errors``. The dataframe must
+            contain ``label_col`` and ``pred_author_from_cluster`` columns.
+        label_col: Name of the column containing the true labels.
+
+    Returns:
+        A dataframe with ``label_col``, ``pred_author_from_cluster``, and
+        ``n_errors`` columns, sorted by descending error count. Returns an empty
+        dataframe with the same columns when no errors are present.
+    """
 
     errors = eval_dict["errors_df"]
     if errors.empty:
@@ -431,6 +661,34 @@ def _run_selected_clustering(
     n_clusters: int | None,
     seed: int,
 ) -> dict[str, Any]:
+    """Runs selected clustering models and evaluates them against author labels.
+
+    Scales the selected feature columns, encodes normalized author labels, fits
+    each requested clustering model, and computes clustering quality metrics.
+    Supported model names are ``"kmeans"``, ``"agglomerative"``, and ``"gmm"``.
+    Results are sorted by ARI, NMI, and silhouette score in descending order.
+
+    Args:
+        data: Dataframe containing feature columns and metadata columns. Must
+            include all columns in ``feature_cols`` plus ``author_norm``,
+            ``file_name``, and ``work``.
+        feature_cols: Names of the feature columns to use for clustering.
+        selected_models: Model names to run. Each value must be one of
+            ``"kmeans"``, ``"agglomerative"``, or ``"gmm"``.
+        n_clusters: Number of clusters to fit. If ``None`` or otherwise falsey,
+            the number of unique normalized authors is used.
+        seed: Random seed used by stochastic models.
+
+    Returns:
+        A dictionary containing:
+            - ``results``: Dataframe with one metric row per selected model,
+              sorted by ARI, NMI, and silhouette score.
+            - ``assignments``: Mapping from model name to assignment dataframe.
+            - ``X_scaled``: Scaled feature matrix used for clustering.
+            - ``y_true``: Original normalized author labels as a NumPy array.
+            - ``label_encoder``: Fitted label encoder for author labels.
+    """
+
     if not selected_models:
         raise ValueError("Select at least one clustering model.")
 
@@ -492,12 +750,39 @@ def _run_selected_clustering(
 
 
 def _hierarchical_linkage(X_scaled: np.ndarray, method: str) -> np.ndarray:
+    """Computes a hierarchical clustering linkage matrix.
+
+    Uses SciPy's default metric handling for Ward linkage and Euclidean distance
+    for all other linkage methods.
+
+    Args:
+        X_scaled: Scaled feature matrix with one row per observation.
+        method: Hierarchical linkage method passed to ``scipy.cluster.hierarchy.linkage``.
+
+    Returns:
+        A SciPy linkage matrix representing the hierarchical clustering tree.
+    """
+
     if method == "ward":
         return linkage(X_scaled, method=method)
     return linkage(X_scaled, method=method, metric="euclidean")
 
 
 def _plotly_dendrogram_color(color: str) -> str:
+    """Converts a SciPy dendrogram color code to a Plotly-compatible color.
+
+    Maps SciPy's default categorical color codes, such as ``"C0"`` and ``"C1"``,
+    to hexadecimal color strings. Colors that are not present in the mapping are
+    returned unchanged.
+
+    Args:
+        color: Color value emitted by SciPy's dendrogram output.
+
+    Returns:
+        A hexadecimal color string for known SciPy categorical color codes, or
+        the original ``color`` value when no mapping exists.
+    """
+
     scipy_color_map = {
         "C0": "#1f77b4",
         "C1": "#ff7f0e",
@@ -514,6 +799,22 @@ def _plotly_dendrogram_color(color: str) -> str:
 
 
 def _author_color_map(authors: pd.Series) -> dict[str, str]:
+    """Builds a deterministic color map for author labels.
+
+    Assigns colors from a fixed palette to the unique author values in
+    alphabetical order. Author values are converted to strings before sorting and
+    before being used as dictionary keys. If there are more authors than colors,
+    the palette is reused cyclically.
+
+    Args:
+        authors: Series containing author labels or values that can be converted
+            to strings.
+
+    Returns:
+        A dictionary mapping stringified author labels to hexadecimal color
+        strings.
+    """
+
     palette = [
         "#1f77b4",
         "#d62728",
@@ -535,6 +836,21 @@ def _author_color_map(authors: pd.Series) -> dict[str, str]:
 
 
 def _safe_silhouette(X_scaled: np.ndarray, clusters: np.ndarray) -> float:
+    """Computes a silhouette score when cluster labels are valid.
+
+    Returns ``NaN`` instead of calling ``silhouette_score`` when the labels do
+    not define a valid silhouette problem. A valid silhouette score requires at
+    least two clusters and fewer clusters than observations.
+
+    Args:
+        X_scaled: Scaled feature matrix with one row per observation.
+        clusters: Cluster labels aligned row-by-row with ``X_scaled``.
+
+    Returns:
+        The silhouette score as a float, or ``NaN`` when there are fewer than two
+        clusters or when each observation has its own cluster.
+    """
+
     n_labels = len(set(clusters))
     if n_labels < 2 or n_labels >= len(clusters):
         return float("nan")
