@@ -124,6 +124,7 @@ def run_eda_core_analysis(df: pd.DataFrame) -> dict[str, Any]:
             - `pca_variance`: Explained variance information from PCA.
             - `pca_loadings_df`: PCA loading values by metric.
     """
+
     metrics_df = _build_metrics_df(df)
     outlier_groups = {
         "quality": _outlier_payload(metrics_df, QUALITY_METRICS),
@@ -171,6 +172,7 @@ def run_eda_vocab_analysis(df: pd.DataFrame, config: EDAConfig) -> dict[str, Any
             - `top_trigrams`: Top trigrams by author.
             - `zipf_df`: Zipf rank-frequency data by author.
     """
+
     tokens_by_author = _tokens_by_author(df)
     return {
         "top_words": _top_words_by_author(tokens_by_author, config.top_n, remove_stopwords=False),
@@ -199,6 +201,7 @@ def _build_metrics_df(df: pd.DataFrame) -> pd.DataFrame:
         metrics returned by `compute_novel_metrics()` plus `author`, `work`,
         `filename`, `token_count`, and `char_count` columns.
     """
+
     rows = []
     for row in df.itertuples(index=False):
         tokens_all = getattr(row, "tokens_all", None)
@@ -242,6 +245,7 @@ def _outlier_payload(metrics_df: pd.DataFrame, metric_cols: list[str]) -> dict[s
             - `metrics`: List of metric columns that were present in
               `metrics_df` and included in the outlier check.
     """
+
     available_cols = [col for col in metric_cols if col in metrics_df.columns]
     checked_df, summary_df = add_iqr_outlier_flags(metrics_df, available_cols)
     outlier_cols = ["author", "work", "filename", "outlier_metrics", *available_cols]
@@ -273,6 +277,7 @@ def _describe_by_author(metrics_df: pd.DataFrame, metric_cols: list[str]) -> pd.
         columns. Each generated metric column follows the pattern
         `{metric}_{stat}`, such as `token_count_mean` or `sentence_count_p50`.
     """
+
     available_cols = [col for col in metric_cols if col in metrics_df.columns]
     desc = metrics_df.groupby("author")[available_cols].describe()
     desc.columns = [
@@ -298,6 +303,7 @@ def _author_metric_means(desc_by_author: pd.DataFrame) -> pd.DataFrame:
         metric mean. Metric mean columns are renamed by removing the `_mean`
         suffix.
     """
+
     mean_cols = [col for col in desc_by_author.columns if col.endswith("_mean")]
     out = desc_by_author[["author", *mean_cols]].copy()
     out = out.rename(columns={col: col.removesuffix("_mean") for col in mean_cols})
@@ -321,6 +327,7 @@ def _standardized_author_heatmap(author_metric_means: pd.DataFrame) -> pd.DataFr
         values from `author_metric_means["author"]`, and the columns are the
         standardized metric columns.
     """
+
     metric_cols = [col for col in author_metric_means.columns if col != "author"]
     scaled = StandardScaler().fit_transform(author_metric_means[metric_cols])
     return pd.DataFrame(scaled, index=author_metric_means["author"], columns=metric_cols)
@@ -346,6 +353,7 @@ def _author_pca(author_metric_means: pd.DataFrame) -> tuple[pd.DataFrame, list[f
               `abs_loading` columns, sorted by component and descending absolute
               loading.
     """
+
     metric_cols = [col for col in author_metric_means.columns if col != "author"]
     n_components = min(2, len(author_metric_means), len(metric_cols))
     scaled = StandardScaler().fit_transform(author_metric_means[metric_cols])
@@ -391,6 +399,7 @@ def _tokens_by_author(df: pd.DataFrame) -> dict[str, list[str]]:
         A dictionary mapping each author to a list of lowercase alphabetic
         tokens from that author's rows.
     """
+
     return {
         author: [token.lower() for tokens in sub["tokens"] for token in tokens if token.isalpha()]
         for author, sub in df.groupby("author")
@@ -422,6 +431,7 @@ def _top_words_by_author(
         of selected tokens for that author, or `0.0` if the selected token count
         is zero.
     """
+
     rows = []
     for author, tokens in tokens_by_author.items():
         selected_tokens = [token for token in tokens if token not in STOPWORDS] if remove_stopwords else tokens
@@ -457,6 +467,7 @@ def _top_ngrams_by_author(tokens_by_author: dict[str, list[str]], n: int, top_k:
         A dataframe with one row per selected n-gram and the following columns:
         `author`, `rank`, `ngram`, and `freq`.
     """
+
     rows = []
     for author, tokens in tokens_by_author.items():
         for rank, (ngram, freq) in enumerate(top_ngrams(tokens, n=n, top_k=top_k, stopword_set=STOPWORDS), start=1):
@@ -481,6 +492,7 @@ def _zipf_by_author(tokens_by_author: dict[str, list[str]], max_rank: int) -> pd
         `relative_freq` value is the token frequency divided by the total token
         count for that author, or `0.0` if the author has no tokens.
     """
+
     rows = []
     for author, tokens in tokens_by_author.items():
         counter = Counter(tokens)
