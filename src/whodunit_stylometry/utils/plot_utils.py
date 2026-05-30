@@ -503,6 +503,7 @@ def plot_authors_pca(
         savepath: Optional path where the generated figure will be saved.
             If ``None``, the figure is not saved. Defaults to ``None``.
     """
+
     explained = pca.explained_variance_ratio_
 
     plt.figure(figsize=(10, 7))
@@ -636,7 +637,7 @@ def plot_clusters_2d(
     method: Literal["pca", "tsne"] = "pca",
     seed: int = 0,
     figsize: tuple[float, float] = (14, 6),
-) -> None:
+):
     """Plot a 2D projection of samples colored by true labels and clusters.
 
     This function reduces the input feature matrix to two dimensions using
@@ -657,6 +658,7 @@ def plot_clusters_2d(
         figsize: Figure size passed to ``matplotlib.pyplot.subplots``.
             Defaults to ``(14, 6)``.
     """
+
     if method == "pca":
         reducer = PCA(n_components=2, random_state=seed)
         coords = reducer.fit_transform(X_scaled)
@@ -752,6 +754,7 @@ def plot_dendrogram_colored_labels(
     Returns:
         NDArray: The hierarchical clustering linkage matrix returned by ``linkage``.
     """
+
     X = data[feature_cols].copy()
     y = data[label_col].astype("category")
     labels = [name.replace(".txt", "")[:30] for name in data[file_col].tolist()]
@@ -820,6 +823,7 @@ def plot_work_length_distribution_by_author(works_df: pd.DataFrame, save_path: P
         save_path: Optional path where the generated figure will be saved.
             If ``None``, the figure is only displayed.
     """
+
     plt.figure(figsize=(12, 6))
 
     order = works_df.groupby("author")["word_count"].median().sort_values().index
@@ -869,6 +873,7 @@ def add_projection(df: pd.DataFrame, coords: np.ndarray, prefix: str) -> pd.Data
     Returns:
         A copy of `df` with the added projection columns.
     """
+
     out = df.copy()
     out[f"{prefix}_1"] = coords[:, 0]
     out[f"{prefix}_2"] = coords[:, 1]
@@ -885,6 +890,24 @@ def plot_projection(
     hover_cols: list[str] | None = None,
     size_col: str = "token_count",
 ) -> go.Figure:
+    """Plots a 2D or 3D projection scatter chart.
+
+    Args:
+        df: DataFrame containing the projection coordinates and metadata.
+        x: Column name to use for the x-axis.
+        y: Column name to use for the y-axis.
+        title: Plot title.
+        z: Optional column name to use for the z-axis. When provided, a 3D
+            scatter plot is created. When ``None``, a 2D scatter plot is created.
+        hover_cols: Optional column names to show in hover labels. When ``None``,
+            defaults to ``["author", "work", "n_chunks", "token_count"]``.
+        size_col: Column name to use for marker sizes. If this column is not
+            present in ``df``, marker sizing is disabled.
+
+    Returns:
+        The generated Plotly figure.
+    """
+
     hover_cols = hover_cols or ["author", "work", "n_chunks", "token_count"]
     size_arg = size_col if size_col in df.columns else None
 
@@ -952,6 +975,7 @@ def plot_local_contributions(
         top_n: Number of rows from `local_df` to include in the plot.
         figsize: Figure size passed to Matplotlib.
     """
+
     plot_local = local_df.head(top_n).sort_values("contribution")
 
     plt.figure(figsize=figsize)
@@ -978,6 +1002,7 @@ def plot_global_bar_for_author(df: pd.DataFrame, author: str, save_path: Path | 
         author: Author/class name used to select SHAP values and name the output file.
         save_path: Optional path where the generated figure will be saved. If ``None``, the figure is only displayed.
     """
+
     df = df.sort_values("mean_abs_shap")
     plt.figure(figsize=(8, max(4, 0.35 * len(df))))
     plt.barh(df["word"], df["mean_abs_shap"])
@@ -990,9 +1015,7 @@ def plot_global_bar_for_author(df: pd.DataFrame, author: str, save_path: Path | 
     plt.show()
 
 
-def plot_beeswarm_for_author(
-    author: str, exp: shap.Explanation, save_path: Path | None = None, max_display: int = 25
-) -> None:
+def plot_beeswarm_for_author(author: str, exp: shap.Explanation, save_path: Path | None = None, max_display: int = 25):
     """Plot and save a SHAP beeswarm chart for a given author.
 
     This function builds a ``shap.Explanation`` object for the specified author
@@ -1006,6 +1029,7 @@ def plot_beeswarm_for_author(
         save_path: Optional path where the generated figure will be saved. If ``None``, the figure is only displayed.
         max_display: Maximum number of features to display in the beeswarm plot. Defaults to 25.
     """
+
     shap.plots.beeswarm(exp, max_display=max_display, show=False)
     plt.title(f"SHAP beeswarm para la clase: {author}")
     plt.tight_layout()
@@ -1020,7 +1044,7 @@ def plot_local_shap_bar(
     work: str,
     instance_id,
     figs_dir: Path,
-) -> None:
+):
     """Plot and save a horizontal bar chart of local SHAP values.
 
     The input DataFrame is sorted by ``shap_value`` and plotted as a horizontal
@@ -1037,6 +1061,7 @@ def plot_local_shap_bar(
             filename.
         figs_dir: Directory where the figure will be saved.
     """
+
     plot_df = df.sort_values("shap_value")
     plt.figure(figsize=(8, max(4, 0.35 * len(plot_df))))
     plt.barh(plot_df["word"], plot_df["shap_value"])
@@ -1060,7 +1085,7 @@ def plot_shap_waterfall(
     work: str,
     instance_id,
     figs_dir: Path,
-) -> None:
+):
     """Plot and save a SHAP waterfall chart for a single instance.
 
     This function renders a SHAP waterfall plot from a precomputed
@@ -1078,6 +1103,7 @@ def plot_shap_waterfall(
         figs_dir: Directory where the figure will be saved.
         filename_prefix: Prefix used to build the output filename.
     """
+
     shap.plots.waterfall(exp, max_display=top_n, show=False)
     plt.title(f"Waterfall SHAP: {author} | {work}")
     plt.tight_layout()
@@ -1119,6 +1145,7 @@ def plot_shap_decision(
             filename.
         figs_dir: Directory where the figure will be saved.
     """
+
     shap.decision_plot(
         base_value,
         mat,
@@ -1167,17 +1194,8 @@ def plot_shap_force(
 
     Returns:
         The visualization object returned by ``shap.force_plot()``.
-
-    Raises:
-        KeyError: If ``instance_id`` is not present in ``X_test_model_space`` or
-            if one or more values in ``feature_cols`` are missing.
-        IndexError: If ``row_pos`` is out of bounds for ``mat``.
-        ValueError: If the selected SHAP values and feature values are not
-            compatible with ``shap.force_plot()``.
-
-    Side Effects:
-        Initializes SHAP JavaScript support with ``shap.initjs()``.
     """
+
     shap.initjs()
     return shap.force_plot(
         base_value,
@@ -1212,6 +1230,7 @@ def plot_dependence_for_top_features(
             dependence plot data.
         figs_dir: Directory where generated plot files are saved.
     """
+
     top_features = top_table["feature"].tolist()
     for feature in top_features:
         shap.dependence_plot(
