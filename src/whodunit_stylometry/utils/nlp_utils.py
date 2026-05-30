@@ -36,6 +36,7 @@ def get_spacy_nlp():
     Returns:
         The loaded spaCy language pipeline with selected components disabled.
     """
+
     global nlp
     if nlp is None:
         nlp = spacy.load("en_core_web_sm", disable=["tagger", "attribute_ruler", "lemmatizer", "ner"])
@@ -184,6 +185,7 @@ def normalize_whitespace(text: str) -> str:
     Returns:
         A normalized version of the input text with consistent whitespace.
     """
+
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n ", "\n", text)
@@ -208,6 +210,7 @@ def normalize_text_for_tokenization(text: str) -> str:
         A normalized text string with standardized punctuation and whitespace,
         suitable for downstream tokenization.
     """
+
     text = re.sub(r"~", "", text)
     text = re.sub(r"…", "...", text)
     text = re.sub(r"(\. ?){3,}", " ... ", text)
@@ -241,6 +244,7 @@ def split_paragraphs(text: str) -> list[str]:
     Returns:
         A list of non-empty paragraph strings.
     """
+
     return [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
 
 
@@ -257,38 +261,8 @@ def is_alpha_tokens(tokens: list[str], keep_alpha: bool = True) -> list[str]:
         A list of filtered tokens, depending on the value of
         ``keep_alpha``.
     """
+
     return [t for t in tokens if bool(ALPHA_TOKENS.fullmatch(t)) == keep_alpha]
-
-
-def split_sentences_by_paragraph(paragraphs: list, batch_size: int = 1000) -> list[list[str]]:
-    """Split each paragraph into a list of sentences using a spaCy pipeline.
-
-    The function processes the input paragraphs in batches with ``nlp.pipe``
-    and extracts sentence strings from ``doc.sents``. Leading and trailing
-    whitespace is stripped, and empty sentences are discarded.
-
-    Notes:
-        This function expects a global spaCy ``nlp`` object to be available in
-        scope and configured with sentence boundary detection (e.g., a parser
-        or a ``sentencizer`` component).
-
-    Args:
-        paragraphs: List of paragraph texts to be segmented into sentences.
-        batch_size: Number of paragraphs to process per batch in ``nlp.pipe``.
-            Larger values may improve throughput at the cost of memory.
-
-    Returns:
-        A list where each element corresponds to the input paragraph at the
-        same index and contains the list of sentence strings extracted from it.
-    """
-    result = []
-
-    parser = get_spacy_nlp()
-    for doc in parser.pipe(paragraphs, batch_size=batch_size):
-        sentences = [s.text.strip() for s in doc.sents if s.text.strip()]
-        result.append(sentences)
-
-    return result
 
 
 def get_length_stats(
@@ -322,6 +296,7 @@ def get_length_stats(
 
         If no valid texts are found, `avg_len` and `median_len` are `np.nan`.
     """
+
     lengths = []
 
     for text in texts:
@@ -354,6 +329,7 @@ def get_length_stats_from_lengths(lengths: list[int], return_lengths: bool = Fal
         positive lengths. If `return_lengths` is `True`, the filtered positive
         lengths are appended as the fourth tuple element.
     """
+
     lengths = [length for length in lengths if length > 0]
     avg_len = np.mean(lengths) if lengths else np.nan
     median_len = np.median(lengths) if lengths else np.nan
@@ -382,6 +358,7 @@ def text_quality_metrics(text: str) -> dict[str, float]:
             digit_ratio: Proportion of characters that are digits.
             whitespace_ratio: Proportion of characters that are whitespace.
     """
+
     n_chars = len(text)
     n_alpha = sum(ch.isalpha() for ch in text)
     n_digit = sum(ch.isdigit() for ch in text)
@@ -427,6 +404,7 @@ def lexical_metrics(tokens_alpha: list[str]) -> dict[str, float]:
         as MATTR. If `tokens_alpha` is empty, `ttr`, `hapax_ratio`, and
         `avg_word_len` are returned as `np.nan`.
     """
+
     tokens_alpha = [t.lower() for t in tokens_alpha]
     n_tokens = len(tokens_alpha)
     counts = Counter(tokens_alpha)
@@ -468,6 +446,7 @@ def mattr(tokens: list[str], window: int = 100) -> float:
         `np.nan` if the number of tokens is smaller than `window` or if
         `window <= 1`.
     """
+
     if len(tokens) < window or window <= 1:
         return np.nan
 
@@ -520,6 +499,7 @@ def punctuation_metrics(text: str, n_tokens: int) -> dict[str, float]:
         are sensitive to text length and may also reflect editorial or
         typographic conventions.
     """
+
     punct_counts = {
         "comma_count": text.count(","),
         "period_count": len(re.findall(r"(?<!\.)\.(?!\.)", text)),
@@ -560,6 +540,7 @@ def stopword_metrics(tokens_alpha: list[str], stopword_set: set) -> dict[str, fl
             stopword_ratio: Proportion of alphabetic tokens that are
                 stopwords.
     """
+
     tokens_alpha = [t.lower() for t in tokens_alpha]
     n = len(tokens_alpha)
     sw = sum(1 for t in tokens_alpha if t in stopword_set)
@@ -584,6 +565,7 @@ def compute_long_word_ratio(tokens: list[str], min_len: int = 8) -> float:
     Returns:
         The proportion of long-word tokens in ``tokens``.
     """
+
     return sum(len(token) > min_len for token in tokens) / len(tokens)
 
 
@@ -610,6 +592,7 @@ def sentence_length_ratios(
     Returns:
         A tuple ``(short_sentence_ratio, long_sentence_ratio)``.
     """
+
     n = len(sentence_lengths)
 
     short_ratio = sum(length < short_max for length in sentence_lengths) / n
@@ -618,7 +601,7 @@ def sentence_length_ratios(
     return short_ratio, long_ratio
 
 
-def split_sentences_by_paragraph_fast(paragraphs: list[str]) -> list[list[str]]:
+def split_sentences_by_paragraph(paragraphs: list[str]) -> list[list[str]]:
     """Splits paragraphs into sentences using lightweight punctuation rules.
 
     Sentences are split on whitespace that follows `.`, `!`, or `?`.
@@ -631,6 +614,7 @@ def split_sentences_by_paragraph_fast(paragraphs: list[str]) -> list[list[str]]:
         A list with one nested list per input paragraph. Each nested list
         contains stripped sentence strings for that paragraph.
     """
+
     return [
         [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", paragraph) if sentence.strip()]
         for paragraph in paragraphs
@@ -664,6 +648,7 @@ def compute_novel_metrics(
         features, as well as normalized rates per 1,000 tokens for selected
         punctuation marks.
     """
+
     stopwords = stopword_set if stopword_set else STOP_WORDS
 
     if tokens_all is None:
@@ -676,7 +661,7 @@ def compute_novel_metrics(
     tokens_not_alpha_count = n_tokens_all - len(tokens_alpha)
 
     paragraphs = split_paragraphs(clean_text)
-    paragraph_sentences = split_sentences_by_paragraph_fast(paragraphs)
+    paragraph_sentences = split_sentences_by_paragraph(paragraphs)
     sentences = [s for para in paragraph_sentences for s in para]
     sentence_counts_per_paragraph = [len(sents) for sents in paragraph_sentences]
 
@@ -770,6 +755,7 @@ def get_tokens_alpha_by_author(df: pd.DataFrame, is_lower: bool = True) -> dict[
         of alphabetic tokens aggregated from all books associated with that
         author.
     """
+
     tokenizer = CustomTokenizer()
 
     out = {}
@@ -809,6 +795,7 @@ def compute_word_frecuencies(
         A dictionary mapping each author to a `Counter` containing token
         frequencies.
     """
+
     counters = {}
 
     for author, toks in alpha_tokens.items():
@@ -836,6 +823,7 @@ def top_n_words(counter: Counter, n: int = 20) -> pd.DataFrame:
         A pandas DataFrame with columns `"token"` and `"freq"`, sorted by
         descending frequency.
     """
+
     data = counter.most_common(n)
     return pd.DataFrame(data, columns=["token", "freq"])
 
@@ -864,6 +852,7 @@ def top_ngrams(tokens: list[str], n: int = 2, top_k: int = 20, stopword_set: set
 
         The list is sorted in descending order of frequency.
     """
+
     if stopword_set is not None:
         tokens = [t for t in tokens if t not in stopword_set]
 
@@ -897,6 +886,7 @@ def compute_ngrams_frecuencies(
         A dictionary mapping each author to a ``Counter`` containing the most
         frequent n-grams for that author's token list.
     """
+
     out = {}
 
     for author, toks in alpha_tokens.items():
@@ -927,6 +917,7 @@ def build_mfw_features(
             - A DataFrame with one row per file, a `file_name` column, and one
               `fw_<word>` relative-frequency column per selected function word.
     """
+
     global_fw_counts = Counter()
     for tokens in tokens_by_file.values():
         global_fw_counts.update(tok for tok in tokens if tok in function_words)
@@ -966,6 +957,7 @@ def transform_with_mfw(
         A DataFrame with one row per file, a `file_name` column, and one
         `fw_<word>` relative-frequency column per word in `mfw`.
     """
+
     rows = []
 
     for file_name, tokens in tokens_by_file.items():
@@ -993,6 +985,7 @@ def tokenize_text(text: str, tokenizer: CustomTokenizer, lowercase: bool = True)
         A list of alphabetic tokens. Tokens are lowercased when ``lowercase`` is
         ``True``.
     """
+
     tokens = is_alpha_tokens(tokenizer.tokenize(text), keep_alpha=True)
     if lowercase:
         return [token.lower() for token in tokens]
@@ -1018,6 +1011,7 @@ def tokenize_text_all(
             - Alphabetic tokens filtered from the full token list, lowercased
               when `lowercase_alpha` is `True`.
     """
+
     tokens_all = tokenizer.tokenize(text)
     tokens_alpha = is_alpha_tokens(tokens_all, keep_alpha=True)
     if lowercase_alpha:
@@ -1041,6 +1035,7 @@ def add_tokens(df: pd.DataFrame, lowercase: bool = True) -> pd.DataFrame:
             - ``ttr``: Type-token ratio, computed as ``type_count / token_count``.
               Empty token lists receive ``np.nan``.
     """
+
     tokenizer = CustomTokenizer()
     out = df.copy()
     tokenized = [tokenize_text_all(text, tokenizer=tokenizer, lowercase_alpha=lowercase) for text in out["text"]]
