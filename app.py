@@ -716,7 +716,7 @@ if selected_analysis == "classical":
         seed=seed,
     )
 
-if selected_method == "mendenhall":
+if selected_analysis == "classical" and selected_method == "mendenhall":
     blocks_tab, average_tab, attribution_tab = st.tabs(
         [
             "Curvas características por bloques",
@@ -875,7 +875,7 @@ if selected_method == "mendenhall":
 
     st.stop()
 
-if selected_method == "kilgariff":
+if selected_analysis == "classical" and selected_method == "kilgariff":
     corpus_tab, vocab_tab, attribution_tab, contributions_tab = st.tabs(
         ["Corpus", "Vocabulario global", "Atribución de obra", "Contribuciones"]
     )
@@ -1120,7 +1120,7 @@ if selected_method == "kilgariff":
 
     st.stop()
 
-if selected_method == "burrows":
+if selected_analysis == "classical" and selected_method == "burrows":
     corpus_tab, vocab_tab, attribution_tab, contributions_tab = st.tabs(
         ["Corpus", "Vocabulario global", "Atribución de obra", "Contribuciones"]
     )
@@ -1376,261 +1376,359 @@ if selected_method == "burrows":
 
     st.stop()
 
-if selected_analysis == "embeddings":
-    embedding_config = EmbeddingsConfig(
-        model=embedding_model,
-        dimensions=embedding_dimensions,
-        chunk_tokens=int(embedding_chunk_tokens),
-        chunk_overlap=int(embedding_chunk_overlap),
-        min_chunk_tokens=int(embedding_min_chunk_tokens),
-        batch_size=int(embedding_batch_size),
-        max_retries=int(embedding_max_retries),
-        random_state=int(embedding_random_state),
-        umap_neighbors=int(embedding_umap_neighbors),
-        umap_min_dist=float(embedding_umap_min_dist),
-        network_top_k=int(embedding_network_top_k),
-        nearest_neighbors_k=int(embedding_nn_k),
+
+#######################################
+# PERFORM SUPERVISED METHODS ANALYSIS #
+#######################################
+if selected_analysis == "supervised":
+    model_display_names = {value: key for key, value in MODEL_NAMES.items()}
+    ml_config = SupervisedConfig(
+        feature_set=ml_feature_set,
+        top_n_mfw=int(ml_top_n_mfw),
+        seed=int(ml_seed),
+        n_test_per_author=int(ml_n_test_per_author),
+        keep_correlated_features=ml_keep_correlated,
+        correlation_threshold=float(ml_corr_threshold),
+        selected_models=ml_model_names,
     )
 
-    api_tab, chunks_tab, projections_tab, similarity_tab, neighbors_tab, cohesion_tab, network_tab = st.tabs(
-        ["API", "Fragmentos", "Proyección", "Similitud", "Vecinos", "Cohesión", "Red"]
-    )
+    if selected_ml_workflow == "experiment":
+        if not ml_model_names:
+            st.warning("Selecciona al menos un modelo para ejecutar el experimento.")
+            st.stop()
 
-    embedding_cache_key = embeddings_experiment_cache_key(corpus_df, lowercase, embedding_config)
-    embedding_cache = st.session_state.setdefault("openai_embeddings_cache", {})
-    embedding_result = embedding_cache.get(embedding_cache_key)
-
-    with api_tab:
-        st.subheader("Generación de embeddings")
-        st.caption(
-            "La API key se usa solo para crear el cliente en memoria durante esta ejecución. "
-            "No se guarda en archivos ni en la caché de resultados."
+        data_tab, features_tab, models_tab, evaluation_tab, predictions_tab, attribution_tab = st.tabs(
+            ["Datos", "Rasgos", "Modelos", "Evaluación", "Predicciones", "Atribuir obra"]
         )
 
-        if embedding_config.chunk_overlap >= embedding_config.chunk_tokens:
-            st.warning(
-                "CHUNK_OVERLAP debería ser menor que CHUNK_TOKENS para evitar fragmentos excesivamente solapados."
-            )
-            st.stop()
-
-        try:
-            estimated_chunks_df = estimate_embedding_chunks(corpus_df, embedding_config)
-        except Exception as exc:
-            st.error(f"No se han podido estimar los fragmentos: {exc}")
-            st.stop()
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Modelo", embedding_config.model)
-        with col2:
-            st.metric("Dimensiones", embedding_config.dimensions or "Nativa")
-        with col3:
-            st.metric("Fragmentos estimados", estimated_chunks_df.shape[0])
-        with col4:
-            estimated_tokens = int(estimated_chunks_df["token_count"].sum()) if not estimated_chunks_df.empty else 0
-            st.metric("Tokens en fragmentos", f"{estimated_tokens:,}")
-
-        if estimated_chunks_df.empty:
-            st.warning("No se han generado fragmentos con la configuración actual.")
+        experiment_cache_key = supervised_experiment_cache_key(corpus_df, lowercase, ml_config)
+        experiment_cache = st.session_state.setdefault("supervised_experiment_cache", {})
+        if experiment_cache_key in experiment_cache:
+            ml_result = experiment_cache[experiment_cache_key]
         else:
-            chunk_summary = (
-                estimated_chunks_df.groupby("author", as_index=False)
-                .agg(obras=("work", "nunique"), fragmentos=("chunk_id", "count"), tokens=("token_count", "sum"))
-                .sort_values("fragmentos", ascending=False)
+            with st.spinner("Entrenando y evaluando modelos supervisados..."):
+                ml_result = run_supervised_experiment(corpus_df, ml_config)
+            experiment_cache[experiment_cache_key] = ml_result
+
+        with data_tab:
+            st.subheader("Partición de entrenamiento y test")
+            split_summary = pd.DataFrame(
+                [
+                    {"split": "Entrenamiento", "obras": ml_result["train_df"].shape[0]},
+                    {"split": "Test", "obras": ml_result["test_df"].shape[0]},
+                ]
             )
-            st.dataframe(chunk_summary, width="stretch", hide_index=True)
+            st.dataframe(split_summary, width="stretch", hide_index=True)
 
-        generate_embeddings = st.button("Generar embeddings", type="primary", width="stretch")
-        if generate_embeddings:
-            if not openai_api_key:
-                st.error("Introduce una API key de OpenAI para generar los embeddings.")
-            elif estimated_chunks_df.empty:
-                st.error("No se han generado fragmentos. Ajusta los parámetros de segmentación.")
-            else:
-                try:
-                    with st.spinner("Generando embeddings con OpenAI y calculando métricas..."):
-                        embedding_result = run_openai_embeddings_experiment(
-                            corpus_df,
-                            embedding_config,
-                            api_key=openai_api_key,
-                        )
-                    embedding_cache[embedding_cache_key] = embedding_result
-                    st.success("Embeddings generados correctamente.")
-                except Exception as exc:
-                    st.error(str(exc))
+            by_author = (
+                pd.concat(
+                    [
+                        ml_result["train_df"].assign(split="Entrenamiento"),
+                        ml_result["test_df"].assign(split="Test"),
+                    ]
+                )
+                .groupby(["split", "author"], as_index=False)
+                .size()
+                .rename(columns={"size": "obras"})
+            )
+            split_fig = px.bar(
+                by_author,
+                x="author",
+                y="obras",
+                color="split",
+                barmode="group",
+                labels={"author": "Autor", "obras": "Obras", "split": "Partición"},
+                title="Obras por autor en cada partición",
+            )
+            st.plotly_chart(split_fig, width="stretch")
 
-        if embedding_result is None:
-            st.info("Genera embeddings para activar las pestañas de visualización, similitud y cohesión.")
-        else:
-            col1, col2, col3, col4 = st.columns(4)
+        with features_tab:
+            st.subheader("Rasgos utilizados")
+            col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Dimensión final", embedding_result["embedding_dimension"])
+                st.metric("Conjunto", ml_feature_label)
             with col2:
-                st.metric("Embeddings de fragmentos", embedding_result["n_api_inputs"])
+                st.metric("Número de rasgos", len(ml_result["feature_cols"]))
             with col3:
-                st.metric("Obras agregadas", embedding_result["work_embeddings"].shape[0])
-            with col4:
-                st.metric("Autores agregados", embedding_result["author_embeddings"].shape[0])
+                st.metric("TOP_N_MFW", len(ml_result["mfw_vocab"]) if ml_result["mfw_vocab"] else "No aplica")
 
-    if embedding_result is None:
-        with chunks_tab:
-            st.info("Genera embeddings en la pestaña API para ver los fragmentos finales.")
-        with projections_tab:
-            st.info("Genera embeddings en la pestaña API para ver las proyecciones.")
-        with similarity_tab:
-            st.info("Genera embeddings en la pestaña API para ver las similitudes.")
-        with neighbors_tab:
-            st.info("Genera embeddings en la pestaña API para ver los vecinos más cercanos.")
-        with cohesion_tab:
-            st.info("Genera embeddings en la pestaña API para ver métricas de cohesión.")
-        with network_tab:
-            st.info("Genera embeddings en la pestaña API para ver la red de similitud.")
+            feature_matrix_df = pd.concat(
+                [
+                    ml_result["train_df"].assign(split="Entrenamiento"),
+                    ml_result["test_df"].assign(split="Test"),
+                ],
+                ignore_index=True,
+            )
+            metadata_cols = [col for col in ["split", "author", "work", "filename"] if col in feature_matrix_df.columns]
+            feature_matrix_df = feature_matrix_df[metadata_cols + ml_result["feature_cols"]]
+            st.dataframe(feature_matrix_df, width="stretch", hide_index=True)
+
+            if ml_feature_set in {"stylometric", "combined"} and ml_result["removed_features"]:
+                st.subheader("Rasgos eliminados por correlación")
+                st.caption(
+                    "**Tip:** al eliminar rasgos muy correlacionados se reduce redundancia entre variables y se evita que "
+                    "algunos modelos den peso repetido a señales casi equivalentes."
+                )
+                st.dataframe(
+                    pd.DataFrame({"removed_feature": ml_result["removed_features"]}),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+        with models_tab:
+            st.subheader("Validación cruzada")
+            st.caption(
+                "**Tip:** `cv_mean` resume el rendimiento medio en validación cruzada sobre entrenamiento; `cv_std` indica "
+                "cuánto varía ese rendimiento entre particiones."
+            )
+            cv_df = ml_result["cv_results"].copy()
+            cv_df["model"] = cv_df["model"].map(model_display_names)
+            st.dataframe(
+                cv_df.style.format({"cv_mean": "{:.3f}", "cv_std": "{:.3f}"}),
+                width="stretch",
+                hide_index=True,
+            )
+            cv_fig = px.bar(
+                cv_df.sort_values("cv_mean"),
+                x="cv_mean",
+                y="model",
+                error_x="cv_std",
+                orientation="h",
+                labels={"cv_mean": "F1-macro medio", "model": "Modelo"},
+                title="Rendimiento medio en validación cruzada",
+            )
+            st.plotly_chart(cv_fig, width="stretch")
+
+        with evaluation_tab:
+            st.subheader("Evaluación del mejor modelo")
+            best_model_label = model_display_names.get(ml_result["best_model_name"], ml_result["best_model_name"])
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Mejor modelo", best_model_label)
+            with col2:
+                st.metric("F1-macro test", f"{ml_result['test_f1_macro']:.3f}")
+            with col3:
+                st.metric("Accuracy test", f"{ml_result['test_accuracy']:.3f}")
+
+            report_df = pd.DataFrame(ml_result["classification_report"]).T.reset_index(names="label")
+            st.dataframe(report_df, width="stretch", hide_index=True)
+
+            cm_df = pd.DataFrame(
+                ml_result["confusion_matrix"],
+                index=ml_result["labels"],
+                columns=ml_result["labels"],
+            )
+            cm_fig = px.imshow(
+                cm_df,
+                text_auto=True,
+                aspect="auto",
+                color_continuous_scale="Blues",
+                labels={"x": "Autor predicho", "y": "Autor real", "color": "Obras"},
+                title="Matriz de confusión en test",
+            )
+            cm_fig.update_coloraxes(showscale=False)
+            st.plotly_chart(cm_fig, width="stretch")
+
+        with predictions_tab:
+            st.subheader("Predicciones por obra")
+            pred_df = ml_result["pred_df"].copy()
+            st.dataframe(pred_df, width="stretch", hide_index=True)
+
+        with attribution_tab:
+            st.subheader("Atribuir una nueva obra")
+            uploaded_file = st.file_uploader(
+                "Selecciona una obra en .txt",
+                type=["txt"],
+                key="experiment_attribution_uploaded_txt",
+            )
+
+            if "experiment_attribution_text" not in st.session_state:
+                st.session_state.experiment_attribution_text = None
+            if "experiment_attribution_filename" not in st.session_state:
+                st.session_state.experiment_attribution_filename = None
+
+            if uploaded_file is not None:
+                st.session_state.experiment_attribution_text = uploaded_file.getvalue().decode(
+                    "utf-8",
+                    errors="replace",
+                )
+                st.session_state.experiment_attribution_filename = uploaded_file.name
+
+            if st.session_state.experiment_attribution_text is None:
+                st.info("Sube un archivo .txt para atribuirlo con el mejor modelo de este experimento.")
+            else:
+                experiment_model_bundle = {
+                    "pipeline": ml_result["best_pipeline"],
+                    "feature_cols": ml_result["feature_cols"],
+                    "mfw_vocab": ml_result["mfw_vocab"],
+                }
+                attribution_ranking_df, attribution_explanation_df = classify_text_with_supervised_model(
+                    st.session_state.experiment_attribution_text,
+                    experiment_model_bundle,
+                    ml_config,
+                    lowercase=lowercase,
+                )
+                score_col = "probability" if "probability" in attribution_ranking_df.columns else "score"
+                predicted_row = attribution_ranking_df.iloc[0]
+                uploaded_filename = st.session_state.experiment_attribution_filename or "obra externa"
+
+                st.success(f"Archivo cargado: {uploaded_filename}")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    best_model_label = model_display_names.get(
+                        ml_result["best_model_name"],
+                        ml_result["best_model_name"],
+                    )
+                    st.metric("Modelo", best_model_label)
+                with col2:
+                    st.metric("Autor predicho", predicted_row["author"])
+                with col3:
+                    st.metric("Score", f"{predicted_row[score_col]:.3f}")
+
+                ranking_fig = px.bar(
+                    attribution_ranking_df.sort_values(score_col),
+                    x=score_col,
+                    y="author",
+                    orientation="h",
+                    labels={score_col: "Probabilidad" if score_col == "probability" else "Score", "author": "Autor"},
+                    title="Ranking de atribución",
+                )
+                st.plotly_chart(ranking_fig, width="stretch")
+                st.dataframe(
+                    attribution_ranking_df.style.format({score_col: "{:.3f}"}),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+                if attribution_explanation_df.empty:
+                    st.info("La explicabilidad local está disponible para modelos lineales con coeficientes.")
+                else:
+                    st.subheader("Rasgos que más empujan la predicción")
+                    top_explanation = attribution_explanation_df.head(25)
+                    explanation_fig = px.bar(
+                        top_explanation.sort_values("contribution"),
+                        x="contribution",
+                        y="feature",
+                        orientation="h",
+                        labels={"contribution": "Contribución", "feature": "Rasgo"},
+                        title="Contribuciones locales principales",
+                    )
+                    explanation_fig.update_layout(height=max(400, 25 * len(top_explanation)))
+                    st.plotly_chart(explanation_fig, width="stretch")
+                    st.dataframe(
+                        top_explanation[["feature", "value", "contribution"]].style.format(
+                            {"value": "{:.6f}", "contribution": "{:.3f}"}
+                        ),
+                        width="stretch",
+                        hide_index=True,
+                    )
+
         st.stop()
 
-    with chunks_tab:
-        st.subheader("Fragmentos generados")
-        st.dataframe(embedding_result["chunks_df"], width="stretch", hide_index=True)
+    if selected_ml_workflow == "robustness":
+        if not ml_top_n_values or not ml_seeds or not ml_model_names:
+            st.warning("Configura al menos un TOP_N_MFW, una semilla y un modelo.")
+            st.stop()
 
-    with projections_tab:
-        st.subheader("Proyección de obras completas")
-        work_projection_df = embedding_result["work_projection_df"].copy()
-        projection_mode = st.radio("Proyección", ["UMAP 2D", "UMAP 3D"], horizontal=True)
-        if projection_mode == "UMAP 2D":
-            projection_fig = px.scatter(
-                work_projection_df,
-                x="umap_1",
-                y="umap_2",
-                color="author",
-                hover_data=["work", "n_chunks", "token_count"],
-                title="UMAP de obras completas en 2D",
-                height=720,
+        sweep_tab, summary_tab, decision_tab, detail_tab = st.tabs(
+            ["Barrido", "Resumen por TOP_N", "Decisión", "Detalle de ejecuciones"]
+        )
+
+        with st.spinner("Ejecutando barrido de robustez MFW..."):
+            robustness = run_mfw_robustness(
+                corpus_df,
+                top_n_values=ml_top_n_values,
+                seeds=ml_seeds,
+                n_test_per_author=int(ml_n_test_per_author),
+                tolerance=float(ml_tolerance),
+                selected_models=ml_model_names,
             )
-        elif projection_mode == "UMAP 3D" and "umap_3" in work_projection_df.columns:
-            projection_fig = px.scatter_3d(
-                work_projection_df,
-                x="umap_1",
-                y="umap_2",
-                z="umap_3",
-                color="author",
-                hover_data=["work", "n_chunks", "token_count"],
-                title="UMAP de obras completas en 3D",
-                height=720,
+
+        with sweep_tab:
+            st.subheader("Configuración del barrido")
+            config_df = pd.DataFrame(
+                [
+                    {"parámetro": "TOP_N_MFW", "valor": ", ".join(map(str, ml_top_n_values))},
+                    {"parámetro": "Semillas", "valor": ", ".join(map(str, ml_seeds))},
+                    {"parámetro": "Modelos", "valor": ", ".join(ml_model_labels)},
+                    {"parámetro": "Tolerancia", "valor": f"{ml_tolerance:.3f}"},
+                ]
             )
-        else:
-            st.info("Esta proyección 3D requiere al menos tres obras y tres dimensiones.")
-            projection_fig = None
+            st.dataframe(config_df, width="stretch", hide_index=True)
 
-        if projection_fig is not None:
-            st.plotly_chart(projection_fig, width="stretch")
-        st.caption(
-            "Varianza explicada PCA: "
-            + ", ".join(f"PC{i + 1}={value:.3f}" for i, value in enumerate(embedding_result["pca_variance"]))
-        )
-
-        st.subheader("UMAP de fragmentos")
-        chunk_projection_df = embedding_result["chunks_projection_df"]
-        if projection_mode == "UMAP 2D":
-            chunk_fig = px.scatter(
-                chunk_projection_df,
-                x="umap_1",
-                y="umap_2",
-                color="author",
-                hover_data=["work", "chunk_index", "token_count"],
-                title="UMAP de fragmentos en 2D",
-                height=720,
+        with summary_tab:
+            st.subheader("Rendimiento agregado")
+            summary_df = robustness["summary_df"].copy()
+            summary_df["model_name"] = summary_df["model_name"].map(model_display_names)
+            st.dataframe(
+                summary_df.style.format(
+                    {
+                        "mean_test_f1_macro": "{:.3f}",
+                        "std_test_f1_macro": "{:.3f}",
+                        "min_test_f1_macro": "{:.3f}",
+                        "max_test_f1_macro": "{:.3f}",
+                    }
+                ),
+                width="stretch",
+                hide_index=True,
             )
-            chunk_fig.update_traces(marker={"size": 6, "opacity": 0.55})
-            st.plotly_chart(chunk_fig, width="stretch")
-        elif "umap_3" in chunk_projection_df.columns:
-            chunk_fig = px.scatter_3d(
-                chunk_projection_df,
-                x="umap_1",
-                y="umap_2",
-                z="umap_3",
-                color="author",
-                hover_data=["work", "chunk_index", "token_count"],
-                title="UMAP de fragmentos en 3D",
-                height=720,
+            robustness_fig = px.line(
+                summary_df,
+                x="top_n_mfw",
+                y="mean_test_f1_macro",
+                color="model_name",
+                markers=True,
+                error_y="std_test_f1_macro",
+                labels={
+                    "top_n_mfw": "TOP_N_MFW",
+                    "mean_test_f1_macro": "F1-macro medio",
+                    "model_name": "Modelo",
+                },
+                title="Robustez del rendimiento según número de MFW",
             )
-            chunk_fig.update_traces(marker={"size": 4, "opacity": 0.45})
-            st.plotly_chart(chunk_fig, width="stretch")
-        else:
-            st.info("La proyección 3D de fragmentos requiere al menos tres fragmentos y tres dimensiones.")
+            robustness_fig.add_hline(
+                y=robustness["threshold_score"],
+                line_dash="dash",
+                annotation_text="Umbral",
+            )
+            robustness_fig.add_vline(
+                x=robustness["selected_top_n_mfw"],
+                line_dash="dot",
+                annotation_text="TOP_N seleccionado",
+            )
+            st.plotly_chart(robustness_fig, width="stretch")
 
-    with similarity_tab:
-        st.subheader("Similitud coseno")
-        author_sim_fig = px.imshow(
-            embedding_result["author_similarity_df"],
-            text_auto=".2f",
-            aspect="auto",
-            color_continuous_scale="Viridis",
-            title="Similitud coseno media entre autores",
-        )
-        author_sim_fig.update_layout(height=620)
-        st.plotly_chart(author_sim_fig, width="stretch")
+        with decision_tab:
+            st.subheader("Selección del menor TOP_N_MFW suficiente")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Mejor media observada", f"{robustness['best_mean_score']:.3f}")
+            with col2:
+                st.metric("Umbral", f"{robustness['threshold_score']:.3f}")
+            with col3:
+                st.metric("TOP_N_MFW seleccionado", robustness["selected_top_n_mfw"])
+            with col4:
+                st.metric(
+                    "Modelo seleccionado",
+                    model_display_names.get(robustness["selected_model_name"], robustness["selected_model_name"]),
+                )
 
-        work_sim_fig = px.imshow(
-            embedding_result["work_similarity_df"],
-            aspect="auto",
-            color_continuous_scale="Viridis",
-            title="Similitud coseno entre obras, ordenada por autor",
-        )
-        work_sim_fig.update_layout(height=760)
-        work_sim_fig.update_xaxes(showticklabels=False)
-        work_sim_fig.update_yaxes(showticklabels=False)
-        st.plotly_chart(work_sim_fig, width="stretch")
+            decision_df = robustness["final_decision_df"].copy()
+            decision_df["model_name"] = decision_df["model_name"].map(model_display_names)
+            st.dataframe(decision_df, width="stretch", hide_index=True)
 
-    with neighbors_tab:
-        st.subheader("Vecinos más cercanos por obra")
-        neighbor_summary_df = embedding_result["neighbor_summary_df"]
-        neighbor_fig = px.bar(
-            neighbor_summary_df,
-            x="neighbor_rank",
-            y="pct_same_author",
-            labels={"neighbor_rank": "Rango del vecino", "pct_same_author": "% mismo autor"},
-            title="Porcentaje de vecinos del mismo autor por rango",
-            height=520,
-        )
-        neighbor_fig.update_yaxes(range=[0, 100])
-        st.plotly_chart(neighbor_fig, width="stretch")
-        st.dataframe(
-            embedding_result["nearest_neighbors_df"].style.format({"cosine_similarity": "{:.3f}"}),
-            width="stretch",
-            hide_index=True,
-        )
+        with detail_tab:
+            st.subheader("Todas las ejecuciones")
+            detail_df = robustness["sweep_df"].copy()
+            detail_df["model_name"] = detail_df["model_name"].map(model_display_names)
+            st.dataframe(detail_df, width="stretch", hide_index=True)
 
-    with cohesion_tab:
-        st.subheader("Cohesión por autor")
-        st.metric("Silhouette por autor", f"{embedding_result['silhouette']:.3f}")
-        pairs_df = embedding_result["pairs_df"].copy()
-        pairs_df["same_author"] = pairs_df["same_author"].map({True: "Mismo autor", False: "Distinto autor"})
-        distance_fig = px.box(
-            pairs_df,
-            x="same_author",
-            y="cosine_distance",
-            points="all",
-            labels={"same_author": "", "cosine_distance": "Distancia coseno"},
-            title="Distancias coseno intraautor vs interautor",
-            height=560,
-        )
-        st.plotly_chart(distance_fig, width="stretch")
-        st.dataframe(
-            embedding_result["author_metrics_df"].style.format(
-                {
-                    "mean_intra_author_distance": "{:.3f}",
-                    "mean_inter_author_distance": "{:.3f}",
-                    "separation_margin": "{:.3f}",
-                }
-            ),
-            width="stretch",
-            hide_index=True,
-        )
+        st.stop()
 
-    with network_tab:
-        st.subheader("Red de similitud entre obras")
-        st.plotly_chart(embedding_result["network_fig"], width="stretch")
 
-    st.stop()
-
+#########################################
+# PERFORM UNSUPERVISED METHODS ANALYSIS #
+#########################################
 if selected_analysis == "unsupervised":
     unsup_display_names = {value: key for key, value in UNSUPERVISED_MODEL_NAMES.items()}
 
@@ -2083,347 +2181,261 @@ if selected_analysis == "unsupervised":
 
         st.stop()
 
-if selected_analysis == "supervised":
-    model_display_names = {value: key for key, value in MODEL_NAMES.items()}
-    ml_config = SupervisedConfig(
-        feature_set=ml_feature_set,
-        top_n_mfw=int(ml_top_n_mfw),
-        seed=int(ml_seed),
-        n_test_per_author=int(ml_n_test_per_author),
-        keep_correlated_features=ml_keep_correlated,
-        correlation_threshold=float(ml_corr_threshold),
-        selected_models=ml_model_names,
+
+#######################################
+# PERFORM EMBEDDINGS METHODS ANALYSIS #
+#######################################
+if selected_analysis == "embeddings":
+    embedding_config = EmbeddingsConfig(
+        model=embedding_model,
+        dimensions=embedding_dimensions,
+        chunk_tokens=int(embedding_chunk_tokens),
+        chunk_overlap=int(embedding_chunk_overlap),
+        min_chunk_tokens=int(embedding_min_chunk_tokens),
+        batch_size=int(embedding_batch_size),
+        max_retries=int(embedding_max_retries),
+        random_state=int(embedding_random_state),
+        umap_neighbors=int(embedding_umap_neighbors),
+        umap_min_dist=float(embedding_umap_min_dist),
+        network_top_k=int(embedding_network_top_k),
+        nearest_neighbors_k=int(embedding_nn_k),
     )
 
-    if selected_ml_workflow == "experiment":
-        if not ml_model_names:
-            st.warning("Selecciona al menos un modelo para ejecutar el experimento.")
-            st.stop()
+    api_tab, chunks_tab, projections_tab, similarity_tab, neighbors_tab, cohesion_tab, network_tab = st.tabs(
+        ["API", "Fragmentos", "Proyección", "Similitud", "Vecinos", "Cohesión", "Red"]
+    )
 
-        data_tab, features_tab, models_tab, evaluation_tab, predictions_tab, attribution_tab = st.tabs(
-            ["Datos", "Rasgos", "Modelos", "Evaluación", "Predicciones", "Atribuir obra"]
+    embedding_cache_key = embeddings_experiment_cache_key(corpus_df, lowercase, embedding_config)
+    embedding_cache = st.session_state.setdefault("openai_embeddings_cache", {})
+    embedding_result = embedding_cache.get(embedding_cache_key)
+
+    with api_tab:
+        st.subheader("Generación de embeddings")
+        st.caption(
+            "La API key se usa solo para crear el cliente en memoria durante esta ejecución. "
+            "No se guarda en archivos ni en la caché de resultados."
         )
 
-        experiment_cache_key = supervised_experiment_cache_key(corpus_df, lowercase, ml_config)
-        experiment_cache = st.session_state.setdefault("supervised_experiment_cache", {})
-        if experiment_cache_key in experiment_cache:
-            ml_result = experiment_cache[experiment_cache_key]
+        if embedding_config.chunk_overlap >= embedding_config.chunk_tokens:
+            st.warning(
+                "CHUNK_OVERLAP debería ser menor que CHUNK_TOKENS para evitar fragmentos excesivamente solapados."
+            )
+            st.stop()
+
+        try:
+            estimated_chunks_df = estimate_embedding_chunks(corpus_df, embedding_config)
+        except Exception as exc:
+            st.error(f"No se han podido estimar los fragmentos: {exc}")
+            st.stop()
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Modelo", embedding_config.model)
+        with col2:
+            st.metric("Dimensiones", embedding_config.dimensions or "Nativa")
+        with col3:
+            st.metric("Fragmentos estimados", estimated_chunks_df.shape[0])
+        with col4:
+            estimated_tokens = int(estimated_chunks_df["token_count"].sum()) if not estimated_chunks_df.empty else 0
+            st.metric("Tokens en fragmentos", f"{estimated_tokens:,}")
+
+        if estimated_chunks_df.empty:
+            st.warning("No se han generado fragmentos con la configuración actual.")
         else:
-            with st.spinner("Entrenando y evaluando modelos supervisados..."):
-                ml_result = run_supervised_experiment(corpus_df, ml_config)
-            experiment_cache[experiment_cache_key] = ml_result
-
-        with data_tab:
-            st.subheader("Partición de entrenamiento y test")
-            split_summary = pd.DataFrame(
-                [
-                    {"split": "Entrenamiento", "obras": ml_result["train_df"].shape[0]},
-                    {"split": "Test", "obras": ml_result["test_df"].shape[0]},
-                ]
+            chunk_summary = (
+                estimated_chunks_df.groupby("author", as_index=False)
+                .agg(obras=("work", "nunique"), fragmentos=("chunk_id", "count"), tokens=("token_count", "sum"))
+                .sort_values("fragmentos", ascending=False)
             )
-            st.dataframe(split_summary, width="stretch", hide_index=True)
+            st.dataframe(chunk_summary, width="stretch", hide_index=True)
 
-            by_author = (
-                pd.concat(
-                    [
-                        ml_result["train_df"].assign(split="Entrenamiento"),
-                        ml_result["test_df"].assign(split="Test"),
-                    ]
-                )
-                .groupby(["split", "author"], as_index=False)
-                .size()
-                .rename(columns={"size": "obras"})
-            )
-            split_fig = px.bar(
-                by_author,
-                x="author",
-                y="obras",
-                color="split",
-                barmode="group",
-                labels={"author": "Autor", "obras": "Obras", "split": "Partición"},
-                title="Obras por autor en cada partición",
-            )
-            st.plotly_chart(split_fig, width="stretch")
-
-        with features_tab:
-            st.subheader("Rasgos utilizados")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Conjunto", ml_feature_label)
-            with col2:
-                st.metric("Número de rasgos", len(ml_result["feature_cols"]))
-            with col3:
-                st.metric("TOP_N_MFW", len(ml_result["mfw_vocab"]) if ml_result["mfw_vocab"] else "No aplica")
-
-            feature_matrix_df = pd.concat(
-                [
-                    ml_result["train_df"].assign(split="Entrenamiento"),
-                    ml_result["test_df"].assign(split="Test"),
-                ],
-                ignore_index=True,
-            )
-            metadata_cols = [col for col in ["split", "author", "work", "filename"] if col in feature_matrix_df.columns]
-            feature_matrix_df = feature_matrix_df[metadata_cols + ml_result["feature_cols"]]
-            st.dataframe(feature_matrix_df, width="stretch", hide_index=True)
-
-            if ml_feature_set in {"stylometric", "combined"} and ml_result["removed_features"]:
-                st.subheader("Rasgos eliminados por correlación")
-                st.caption(
-                    "**Tip:** al eliminar rasgos muy correlacionados se reduce redundancia entre variables y se evita que "
-                    "algunos modelos den peso repetido a señales casi equivalentes."
-                )
-                st.dataframe(
-                    pd.DataFrame({"removed_feature": ml_result["removed_features"]}),
-                    width="stretch",
-                    hide_index=True,
-                )
-
-        with models_tab:
-            st.subheader("Validación cruzada")
-            st.caption(
-                "**Tip:** `cv_mean` resume el rendimiento medio en validación cruzada sobre entrenamiento; `cv_std` indica "
-                "cuánto varía ese rendimiento entre particiones."
-            )
-            cv_df = ml_result["cv_results"].copy()
-            cv_df["model"] = cv_df["model"].map(model_display_names)
-            st.dataframe(
-                cv_df.style.format({"cv_mean": "{:.3f}", "cv_std": "{:.3f}"}),
-                width="stretch",
-                hide_index=True,
-            )
-            cv_fig = px.bar(
-                cv_df.sort_values("cv_mean"),
-                x="cv_mean",
-                y="model",
-                error_x="cv_std",
-                orientation="h",
-                labels={"cv_mean": "F1-macro medio", "model": "Modelo"},
-                title="Rendimiento medio en validación cruzada",
-            )
-            st.plotly_chart(cv_fig, width="stretch")
-
-        with evaluation_tab:
-            st.subheader("Evaluación del mejor modelo")
-            best_model_label = model_display_names.get(ml_result["best_model_name"], ml_result["best_model_name"])
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Mejor modelo", best_model_label)
-            with col2:
-                st.metric("F1-macro test", f"{ml_result['test_f1_macro']:.3f}")
-            with col3:
-                st.metric("Accuracy test", f"{ml_result['test_accuracy']:.3f}")
-
-            report_df = pd.DataFrame(ml_result["classification_report"]).T.reset_index(names="label")
-            st.dataframe(report_df, width="stretch", hide_index=True)
-
-            cm_df = pd.DataFrame(
-                ml_result["confusion_matrix"],
-                index=ml_result["labels"],
-                columns=ml_result["labels"],
-            )
-            cm_fig = px.imshow(
-                cm_df,
-                text_auto=True,
-                aspect="auto",
-                color_continuous_scale="Blues",
-                labels={"x": "Autor predicho", "y": "Autor real", "color": "Obras"},
-                title="Matriz de confusión en test",
-            )
-            cm_fig.update_coloraxes(showscale=False)
-            st.plotly_chart(cm_fig, width="stretch")
-
-        with predictions_tab:
-            st.subheader("Predicciones por obra")
-            pred_df = ml_result["pred_df"].copy()
-            st.dataframe(pred_df, width="stretch", hide_index=True)
-
-        with attribution_tab:
-            st.subheader("Atribuir una nueva obra")
-            uploaded_file = st.file_uploader(
-                "Selecciona una obra en .txt",
-                type=["txt"],
-                key="experiment_attribution_uploaded_txt",
-            )
-
-            if "experiment_attribution_text" not in st.session_state:
-                st.session_state.experiment_attribution_text = None
-            if "experiment_attribution_filename" not in st.session_state:
-                st.session_state.experiment_attribution_filename = None
-
-            if uploaded_file is not None:
-                st.session_state.experiment_attribution_text = uploaded_file.getvalue().decode(
-                    "utf-8",
-                    errors="replace",
-                )
-                st.session_state.experiment_attribution_filename = uploaded_file.name
-
-            if st.session_state.experiment_attribution_text is None:
-                st.info("Sube un archivo .txt para atribuirlo con el mejor modelo de este experimento.")
+        generate_embeddings = st.button("Generar embeddings", type="primary", width="stretch")
+        if generate_embeddings:
+            if not openai_api_key:
+                st.error("Introduce una API key de OpenAI para generar los embeddings.")
+            elif estimated_chunks_df.empty:
+                st.error("No se han generado fragmentos. Ajusta los parámetros de segmentación.")
             else:
-                experiment_model_bundle = {
-                    "pipeline": ml_result["best_pipeline"],
-                    "feature_cols": ml_result["feature_cols"],
-                    "mfw_vocab": ml_result["mfw_vocab"],
-                }
-                attribution_ranking_df, attribution_explanation_df = classify_text_with_supervised_model(
-                    st.session_state.experiment_attribution_text,
-                    experiment_model_bundle,
-                    ml_config,
-                    lowercase=lowercase,
-                )
-                score_col = "probability" if "probability" in attribution_ranking_df.columns else "score"
-                predicted_row = attribution_ranking_df.iloc[0]
-                uploaded_filename = st.session_state.experiment_attribution_filename or "obra externa"
+                try:
+                    with st.spinner("Generando embeddings con OpenAI y calculando métricas..."):
+                        embedding_result = run_openai_embeddings_experiment(
+                            corpus_df,
+                            embedding_config,
+                            api_key=openai_api_key,
+                        )
+                    embedding_cache[embedding_cache_key] = embedding_result
+                    st.success("Embeddings generados correctamente.")
+                except Exception as exc:
+                    st.error(str(exc))
 
-                st.success(f"Archivo cargado: {uploaded_filename}")
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    best_model_label = model_display_names.get(
-                        ml_result["best_model_name"],
-                        ml_result["best_model_name"],
-                    )
-                    st.metric("Modelo", best_model_label)
-                with col2:
-                    st.metric("Autor predicho", predicted_row["author"])
-                with col3:
-                    st.metric("Score", f"{predicted_row[score_col]:.3f}")
-
-                ranking_fig = px.bar(
-                    attribution_ranking_df.sort_values(score_col),
-                    x=score_col,
-                    y="author",
-                    orientation="h",
-                    labels={score_col: "Probabilidad" if score_col == "probability" else "Score", "author": "Autor"},
-                    title="Ranking de atribución",
-                )
-                st.plotly_chart(ranking_fig, width="stretch")
-                st.dataframe(
-                    attribution_ranking_df.style.format({score_col: "{:.3f}"}),
-                    width="stretch",
-                    hide_index=True,
-                )
-
-                if attribution_explanation_df.empty:
-                    st.info("La explicabilidad local está disponible para modelos lineales con coeficientes.")
-                else:
-                    st.subheader("Rasgos que más empujan la predicción")
-                    top_explanation = attribution_explanation_df.head(25)
-                    explanation_fig = px.bar(
-                        top_explanation.sort_values("contribution"),
-                        x="contribution",
-                        y="feature",
-                        orientation="h",
-                        labels={"contribution": "Contribución", "feature": "Rasgo"},
-                        title="Contribuciones locales principales",
-                    )
-                    explanation_fig.update_layout(height=max(400, 25 * len(top_explanation)))
-                    st.plotly_chart(explanation_fig, width="stretch")
-                    st.dataframe(
-                        top_explanation[["feature", "value", "contribution"]].style.format(
-                            {"value": "{:.6f}", "contribution": "{:.3f}"}
-                        ),
-                        width="stretch",
-                        hide_index=True,
-                    )
-
-        st.stop()
-
-    if selected_ml_workflow == "robustness":
-        if not ml_top_n_values or not ml_seeds or not ml_model_names:
-            st.warning("Configura al menos un TOP_N_MFW, una semilla y un modelo.")
-            st.stop()
-
-        sweep_tab, summary_tab, decision_tab, detail_tab = st.tabs(
-            ["Barrido", "Resumen por TOP_N", "Decisión", "Detalle de ejecuciones"]
-        )
-
-        with st.spinner("Ejecutando barrido de robustez MFW..."):
-            robustness = run_mfw_robustness(
-                corpus_df,
-                top_n_values=ml_top_n_values,
-                seeds=ml_seeds,
-                n_test_per_author=int(ml_n_test_per_author),
-                tolerance=float(ml_tolerance),
-                selected_models=ml_model_names,
-            )
-
-        with sweep_tab:
-            st.subheader("Configuración del barrido")
-            config_df = pd.DataFrame(
-                [
-                    {"parámetro": "TOP_N_MFW", "valor": ", ".join(map(str, ml_top_n_values))},
-                    {"parámetro": "Semillas", "valor": ", ".join(map(str, ml_seeds))},
-                    {"parámetro": "Modelos", "valor": ", ".join(ml_model_labels)},
-                    {"parámetro": "Tolerancia", "valor": f"{ml_tolerance:.3f}"},
-                ]
-            )
-            st.dataframe(config_df, width="stretch", hide_index=True)
-
-        with summary_tab:
-            st.subheader("Rendimiento agregado")
-            summary_df = robustness["summary_df"].copy()
-            summary_df["model_name"] = summary_df["model_name"].map(model_display_names)
-            st.dataframe(
-                summary_df.style.format(
-                    {
-                        "mean_test_f1_macro": "{:.3f}",
-                        "std_test_f1_macro": "{:.3f}",
-                        "min_test_f1_macro": "{:.3f}",
-                        "max_test_f1_macro": "{:.3f}",
-                    }
-                ),
-                width="stretch",
-                hide_index=True,
-            )
-            robustness_fig = px.line(
-                summary_df,
-                x="top_n_mfw",
-                y="mean_test_f1_macro",
-                color="model_name",
-                markers=True,
-                error_y="std_test_f1_macro",
-                labels={
-                    "top_n_mfw": "TOP_N_MFW",
-                    "mean_test_f1_macro": "F1-macro medio",
-                    "model_name": "Modelo",
-                },
-                title="Robustez del rendimiento según número de MFW",
-            )
-            robustness_fig.add_hline(
-                y=robustness["threshold_score"],
-                line_dash="dash",
-                annotation_text="Umbral",
-            )
-            robustness_fig.add_vline(
-                x=robustness["selected_top_n_mfw"],
-                line_dash="dot",
-                annotation_text="TOP_N seleccionado",
-            )
-            st.plotly_chart(robustness_fig, width="stretch")
-
-        with decision_tab:
-            st.subheader("Selección del menor TOP_N_MFW suficiente")
+        if embedding_result is None:
+            st.info("Genera embeddings para activar las pestañas de visualización, similitud y cohesión.")
+        else:
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric("Mejor media observada", f"{robustness['best_mean_score']:.3f}")
+                st.metric("Dimensión final", embedding_result["embedding_dimension"])
             with col2:
-                st.metric("Umbral", f"{robustness['threshold_score']:.3f}")
+                st.metric("Embeddings de fragmentos", embedding_result["n_api_inputs"])
             with col3:
-                st.metric("TOP_N_MFW seleccionado", robustness["selected_top_n_mfw"])
+                st.metric("Obras agregadas", embedding_result["work_embeddings"].shape[0])
             with col4:
-                st.metric(
-                    "Modelo seleccionado",
-                    model_display_names.get(robustness["selected_model_name"], robustness["selected_model_name"]),
-                )
+                st.metric("Autores agregados", embedding_result["author_embeddings"].shape[0])
 
-            decision_df = robustness["final_decision_df"].copy()
-            decision_df["model_name"] = decision_df["model_name"].map(model_display_names)
-            st.dataframe(decision_df, width="stretch", hide_index=True)
-
-        with detail_tab:
-            st.subheader("Todas las ejecuciones")
-            detail_df = robustness["sweep_df"].copy()
-            detail_df["model_name"] = detail_df["model_name"].map(model_display_names)
-            st.dataframe(detail_df, width="stretch", hide_index=True)
-
+    if embedding_result is None:
+        with chunks_tab:
+            st.info("Genera embeddings en la pestaña API para ver los fragmentos finales.")
+        with projections_tab:
+            st.info("Genera embeddings en la pestaña API para ver las proyecciones.")
+        with similarity_tab:
+            st.info("Genera embeddings en la pestaña API para ver las similitudes.")
+        with neighbors_tab:
+            st.info("Genera embeddings en la pestaña API para ver los vecinos más cercanos.")
+        with cohesion_tab:
+            st.info("Genera embeddings en la pestaña API para ver métricas de cohesión.")
+        with network_tab:
+            st.info("Genera embeddings en la pestaña API para ver la red de similitud.")
         st.stop()
+
+    with chunks_tab:
+        st.subheader("Fragmentos generados")
+        st.dataframe(embedding_result["chunks_df"], width="stretch", hide_index=True)
+
+    with projections_tab:
+        st.subheader("Proyección de obras completas")
+        work_projection_df = embedding_result["work_projection_df"].copy()
+        projection_mode = st.radio("Proyección", ["UMAP 2D", "UMAP 3D"], horizontal=True)
+        if projection_mode == "UMAP 2D":
+            projection_fig = px.scatter(
+                work_projection_df,
+                x="umap_1",
+                y="umap_2",
+                color="author",
+                hover_data=["work", "n_chunks", "token_count"],
+                title="UMAP de obras completas en 2D",
+                height=720,
+            )
+        elif projection_mode == "UMAP 3D" and "umap_3" in work_projection_df.columns:
+            projection_fig = px.scatter_3d(
+                work_projection_df,
+                x="umap_1",
+                y="umap_2",
+                z="umap_3",
+                color="author",
+                hover_data=["work", "n_chunks", "token_count"],
+                title="UMAP de obras completas en 3D",
+                height=720,
+            )
+        else:
+            st.info("Esta proyección 3D requiere al menos tres obras y tres dimensiones.")
+            projection_fig = None
+
+        if projection_fig is not None:
+            st.plotly_chart(projection_fig, width="stretch")
+        st.caption(
+            "Varianza explicada PCA: "
+            + ", ".join(f"PC{i + 1}={value:.3f}" for i, value in enumerate(embedding_result["pca_variance"]))
+        )
+
+        st.subheader("UMAP de fragmentos")
+        chunk_projection_df = embedding_result["chunks_projection_df"]
+        if projection_mode == "UMAP 2D":
+            chunk_fig = px.scatter(
+                chunk_projection_df,
+                x="umap_1",
+                y="umap_2",
+                color="author",
+                hover_data=["work", "chunk_index", "token_count"],
+                title="UMAP de fragmentos en 2D",
+                height=720,
+            )
+            chunk_fig.update_traces(marker={"size": 6, "opacity": 0.55})
+            st.plotly_chart(chunk_fig, width="stretch")
+        elif "umap_3" in chunk_projection_df.columns:
+            chunk_fig = px.scatter_3d(
+                chunk_projection_df,
+                x="umap_1",
+                y="umap_2",
+                z="umap_3",
+                color="author",
+                hover_data=["work", "chunk_index", "token_count"],
+                title="UMAP de fragmentos en 3D",
+                height=720,
+            )
+            chunk_fig.update_traces(marker={"size": 4, "opacity": 0.45})
+            st.plotly_chart(chunk_fig, width="stretch")
+        else:
+            st.info("La proyección 3D de fragmentos requiere al menos tres fragmentos y tres dimensiones.")
+
+    with similarity_tab:
+        st.subheader("Similitud coseno")
+        author_sim_fig = px.imshow(
+            embedding_result["author_similarity_df"],
+            text_auto=".2f",
+            aspect="auto",
+            color_continuous_scale="Viridis",
+            title="Similitud coseno media entre autores",
+        )
+        author_sim_fig.update_layout(height=620)
+        st.plotly_chart(author_sim_fig, width="stretch")
+
+        work_sim_fig = px.imshow(
+            embedding_result["work_similarity_df"],
+            aspect="auto",
+            color_continuous_scale="Viridis",
+            title="Similitud coseno entre obras, ordenada por autor",
+        )
+        work_sim_fig.update_layout(height=760)
+        work_sim_fig.update_xaxes(showticklabels=False)
+        work_sim_fig.update_yaxes(showticklabels=False)
+        st.plotly_chart(work_sim_fig, width="stretch")
+
+    with neighbors_tab:
+        st.subheader("Vecinos más cercanos por obra")
+        neighbor_summary_df = embedding_result["neighbor_summary_df"]
+        neighbor_fig = px.bar(
+            neighbor_summary_df,
+            x="neighbor_rank",
+            y="pct_same_author",
+            labels={"neighbor_rank": "Rango del vecino", "pct_same_author": "% mismo autor"},
+            title="Porcentaje de vecinos del mismo autor por rango",
+            height=520,
+        )
+        neighbor_fig.update_yaxes(range=[0, 100])
+        st.plotly_chart(neighbor_fig, width="stretch")
+        st.dataframe(
+            embedding_result["nearest_neighbors_df"].style.format({"cosine_similarity": "{:.3f}"}),
+            width="stretch",
+            hide_index=True,
+        )
+
+    with cohesion_tab:
+        st.subheader("Cohesión por autor")
+        st.metric("Silhouette por autor", f"{embedding_result['silhouette']:.3f}")
+        pairs_df = embedding_result["pairs_df"].copy()
+        pairs_df["same_author"] = pairs_df["same_author"].map({True: "Mismo autor", False: "Distinto autor"})
+        distance_fig = px.box(
+            pairs_df,
+            x="same_author",
+            y="cosine_distance",
+            points="all",
+            labels={"same_author": "", "cosine_distance": "Distancia coseno"},
+            title="Distancias coseno intraautor vs interautor",
+            height=560,
+        )
+        st.plotly_chart(distance_fig, width="stretch")
+        st.dataframe(
+            embedding_result["author_metrics_df"].style.format(
+                {
+                    "mean_intra_author_distance": "{:.3f}",
+                    "mean_inter_author_distance": "{:.3f}",
+                    "separation_margin": "{:.3f}",
+                }
+            ),
+            width="stretch",
+            hide_index=True,
+        )
+
+    with network_tab:
+        st.subheader("Red de similitud entre obras")
+        st.plotly_chart(embedding_result["network_fig"], width="stretch")
+
+    st.stop()
